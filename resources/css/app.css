@@ -1,0 +1,111 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/inter';
+@plugin '@tailwindcss/typography';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../../app/**/*.php';
+
+@theme {
+    --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+        'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* Primary purple scale — merkkleur #7C3AED */
+    --color-primary-50:  #f5f3ff;
+    --color-primary-100: #ede9fe;
+    --color-primary-200: #ddd6fe;
+    --color-primary-300: #c4b5fd;
+    --color-primary-400: #a78bfa;
+    --color-primary-500: #8b5cf6;
+    --color-primary-600: #7c3aed;
+    --color-primary-700: #6d28d9;
+    --color-primary-800: #5b21b6;
+    --color-primary-900: #4c1d95;
+    --color-primary-950: #2e1065;
+
+    /* Cyan accent — gebruik als highlight naast primary */
+    --color-cyan-300: #67e8f9;
+    --color-cyan-400: #22d3ee;
+    --color-cyan-500: #06b6d4;
+    --color-cyan-600: #0891b2;
+
+    /* Orb-animaties */
+    --animate-glow-drift:      glow-drift      10s ease-in-out infinite;
+    --animate-glow-drift-alt:  glow-drift-alt  14s ease-in-out infinite;
+    --animate-glow-drift-slow: glow-drift-slow 18s ease-in-out infinite;
+
+    /* Hero-intro bij het laden van een pagina */
+    --animate-hero-enter: hero-enter 1.1s cubic-bezier(0.16, 1, 0.3, 1) both;
+
+    /* Scroll-reveal voor secties/cards verderop op de pagina */
+    --animate-reveal-up:    reveal-up    0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+    --animate-reveal-scale: reveal-scale 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+
+    /* Zoom-out bij laden, voor uitgelichte afbeeldingen (bv. blog-cover) */
+    --animate-image-zoom-out: image-zoom-out 1.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+
+    /* Scroll-down indicator onderaan de hero: stipje glijdt op en neer in het muis-icoon */
+    --animate-scroll-dot: scroll-dot 1.8s ease-in-out infinite;
+}
+
+@keyframes glow-drift {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33%       { transform: translate(40px, -40px) scale(1.08); }
+    66%       { transform: translate(-20px, 20px) scale(0.95); }
+}
+
+@keyframes glow-drift-alt {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33%       { transform: translate(-30px, 30px) scale(0.95); }
+    66%       { transform: translate(20px, -20px) scale(1.06); }
+}
+
+@keyframes glow-drift-slow {
+    0%, 100% { transform: translate(0, 0) scale(1.05); }
+    50%       { transform: translate(25px, -25px) scale(0.95); }
+}
+
+@keyframes hero-enter {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes reveal-up {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes reveal-scale {
+    from { opacity: 0; transform: scale(0.97); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes image-zoom-out {
+    from { transform: scale(1.06); }
+    to   { transform: scale(1); }
+}
+
+@keyframes scroll-dot {
+    0%       { transform: translateY(0);    opacity: 1; }
+    50%      { transform: translateY(10px); opacity: 0; }
+    50.01%   { transform: translateY(0);    opacity: 0; }
+    100%     { transform: translateY(0);    opacity: 1; }
+}
+
+/* Scroll-reveal: elementen starten onzichtbaar en krijgen .is-visible zodra
+   ze de viewport in scrollen (zie resources/js/reveal.js). Zonder JS (of vóór
+   init) blijven ze gewoon zichtbaar — progressive enhancement, geen FOUC. */
+[data-reveal], [data-reveal-scale] { opacity: 0; }
+[data-reveal].is-visible { animation: var(--animate-reveal-up); }
+[data-reveal-scale].is-visible { animation: var(--animate-reveal-scale); }
+
+@media (prefers-reduced-motion: reduce) {
+    .animate-hero-enter, .animate-image-zoom-out, .animate-scroll-dot { animation: none; }
+    [data-reveal], [data-reveal-scale] { opacity: 1; animation: none; }
+}
+
+/* Smooth scroll voor anchor-links */
+html { scroll-behavior: smooth; }
+
+/* Verberg Alpine.js x-cloak elementen tot Alpine initialiseert */
+[x-cloak] { display: none !important; }
