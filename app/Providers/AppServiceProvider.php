@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Laravel\Passport\Passport;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,6 +20,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Eigen (merk-)consentscherm voor de OAuth-flow, o.a. de claude.ai-connector.
+        Passport::authorizationView('oauth.authorize');
     }
 }
