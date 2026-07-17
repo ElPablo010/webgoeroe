@@ -25,6 +25,7 @@ class SiteHeader
     {
         return [
             'logo' => null,
+            'favicon' => null,
             'name' => config('app.name'),
             'subtitle' => '',
             'cta' => [
@@ -58,6 +59,39 @@ class SiteHeader
                 'href' => self::resolveHref($cta),
             ],
         ];
+    }
+
+    /**
+     * De favicon-URL (het tab-icoontje). Valt terug op het header-logo wanneer
+     * er geen aparte favicon is ingesteld, zodat het icoontje ook zonder extra
+     * upload klopt. Geeft null wanneer geen van beide bestaat.
+     */
+    public static function favicon(): ?string
+    {
+        $header = self::current();
+
+        return ($header['favicon'] ?? null) ?: (($header['logo'] ?? null) ?: null);
+    }
+
+    /**
+     * Het MIME-type dat bij een favicon-URL past (voor het type-attribuut op de
+     * <link>). Afgeleid van de bestandsextensie; null wanneer onbekend.
+     */
+    public static function faviconType(?string $url): ?string
+    {
+        if ($url === null || $url === '') {
+            return null;
+        }
+
+        return match (strtolower(pathinfo(parse_url($url, PHP_URL_PATH) ?? $url, PATHINFO_EXTENSION))) {
+            'svg' => 'image/svg+xml',
+            'png' => 'image/png',
+            'ico' => 'image/x-icon',
+            'gif' => 'image/gif',
+            'jpg', 'jpeg' => 'image/jpeg',
+            'webp' => 'image/webp',
+            default => null,
+        };
     }
 
     /**

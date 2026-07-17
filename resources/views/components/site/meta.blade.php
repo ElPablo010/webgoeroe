@@ -15,7 +15,14 @@
     $title = $title ?? \App\Support\Seo::siteName();
     $description = $description ?? \App\Support\Seo::defaultDescription();
     $ogImage = \App\Support\Seo::absoluteUrl($image);
+    $favicon = \App\Support\SiteHeader::favicon();
+    $faviconType = \App\Support\SiteHeader::faviconType($favicon);
 @endphp
+
+@if ($favicon)
+    <link rel="icon" href="{{ $favicon }}"@if ($faviconType) type="{{ $faviconType }}"@endif>
+    <link rel="apple-touch-icon" href="{{ $favicon }}">
+@endif
 
 <title>{{ $title }}</title>
 <meta name="description" content="{{ $description }}">
