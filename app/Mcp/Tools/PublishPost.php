@@ -9,8 +9,17 @@ use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
+use Laravel\Mcp\Server\Tools\Annotations\IsIdempotent;
+use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Description('Zet een bestaand blogartikel live. Vult de publicatiedatum aan met nu indien nog leeg.')]
+// Maakt niets stuk, maar zet wel iets publiek zichtbaar => bewust geen auto-approve.
+#[IsReadOnly(false)]
+#[IsDestructive(false)]
+#[IsIdempotent]
+#[IsOpenWorld(false)]
 class PublishPost extends Tool
 {
     use InteractsWithPosts;

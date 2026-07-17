@@ -11,8 +11,15 @@ use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
+use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Description('Maak een nieuw blogartikel op dewebgoeroe.be. De artikeltekst geef je als Markdown. Zet published op true om het meteen live te zetten; anders blijft het een concept in de admin.')]
+// Voegt toe, overschrijft niets — maar kan wel meteen publiceren, dus geen auto-approve-kandidaat.
+#[IsReadOnly(false)]
+#[IsDestructive(false)]
+#[IsOpenWorld(false)]
 class CreatePost extends Tool
 {
     use InteractsWithPosts;

@@ -9,8 +9,17 @@ use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
+use Laravel\Mcp\Server\Tools\Annotations\IsIdempotent;
+use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Description('Haal een blogartikel offline (terug naar concept). Handig om een per ongeluk gepubliceerd artikel meteen weg te halen. De inhoud blijft bewaard.')]
+// Verwijdert niets (inhoud blijft), enkel de zichtbaarheid gaat uit.
+#[IsReadOnly(false)]
+#[IsDestructive(false)]
+#[IsIdempotent]
+#[IsOpenWorld(false)]
 class UnpublishPost extends Tool
 {
     use InteractsWithPosts;

@@ -155,10 +155,32 @@ php artisan passport:keys            # genereert storage/oauth-*.key op de serve
 ```
 
 Draai `passport:keys` **niet** opnieuw bij latere deploys — dat maakt bestaande
-tokens ongeldig. Voeg dit toe aan de `deploy-combell`-flow (of run het handmatig
-bij go-live). Daarna in claude.ai: connector toevoegen met URL
+tokens ongeldig. Daarna in claude.ai: connector toevoegen met URL
 `https://dewebgoeroe.be/mcp` — de rest (registratie + inloggen + toestemming) loopt
 via de browser.
+
+#### ⚠️ Sleutelrechten vs. `deploy.sh` (dit brak het al een keer)
+
+`league/oauth2-server` **weigert** de sleutels als ze ruimer dan 600/660 staan en
+gooit dan een `ErrorException` — resultaat: OAuth valt om, claude.ai krijgt een
+serverfout en ziet géén tools (ook de bestaande niet).
+
+De laatste stap van `deploy.sh` is `chmod -R 775 storage bootstrap/cache`, en die
+`-R` zet **ook `storage/oauth-*.key` op 775**. Elke deploy breekt de OAuth dus
+opnieuw. Zorg dat `~/deploy.sh` op de server dit erachteraan zet:
+
+```bash
+chmod -R 775 storage bootstrap/cache
+# Passport-sleutels moeten strikter: 775 laat oauth2-server hard falen.
+chmod 600 "$APP_DIR"/storage/oauth-*.key 2>/dev/null || true
+```
+
+Symptoom in `storage/logs/laravel.log`:
+`Key file ".../oauth-private.key" permissions are not correct, recommend changing to 600 or 660`.
+
+De code zelf is hierdoor niet te betrappen: [BlogMcpOAuthFlowTest](tests/Feature/BlogMcpOAuthFlowTest.php)
+loopt de volledige authorization-code + PKCE-flow door en slaagt lokaal — dit is
+puur een bestandsrechten-kwestie op de server.
 
 ### Nieuwe blog-tool toevoegen
 

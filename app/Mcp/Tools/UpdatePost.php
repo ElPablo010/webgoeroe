@@ -11,8 +11,17 @@ use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
+use Laravel\Mcp\Server\Tools\Annotations\IsIdempotent;
+use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Description('Werk een bestaand blogartikel bij. Geef alleen de velden mee die je wil wijzigen; de rest blijft ongemoeid. Zoek het id eerst op met list_posts.')]
+// Overschrijft bestaande inhoud (body vervangt de volledige tekst) => destructief.
+#[IsReadOnly(false)]
+#[IsDestructive]
+#[IsIdempotent]
+#[IsOpenWorld(false)]
 class UpdatePost extends Tool
 {
     use InteractsWithPosts;
