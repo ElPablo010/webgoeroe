@@ -12,6 +12,7 @@ use Filament\Schemas\Components\Text;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\HtmlString;
 
 class MediaPickerField
 {
@@ -29,7 +30,7 @@ class MediaPickerField
         // bovenaan, het veld eronder, en blijven "Upload afbeelding" + "Kies uit
         // media" netjes naast elkaar — ook op smalle schermen, zonder dat de
         // label-rij horizontale overflow veroorzaakt.
-        $belowContent = [
+        $actions = [
             Action::make("upload_{$name}")
                 ->label('Upload afbeelding')
                 ->icon(Heroicon::OutlinedArrowUpTray)
@@ -79,19 +80,42 @@ class MediaPickerField
                 }),
         ];
 
-        // Helptekst als Text-component ACHTER de acties in dezelfde belowContent-array
-        // (Filament groepeert de twee aangrenzende acties tot één rij en zet de tekst
-        // eronder). Niet via ->helperText() — dat zou de acties overschrijven.
-        if (filled($helperText)) {
-            $belowContent[] = Text::make($helperText);
-        }
+        // belowContent als field-context CLOSURE: die krijgt de veldwaarde ($state)
+        // rechtstreeks — geen $get()/statePath-gegoochel (dat brak binnen Repeaters
+        // met dynamische UUID-paden). Volgorde in de rij:
+        //   1. voorbeeldthumbnail van de gekozen afbeelding (enkel als er een waarde is),
+        //   2. de twee acties "Upload afbeelding" + "Kies uit media",
+        //   3. optionele helptekst.
+        // De thumbnail komt als HtmlString uit een aparte blade-view met de URL
+        // expliciet meegegeven; helptekst NIET via ->helperText() — dat zou de
+        // acties overschrijven (zelfde belowContent-slot).
+        $belowContent = function (?string $state) use ($actions, $helperText): array {
+            $content = [];
+
+            if (filled($state)) {
+                $content[] = new HtmlString(
+                    view('filament.forms.media-preview', ['url' => $state])->render()
+                );
+            }
+
+            $content = array_merge($content, $actions);
+
+            if (filled($helperText)) {
+                $content[] = Text::make($helperText);
+            }
+
+            return $content;
+        };
 
         // dehydrated(true): in Filament v5 kan readOnly() de dehydratie stilzwijgend
         // uitschakelen waardoor de URL verloren gaat bij opslaan. Expliciet aan zetten.
+        // live(): zodat na een upload/keuze ($set) de belowContent-closure meteen
+        // opnieuw evalueert en de thumbnail verschijnt zonder tussentijds op te slaan.
         $field = TextInput::make($name)
             ->label($label)
             ->readOnly()
             ->dehydrated(true)
+            ->live()
             ->placeholder('Nog geen afbeelding gekozen')
             ->belowContent($belowContent);
 

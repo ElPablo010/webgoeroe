@@ -16,7 +16,11 @@
             {{-- Brand + social --}}
             <div class="sm:col-span-2 md:col-span-1">
                 <div class="mb-1 flex items-center gap-2">
-                    <span class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-400 to-primary-600 text-xs font-black text-white">W</span>
+                    @if (! empty($brand['logo']))
+                        <img src="{{ $brand['logo'] }}" alt="{{ $brand['name'] ?? config('app.name') }}" class="h-7 w-auto">
+                    @else
+                        <span class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-400 to-primary-600 text-xs font-black text-white">W</span>
+                    @endif
                     <span class="text-base font-bold text-white">{{ $brand['name'] ?? config('app.name') }}</span>
                 </div>
                 @if (! empty($brand['tagline']))
