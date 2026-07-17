@@ -18,6 +18,9 @@
         </include>
     </source>
     <php>
+        <!-- Beeldverwerking (GD) houdt afbeeldingen onverpakt in het geheugen; de
+             PHP-default van 128M is te krap voor de media-tests. -->
+        <ini name="memory_limit" value="512M"/>
         <env name="APP_ENV" value="testing"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>

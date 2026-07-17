@@ -4,6 +4,7 @@ namespace App\Mcp\Tools;
 
 use App\Mcp\Concerns\InteractsWithPosts;
 use App\Models\Post;
+use App\Rules\MediaUrl;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Support\Str;
 use Laravel\Mcp\Request;
@@ -27,7 +28,9 @@ class CreatePost extends Tool
             'slug' => ['nullable', 'string', 'max:255'],
             'tags' => ['nullable', 'array', 'max:8'],
             'tags.*' => ['string', 'max:50'],
-            'cover_url' => ['nullable', 'url', 'max:255'],
+            // Media uit de eigen library zijn relatief ("/storage/..."), dus naast een
+            // volledige URL moet ook zo'n pad door de validatie komen.
+            'cover_url' => ['nullable', 'string', 'max:255', new MediaUrl],
             'cover_alt' => ['nullable', 'string', 'max:255'],
             'author_name' => ['nullable', 'string', 'max:100'],
             'meta_title' => ['nullable', 'string', 'max:60'],
@@ -82,7 +85,7 @@ class CreatePost extends Tool
                 ->description('1-4 relevante tags. Alfabetisch ordenen.')
                 ->items($schema->string()),
             'cover_url' => $schema->string()
-                ->description('Optionele URL van de coverafbeelding bovenaan het artikel.'),
+                ->description('Coverafbeelding bovenaan het artikel. Gebruik de "url" die upload_media_from_url teruggaf (bv. /storage/website-media/...), niet een externe link.'),
             'cover_alt' => $schema->string()
                 ->description('Alt-tekst voor de coverafbeelding.'),
             'author_name' => $schema->string()

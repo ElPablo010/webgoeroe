@@ -79,13 +79,41 @@ proces, rolt mee met de gewone deploy.
 - **Endpoint**: `POST /mcp` (zie [routes/ai.php](routes/ai.php)).
 - **Server**: [app/Mcp/Servers/BlogServer.php](app/Mcp/Servers/BlogServer.php).
 - **Tools** (in [app/Mcp/Tools/](app/Mcp/Tools/)): `list_posts`, `create_post`,
-  `update_post`, `publish_post`, `unpublish_post`. Body geef je als **Markdown**;
-  wordt server-side via `Str::markdown()` naar HTML omgezet (h2-id's voor de TOC
-  voegt de blade-view zelf toe). Gedeelde helpers in
+  `update_post`, `publish_post`, `unpublish_post`, `upload_media_from_url`. Body
+  geef je als **Markdown**; wordt server-side via `Str::markdown()` naar HTML
+  omgezet (h2-id's voor de TOC voegt de blade-view zelf toe). Gedeelde helpers in
   [app/Mcp/Concerns/InteractsWithPosts.php](app/Mcp/Concerns/InteractsWithPosts.php).
 - **Veiligheid**: `create_post` publiceert **niet** standaard (`published:false`);
   zet expliciet `published:true` om live te gaan. `unpublish_post` is het vangnet.
   Elke actie geeft de publieke `url` terug ter controle.
+
+### Afbeeldingen via MCP (`upload_media_from_url`)
+
+Claude mag **nooit** rechtstreeks naar een externe afbeelding linken: `upload_media_from_url`
+downloadt de afbeelding en zet ze via `WebsiteMediaService::storeFromUrl()` in de
+library (WebP + JPG-fallback, max 2400 px). De teruggegeven `/storage/...`-URL gebruik
+je als `cover_url`.
+
+Omdat de URL van buitenaf komt (een MCP-client kiest 'm), is de fetch afgeschermd —
+zie [WebsiteMediaService](app/Services/Website/WebsiteMediaService.php):
+
+- **SSRF**: enkel `http(s)`, en enkel publieke IP's. Loopback, privé-ranges en
+  cloud-metadata (`169.254.169.254`) worden geweigerd — óók per redirect-hop, zodat
+  een publieke URL je niet alsnog naar binnen stuurt.
+- **Decompression bomb**: naast de 15 MB byte-cap geldt een **pixel-cap van 12 MP**
+  (`MAX_PIXELS`). Een klein JPEG kan enorme afmetingen hebben; GD houdt een afbeelding
+  onverpakt in het geheugen (b×h×4 bytes), dus zonder deze check blaast een 10000×8000
+  bron het PHP-geheugen op de server op. De header wordt via `getimagesize()` gelezen
+  vóór GD decodeert.
+- Content-Type moet `image/*` zijn, en de bytes moeten écht decodeerbaar zijn.
+
+**Let op bij media-URL's**: de library slaat **relatieve** URL's op (`/storage/...`),
+niet absolute. Velden die media aannemen valideren daarom met [`App\Rules\MediaUrl`](app/Rules/MediaUrl.php)
+(volledige http(s)-URL **of** een `/storage/`-pad) — de kale `url`-regel keurt een
+library-pad af.
+
+De pixel-cap raakt ook gewone admin-uploads (zelfde `storeFromPath`). Beeldverwerking
+vraagt geheugen: `phpunit.xml` zet `memory_limit=512M` voor de tests.
 
 ### Auth — twee wegen op één route
 

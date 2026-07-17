@@ -7,6 +7,7 @@ use App\Mcp\Tools\ListPosts;
 use App\Mcp\Tools\PublishPost;
 use App\Mcp\Tools\UnpublishPost;
 use App\Mcp\Tools\UpdatePost;
+use App\Mcp\Tools\UploadMediaFromUrl;
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Attributes\Instructions;
 use Laravel\Mcp\Server\Attributes\Name;
@@ -28,6 +29,14 @@ use Laravel\Mcp\Server\Attributes\Version;
       daar altijd even na.
     - Twijfel je of een titel al bestaat? Gebruik eerst `list_posts`.
     - Een fout online gezet? `unpublish_post` haalt het artikel meteen offline.
+
+    Afbeeldingen:
+    - Link **nooit** rechtstreeks naar een externe afbeelding. Haal ze binnen met
+      `upload_media_from_url` en gebruik de `url` die je terugkrijgt als `cover_url`.
+      Zo staat het bestand op onze eigen server (geconverteerd naar WebP + JPG),
+      en breekt de afbeelding niet als de bron offline gaat.
+    - De URL moet publiek en rechtstreeks naar het afbeeldingsbestand wijzen.
+    - Zet er een beschrijvende `cover_alt` bij — nodig voor toegankelijkheid en SEO.
     TXT)]
 class BlogServer extends Server
 {
@@ -37,6 +46,7 @@ class BlogServer extends Server
         UpdatePost::class,
         PublishPost::class,
         UnpublishPost::class,
+        UploadMediaFromUrl::class,
     ];
 
     protected array $resources = [

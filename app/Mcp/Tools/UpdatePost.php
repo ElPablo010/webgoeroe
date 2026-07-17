@@ -4,6 +4,7 @@ namespace App\Mcp\Tools;
 
 use App\Mcp\Concerns\InteractsWithPosts;
 use App\Models\Post;
+use App\Rules\MediaUrl;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Support\Str;
 use Laravel\Mcp\Request;
@@ -28,7 +29,7 @@ class UpdatePost extends Tool
             'slug' => ['sometimes', 'string', 'max:255'],
             'tags' => ['sometimes', 'nullable', 'array', 'max:8'],
             'tags.*' => ['string', 'max:50'],
-            'cover_url' => ['sometimes', 'nullable', 'url', 'max:255'],
+            'cover_url' => ['sometimes', 'nullable', 'string', 'max:255', new MediaUrl],
             'cover_alt' => ['sometimes', 'nullable', 'string', 'max:255'],
             'meta_title' => ['sometimes', 'nullable', 'string', 'max:60'],
             'meta_description' => ['sometimes', 'nullable', 'string', 'max:160'],
