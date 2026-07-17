@@ -1,7 +1,7 @@
 <?php
 
 use App\Enums\UserRole;
-use App\Mcp\Servers\BlogServer;
+use App\Mcp\Servers\CmsServer;
 use App\Mcp\Tools\CreatePost;
 use App\Mcp\Tools\UploadMediaFromUrl;
 use App\Models\Post;
@@ -32,7 +32,7 @@ it('downloads a remote image into the media library and returns its internal url
     // Publiek IP-literal: geen DNS nodig, dus de test blijft offline werken.
     Http::fake(['*' => Http::response(fakeImageBytes(), 200, ['Content-Type' => 'image/jpeg'])]);
 
-    BlogServer::actingAs($this->admin)
+    CmsServer::actingAs($this->admin)
         ->tool(UploadMediaFromUrl::class, ['url' => 'https://93.184.216.34/photo.jpg'])
         ->assertOk()
         ->assertSee('/storage/website-media/');
@@ -55,7 +55,7 @@ it('downloads a remote image into the media library and returns its internal url
 it('scales down an oversized image to the 2400px cap', function () {
     Http::fake(['*' => Http::response(fakeImageBytes(3000, 1500), 200, ['Content-Type' => 'image/jpeg'])]);
 
-    BlogServer::actingAs($this->admin)
+    CmsServer::actingAs($this->admin)
         ->tool(UploadMediaFromUrl::class, ['url' => 'https://93.184.216.34/big.jpg'])
         ->assertOk();
 
@@ -65,7 +65,7 @@ it('scales down an oversized image to the 2400px cap', function () {
 it('rejects urls pointing at loopback, private or metadata addresses', function (string $url) {
     Http::fake(['*' => Http::response(fakeImageBytes(), 200, ['Content-Type' => 'image/jpeg'])]);
 
-    BlogServer::actingAs($this->admin)
+    CmsServer::actingAs($this->admin)
         ->tool(UploadMediaFromUrl::class, ['url' => $url])
         ->assertHasErrors();
 
@@ -78,7 +78,7 @@ it('rejects urls pointing at loopback, private or metadata addresses', function 
 ]);
 
 it('rejects a non-http scheme', function () {
-    BlogServer::actingAs($this->admin)
+    CmsServer::actingAs($this->admin)
         ->tool(UploadMediaFromUrl::class, ['url' => 'file:///etc/passwd'])
         ->assertHasErrors();
 
@@ -88,7 +88,7 @@ it('rejects a non-http scheme', function () {
 it('rejects a url that does not serve an image', function () {
     Http::fake(['*' => Http::response('<html>geen afbeelding</html>', 200, ['Content-Type' => 'text/html'])]);
 
-    BlogServer::actingAs($this->admin)
+    CmsServer::actingAs($this->admin)
         ->tool(UploadMediaFromUrl::class, ['url' => 'https://93.184.216.34/pagina.html'])
         ->assertHasErrors();
 
@@ -112,7 +112,7 @@ it('rejects an image whose dimensions would blow up the server memory', function
         fakePngHeaderClaiming(20000, 20000), 200, ['Content-Type' => 'image/png']
     )]);
 
-    BlogServer::actingAs($this->admin)
+    CmsServer::actingAs($this->admin)
         ->tool(UploadMediaFromUrl::class, ['url' => 'https://93.184.216.34/bom.png'])
         ->assertHasErrors();
 
@@ -122,7 +122,7 @@ it('rejects an image whose dimensions would blow up the server memory', function
 it('rejects bytes that claim to be an image but are not decodable', function () {
     Http::fake(['*' => Http::response('dit zijn geen afbeeldingsbytes', 200, ['Content-Type' => 'image/jpeg'])]);
 
-    BlogServer::actingAs($this->admin)
+    CmsServer::actingAs($this->admin)
         ->tool(UploadMediaFromUrl::class, ['url' => 'https://93.184.216.34/kapot.jpg'])
         ->assertHasErrors();
 
@@ -132,7 +132,7 @@ it('rejects bytes that claim to be an image but are not decodable', function () 
 it('surfaces an http error from the source', function () {
     Http::fake(['*' => Http::response('not found', 404)]);
 
-    BlogServer::actingAs($this->admin)
+    CmsServer::actingAs($this->admin)
         ->tool(UploadMediaFromUrl::class, ['url' => 'https://93.184.216.34/weg.jpg'])
         ->assertHasErrors();
 
@@ -142,7 +142,7 @@ it('surfaces an http error from the source', function () {
 it('accepts a library media path as cover_url on a post', function () {
     // Dit is de hele reden van de MediaUrl-regel: /storage/... is geen absolute URL,
     // maar moet wel als cover geaccepteerd worden.
-    BlogServer::actingAs($this->admin)
+    CmsServer::actingAs($this->admin)
         ->tool(CreatePost::class, [
             'title' => 'Met cover',
             'body' => 'Inhoud.',
@@ -156,7 +156,7 @@ it('accepts a library media path as cover_url on a post', function () {
 });
 
 it('still rejects a nonsense cover_url', function () {
-    BlogServer::actingAs($this->admin)
+    CmsServer::actingAs($this->admin)
         ->tool(CreatePost::class, [
             'title' => 'Kapotte cover',
             'body' => 'Inhoud.',

@@ -70,22 +70,66 @@ Drie plekken:
 
 ---
 
-## Blog via MCP — Claude schrijft blogposts
+## Content via MCP — Claude beheert blog + cases
 
-De blog kan door elke Claude-client (Code, desktop, claude.ai) beheerd worden via
-een MCP-server die **in de Laravel-app zelf** draait (`laravel/mcp`) — geen apart
-proces, rolt mee met de gewone deploy.
+Blog en cases kunnen door elke Claude-client (Code, desktop, claude.ai/Cowork)
+beheerd worden via een MCP-server die **in de Laravel-app zelf** draait
+(`laravel/mcp`) — geen apart proces, rolt mee met de gewone deploy.
 
 - **Endpoint**: `POST /mcp` (zie [routes/ai.php](routes/ai.php)).
-- **Server**: [app/Mcp/Servers/BlogServer.php](app/Mcp/Servers/BlogServer.php).
-- **Tools** (in [app/Mcp/Tools/](app/Mcp/Tools/)): `list_posts`, `create_post`,
-  `update_post`, `publish_post`, `unpublish_post`, `upload_media_from_url`. Body
-  geef je als **Markdown**; wordt server-side via `Str::markdown()` naar HTML
-  omgezet (h2-id's voor de TOC voegt de blade-view zelf toe). Gedeelde helpers in
-  [app/Mcp/Concerns/InteractsWithPosts.php](app/Mcp/Concerns/InteractsWithPosts.php).
-- **Veiligheid**: `create_post` publiceert **niet** standaard (`published:false`);
-  zet expliciet `published:true` om live te gaan. `unpublish_post` is het vangnet.
-  Elke actie geeft de publieke `url` terug ter controle.
+- **Server**: [app/Mcp/Servers/CmsServer.php](app/Mcp/Servers/CmsServer.php).
+- **Tools** (in [app/Mcp/Tools/](app/Mcp/Tools/)), 11 in totaal:
+  - Blog: `list_posts`, `create_post`, `update_post`, `publish_post`, `unpublish_post`
+  - Cases: `list_cases`, `create_case`, `update_case`, `publish_case`, `unpublish_case`
+  - Gedeeld: `upload_media_from_url`
+- **Veiligheid**: `create_post`/`create_case` publiceren **niet** standaard
+  (`published:false`); zet expliciet `published:true` om live te gaan.
+  `unpublish_*` is het vangnet. Elke actie geeft de publieke `url` terug.
+- **Annotaties**: elke tool declareert MCP-hints (`readOnlyHint`, `destructiveHint`,
+  `idempotentHint`, `openWorldHint`) zodat clients weten wat veilig auto-approvebaar
+  is. `list_*` is read-only; `update_*` is destructief; `upload_media_from_url` is
+  open-world (haalt een externe URL op). **Nooit een schrijvende tool als read-only
+  markeren** om een goedkeuringsprompt te omzeilen — die prompt is de bescherming.
+
+### Blog
+
+Body geef je als **Markdown**; wordt server-side via `Str::markdown()` naar HTML
+omgezet (h2-id's voor de TOC voegt de blade-view zelf toe). Helpers in
+[InteractsWithPosts](app/Mcp/Concerns/InteractsWithPosts.php).
+
+### Cases
+
+Let op: een case werkt **anders dan een post**. `CaseStudy::$content` is een
+**gestructureerde JSON-array** (geen HTML-string), met een vast stramien dat
+[CaseStudyForm](app/Filament/Resources/CaseStudies/Schemas/CaseStudyForm.php) en de
+publieke view verwachten:
+
+```
+content: {
+  challenge:   { body }                        // verplicht
+  goals:       [ { text } ]
+  approach:    { steps: [ { title, body } ] }
+  solution:    { body, image_url, image_alt }  // body verplicht
+  results:     { intro, metrics: [ { label, value } ] }
+  testimonial: { quote, name, role, avatar_url }
+  reflection:  { body, website_url }
+  cta:         { title, body, button_label, button_url }
+}
+```
+
+Dat contract staat op één plek — [InteractsWithCases](app/Mcp/Concerns/InteractsWithCases.php)
+levert zowel `contentRules()` (validatie) als `contentSchema()` (MCP-inputschema),
+zodat beide niet uit elkaar kunnen lopen. **Wijzigt de form? Werk de concern bij.**
+
+`update_case` met `content` vervangt het **volledige** content-blok (geen deep merge).
+
+### Naamgeving cases
+
+In de admin heet dit **"Cases"** en staat het op **`/admin/cases`** (via
+`$slug = 'cases'` op de resource). Het **model (`CaseStudy`), de klassen en de tabel
+(`case_studies`) heten bewust nog steeds "case study"** — hernoemen daarvan vraagt
+een migratie en een brede refactor zonder functionele winst. Alleen de weergave en
+de URL zijn hernoemd.
 
 ### Afbeeldingen via MCP (`upload_media_from_url`)
 
@@ -185,5 +229,5 @@ puur een bestandsrechten-kwestie op de server.
 ### Nieuwe blog-tool toevoegen
 
 `php artisan make:mcp-tool <Naam>`, `use InteractsWithPosts`, registreren in de
-`$tools`-array van `BlogServer`. Validatie in `handle()` via `$request->validate()`,
+`$tools`-array van `CmsServer`. Validatie in `handle()` via `$request->validate()`,
 inputschema in `schema()`.

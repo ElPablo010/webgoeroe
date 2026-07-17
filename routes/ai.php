@@ -1,6 +1,6 @@
 <?php
 
-use App\Mcp\Servers\BlogServer;
+use App\Mcp\Servers\CmsServer;
 use Laravel\Mcp\Facades\Mcp;
 
 /*
@@ -26,6 +26,6 @@ use Laravel\Mcp\Facades\Mcp;
 
 Mcp::oauthRoutes();
 
-Mcp::web('mcp', BlogServer::class)
+Mcp::web('mcp', CmsServer::class)
     ->middleware('auth:sanctum,api')
     ->name('mcp.blog');

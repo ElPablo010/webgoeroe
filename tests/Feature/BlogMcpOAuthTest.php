@@ -83,5 +83,5 @@ it('authenticates on /mcp through the Passport api guard', function () {
 
     // De api-guard accepteert de gebruiker => route is niet langer 401.
     expect($response->getStatusCode())->not->toBe(401);
-    $response->assertSee('Webgoeroe Blog');
+    $response->assertSee('Webgoeroe CMS');
 });

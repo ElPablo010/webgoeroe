@@ -24,19 +24,26 @@ class CaseStudyResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'title';
 
+    /**
+     * Admin-URL wordt /admin/cases (i.p.v. de van de klassenaam afgeleide
+     * /admin/case-studies). Model en tabel (case_studies) blijven bewust
+     * ongewijzigd — enkel de weergave en de URL heten "cases".
+     */
+    protected static ?string $slug = 'cases';
+
     public static function getModelLabel(): string
     {
-        return 'case study';
+        return 'case';
     }
 
     public static function getPluralModelLabel(): string
     {
-        return 'case studies';
+        return 'cases';
     }
 
     public static function getNavigationLabel(): string
     {
-        return 'Case Studies';
+        return 'Cases';
     }
 
     public static function form(Schema $schema): Schema
