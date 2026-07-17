@@ -12,6 +12,19 @@ class EditPost extends EditRecord
 {
     protected static string $resource = PostResource::class;
 
+    /**
+     * Vul de publicatiedatum aan met nu wanneer het bericht gepubliceerd wordt
+     * en er nog geen datum is ingevuld — zoals de veld-helptekst belooft.
+     */
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        if (($data['published'] ?? false) && blank($data['published_at'] ?? null)) {
+            $data['published_at'] = now();
+        }
+
+        return $data;
+    }
+
     protected function getHeaderActions(): array
     {
         return [
