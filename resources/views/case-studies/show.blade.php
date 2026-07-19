@@ -15,7 +15,7 @@
 
     @auth
         <a
-            href="{{ route('filament.admin.resources.case-studies.edit', ['record' => $case, 'tab' => 'sections']) }}"
+            href="{{ route('filament.admin.resources.cases.edit', ['record' => $case, 'tab' => 'sections']) }}"
             class="fixed right-4 top-20 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-violet-600 text-white shadow-lg transition hover:bg-violet-700"
             title="Bewerk deze case study"
             aria-label="Bewerk case study"

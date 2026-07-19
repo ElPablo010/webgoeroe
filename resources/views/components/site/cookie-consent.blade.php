@@ -58,7 +58,9 @@
             document.cookie = `cookie_consent=${value}; max-age=${maxAge}; path=/; samesite=lax`;
             this.applyConsent(consent);
             this.open = false;
-            this.detailed = false;
+            // Pas resetten nadat de banner is uitgeschoven, anders zie je het
+            // voorkeuren-paneel eerst apart wegvallen tijdens de leave-transitie.
+            setTimeout(() => this.detailed = false, 300);
         },
 
         acceptAll() {
@@ -79,9 +81,12 @@
     }"
     x-show="open"
     x-cloak
-    x-transition:enter="transition ease-out duration-300"
-    x-transition:enter-start="opacity-0 translate-y-4"
-    x-transition:enter-end="opacity-100 translate-y-0"
+    x-transition:enter="transition-opacity ease-out duration-300"
+    x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100"
+    x-transition:leave="transition-opacity ease-in duration-300"
+    x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0"
     class="fixed inset-x-0 bottom-0 z-[100] flex justify-center px-4 pb-4 sm:px-6"
     role="dialog"
     aria-modal="true"
@@ -102,14 +107,10 @@
         </div>
 
         <div
+            {{-- Geen eigen x-transition: het paneel moet mee in-/uitfaden met de
+                 banner als geheel, niet als een tweede animatie erbovenop. --}}
             x-show="detailed"
             x-cloak
-            x-transition:enter="transition ease-out duration-200"
-            x-transition:enter-start="opacity-0 -translate-y-1"
-            x-transition:enter-end="opacity-100 translate-y-0"
-            x-transition:leave="transition ease-in duration-150"
-            x-transition:leave-start="opacity-100"
-            x-transition:leave-end="opacity-0"
             class="mt-4 space-y-3 rounded-xl border border-white/[0.06] bg-white/[0.03] p-4"
         >
             <div class="flex items-center justify-between gap-4">
