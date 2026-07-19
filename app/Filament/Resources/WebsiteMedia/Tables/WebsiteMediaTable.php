@@ -4,6 +4,7 @@ namespace App\Filament\Resources\WebsiteMedia\Tables;
 
 use App\Models\WebsiteMedia;
 use App\Services\Website\WebsiteMediaService;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -12,6 +13,7 @@ use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\Layout\Stack;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Storage;
 
 class WebsiteMediaTable
 {
@@ -27,7 +29,11 @@ class WebsiteMediaTable
             ->columns([
                 Stack::make([
                     ImageColumn::make('thumbnail')
-                        ->getStateUsing(fn (WebsiteMedia $record): string => $record->url)
+                        // Absolute URL, geen /storage-pad: ImageColumn ziet een
+                        // relatief pad niet als URL en probeert het dan via de
+                        // default filesystem-disk (hier `local`) op te lossen —
+                        // dat mislukt en levert een lege src op.
+                        ->getStateUsing(fn (WebsiteMedia $record): string => url($record->url))
                         ->imageHeight('10rem')
                         ->imageWidth('100%')
                         // Inline style i.p.v. Tailwind-classes: Filament laadt de
@@ -52,6 +58,27 @@ class WebsiteMediaTable
                 ])->space(1),
             ])
             ->recordActions([
+                Action::make('download')
+                    ->button()
+                    ->hiddenLabel()
+                    ->color('gray')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->tooltip('Downloaden')
+                    // De library bewaart geen ruwe upload — enkel de verwerkte
+                    // WebP + JPG-fallback. We geven de JPG mee als die er is
+                    // (breedst bruikbaar buiten de browser), anders de WebP.
+                    ->action(function (WebsiteMedia $record) {
+                        $disk = Storage::disk($record->disk);
+                        $path = $record->fallback_path && $disk->exists($record->fallback_path)
+                            ? $record->fallback_path
+                            : $record->path;
+
+                        return $disk->download(
+                            $path,
+                            pathinfo($record->original_filename ?: basename($path), PATHINFO_FILENAME)
+                                .'.'.pathinfo($path, PATHINFO_EXTENSION),
+                        );
+                    }),
                 DeleteAction::make()
                     ->button()
                     ->hiddenLabel()
