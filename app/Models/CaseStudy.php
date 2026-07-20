@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Support\MediaPath;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 
 #[Fillable([
@@ -34,8 +36,32 @@ class CaseStudy extends Model
             'featured'      => 'boolean',
             'is_cornerstone' => 'boolean',
             'tags'          => 'array',
-            'content'       => 'array',
+            // 'content' heeft een eigen Attribute (zie onder) die media
+            // normaliseert; een 'array'-cast zou daarmee botsen.
         ];
+    }
+
+    /**
+     * Media hoort relatief in de database te staan — zie MediaPath.
+     */
+    protected function coverUrl(): Attribute
+    {
+        return Attribute::set(fn (?string $value): ?string => MediaPath::relative($value));
+    }
+
+    protected function seoImageUrl(): Attribute
+    {
+        return Attribute::set(fn (?string $value): ?string => MediaPath::relative($value));
+    }
+
+    protected function content(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value): ?array => $value === null ? null : json_decode($value, true),
+            set: fn (?array $value): ?string => $value === null
+                ? null
+                : json_encode(MediaPath::relativeInContent($value)),
+        );
     }
 
     public function publicUrl(): string

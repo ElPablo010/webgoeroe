@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Support\MediaPath;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 
 #[Fillable([
@@ -23,6 +25,24 @@ class Post extends Model
             'tags'           => 'array',
             'published_at'   => 'datetime',
         ];
+    }
+
+    /**
+     * Media hoort relatief in de database te staan — zie MediaPath.
+     */
+    protected function coverUrl(): Attribute
+    {
+        return Attribute::set(fn (?string $value): ?string => MediaPath::relative($value));
+    }
+
+    protected function authorAvatarUrl(): Attribute
+    {
+        return Attribute::set(fn (?string $value): ?string => MediaPath::relative($value));
+    }
+
+    protected function seoImageUrl(): Attribute
+    {
+        return Attribute::set(fn (?string $value): ?string => MediaPath::relative($value));
     }
 
     public function publicUrl(): string
