@@ -15,10 +15,14 @@ use Filament\Support\Icons\Heroicon;
 use UnitEnum;
 
 /**
- * SEO-instellingen: DataForSEO-credentials, doeldomein, de Anthropic-key voor
- * het advies + de acties, en de "feiten voor AI" waarop de gegenereerde content
- * zich baseert. Alles landt als losse sleutels in de Setting-tabel, exact zoals
- * DataForSeoService / SeoAdvisorService / SeoCollector ze uitlezen.
+ * SEO-instellingen: DataForSEO-credentials, doeldomein, de GEO-prompts en het
+ * adres waar de wekelijkse briefing heen gaat. Alles landt als losse sleutels in
+ * de Setting-tabel, exact zoals DataForSeoService / SeoAdvisorService /
+ * SeoCollector ze uitlezen.
+ *
+ * De app-brede AI-configuratie (Anthropic-key, merknaam, omschrijving, "feiten
+ * voor AI") staat bewust NIET hier maar op de algemene instellingenpagina
+ * ({@see GeneralSettings}) — meerdere features delen die.
  */
 class SeoSettings extends Page
 {
@@ -44,10 +48,6 @@ class SeoSettings extends Page
         'seo_target_domain',
         'seo_location_code',
         'seo_language_code',
-        'anthropic_api_key',
-        'seo_brand_name',
-        'seo_business_description',
-        'seo_facts',
         'seo_report_email',
     ];
 
@@ -79,20 +79,11 @@ class SeoSettings extends Page
                     ])
                     ->columns(2),
 
-                Section::make('AI-advies & acties')
-                    ->description('De Anthropic-key voor het wekelijkse advies én de gegenereerde verbeteracties.')
+                Section::make('Wekelijkse briefing')
+                    ->description('De AI-key en de "feiten voor AI" staan op de algemene instellingenpagina — hier enkel waar de SEO-briefing heen gaat.')
                     ->schema([
-                        TextInput::make('anthropic_api_key')->label('Anthropic API-key')->password()->revealable()->maxLength(255),
                         TextInput::make('seo_report_email')->label('Rapport-ontvanger')->email()->helperText('Waar de wekelijkse briefing heen gaat. Leeg = MAIL_FROM_ADDRESS.'),
-                        TextInput::make('seo_brand_name')->label('Merknaam')->helperText('Leeg = APP_NAME.'),
-                        TextInput::make('seo_business_description')->label('Korte omschrijving')->helperText('bv. "een dansschool in Antwerpen". Geeft de AI context.'),
-                        Textarea::make('seo_facts')
-                            ->label('Feiten voor AI')
-                            ->rows(5)
-                            ->columnSpanFull()
-                            ->helperText('Adres, openingsuren, prijzen, USP\'s… De AI gebruikt ENKEL deze feiten in gegenereerde pagina\'s/FAQ — zo verzint hij niets.'),
-                    ])
-                    ->columns(2),
+                    ]),
 
                 Section::make('GEO / AI-zichtbaarheid')
                     ->description('Zoekvragen waarmee we checken of AI-assistenten (ChatGPT) je merk vermelden.')

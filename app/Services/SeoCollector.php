@@ -253,7 +253,7 @@ class SeoCollector
     public function runGeoChecks(string $engine = 'chat_gpt', ?array $prompts = null): int
     {
         $prompts ??= $this->geoPrompts();
-        $brand = Setting::get('seo_brand_name') ?: config('app.name');
+        $brand = Setting::get('brand_name') ?: config('app.name');
         $domain = $this->api->target;
         $count = 0;
 

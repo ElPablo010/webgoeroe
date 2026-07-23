@@ -84,8 +84,8 @@ class SeoAdvisorService
 
         $summary = $this->contextToText($context);
 
-        $brand = Setting::get('seo_brand_name') ?: config('app.name');
-        $sector = Setting::get('seo_business_description')
+        $brand = Setting::get('brand_name') ?: config('app.name');
+        $sector = Setting::get('business_description')
             ?: 'een lokale onderneming';
 
         $prompt = <<<PROMPT
@@ -178,8 +178,8 @@ PROMPT;
             return [];
         }
 
-        $brand = Setting::get('seo_brand_name') ?: config('app.name');
-        $sector = Setting::get('seo_business_description') ?: 'een lokale onderneming';
+        $brand = Setting::get('brand_name') ?: config('app.name');
+        $sector = Setting::get('business_description') ?: 'een lokale onderneming';
         $summary = $this->contextToText($context);
         $grounding = $this->buildGroundingText();
 
@@ -247,7 +247,7 @@ PROMPT;
     {
         $lines = [];
 
-        if ($facts = trim((string) Setting::get('seo_facts'))) {
+        if ($facts = trim((string) Setting::get('ai_facts'))) {
             $lines[] = "Feiten (door de beheerder ingevoerd):\n{$facts}";
         }
 
