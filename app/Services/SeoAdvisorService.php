@@ -7,6 +7,7 @@ use App\Models\SeoGeoCheck;
 use App\Models\SeoKeyword;
 use App\Models\SeoSiteSnapshot;
 use App\Models\Setting;
+use App\Support\Url;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -18,6 +19,9 @@ use Illuminate\Support\Facades\Log;
 class SeoAdvisorService
 {
     protected string $model = 'claude-sonnet-5';
+
+    /** Gecachete ankers uit de homepage (herbruikbare CTA-link + huisstijl-toon). */
+    protected ?array $homepageBlueprint = null;
 
     public function __construct(protected DataForSeoService $api)
     {
@@ -184,8 +188,9 @@ PROMPT;
         $grounding = $this->buildGroundingText();
 
         $prompt = <<<PROMPT
-Je bent SEO-consultant voor {$brand} — {$sector} (domein {$context['target']}).
-Zet de onderstaande cijfers om in een korte lijst **uitvoerbare content-acties** die de zichtbaarheid verhogen. Rapporteer ze via de tool `report_actions`.
+Je bent tegelijk een **SEO-strateeg**, een **conversie-copywriter** en een **landingspagina-expert** voor {$brand} — {$sector} (domein {$context['target']}).
+Je schrijft in de huisstijl-toon van {$brand} (zie de voorbeelden bij de feiten): warm en persoonlijk, aansprekend met "je", concreet, nooit stijf of corporate.
+Zet de onderstaande cijfers om in een korte lijst **uitvoerbare content-acties** die zowel de zichtbaarheid (SEO) als de **conversie** verhogen. Rapporteer ze via de tool `report_actions`.
 
 Regels:
 - Enkel content-acties, één van: `create_page` (nieuwe pagina voor een keyword zonder ranking), `add_section` (FAQ-blok toevoegen aan een bestaande pagina), `optimize_meta` (ontbrekende/zwakke meta-title of -description invullen).
@@ -195,6 +200,13 @@ Regels:
 - Gebruik voor concrete feiten (adres, openingsuren, prijzen, USP's) **uitsluitend** de aangeleverde feiten. Weet je iets niet zeker, laat het veld dan leeg — verzin niets.
 - Meta-description: max 155 tekens. FAQ-antwoorden: kort en concreet.
 - GEO/AI-zichtbaarheid: verschijnen we niet in AI-antwoorden, geef dan letterlijke vraag-antwoord-FAQ's die die vragen beantwoorden.
+
+Voor `create_page` denk je als **conversie-copywriter**: een bezoeker komt met concrete intentie binnen en moet binnen enkele seconden kunnen klikken. Lever een **volledige landingspagina** (niet enkel introtekst):
+- `h1_title` + `hero_subtitle`: scherpe titel en een emotionele belofte van 1-2 zinnen.
+- `why_title` + `why_html`: de echte, emotionele reden om hier te starten (2-3 korte alinea's, eenvoudige HTML).
+- `faq`: 4-6 vraag-antwoord-paren, incl. de zoekvraag zelf.
+- `closing_title` + `closing_body`: een afsluitende CTA met risico-omkering.
+De hero- en afsluit-knop krijgen automatisch de bestaande CTA-link van de homepage; verzin zelf geen knop-URL's.
 
 DATA:
 {$summary}
@@ -261,6 +273,17 @@ PROMPT;
             }
         }
 
+        $hp = $this->homepage();
+        if ($hp['cta']) {
+            $lines[] = "\nHerbruikbare CTA-knop van de homepage (wordt in de hero én de afsluit-CTA gebruikt): \"{$hp['cta']['label']}\" → {$hp['cta']['href']}";
+        }
+        if (! empty($hp['voice'])) {
+            $lines[] = "\nToon & huisstijl (echte tekstfragmenten van de homepage — schrijf in deze stem):";
+            foreach ($hp['voice'] as $sample) {
+                $lines[] = '- "' . $sample . '"';
+            }
+        }
+
         return implode("\n", $lines) ?: 'Geen aanvullende feiten ingevoerd.';
     }
 
@@ -285,8 +308,13 @@ PROMPT;
                                 'source_keyword' => ['type' => 'string', 'description' => 'Keyword dat dit adresseert; leeg indien n.v.t.'],
                                 'target_slug' => ['type' => 'string', 'description' => 'Slug van de bestaande pagina (add_section/optimize_meta). "/" voor de homepage.'],
                                 'slug' => ['type' => 'string', 'description' => 'Gewenste slug voor een nieuwe pagina (create_page).'],
-                                'h1_title' => ['type' => 'string', 'description' => 'H1 / paginatitel (create_page).'],
-                                'intro_html' => ['type' => 'string', 'description' => 'Introtekst als eenvoudige HTML (create_page).'],
+                                'h1_title' => ['type' => 'string', 'description' => 'H1 / hero-titel (create_page).'],
+                                'hero_subtitle' => ['type' => 'string', 'description' => 'create_page: korte, emotionele belofte onder de hero-titel (1-2 zinnen).'],
+                                'why_title' => ['type' => 'string', 'description' => 'create_page: titel van het "waarom"-blok (de emotionele hook).'],
+                                'why_html' => ['type' => 'string', 'description' => 'create_page: waarom hier starten — eenvoudige HTML, 2-3 alinea\'s.'],
+                                'intro_html' => ['type' => 'string', 'description' => 'Alias voor why_html (create_page).'],
+                                'closing_title' => ['type' => 'string', 'description' => 'create_page: titel van de afsluitende CTA-sectie.'],
+                                'closing_body' => ['type' => 'string', 'description' => 'create_page: korte tekst boven de afsluitende CTA-knop.'],
                                 'meta_title' => ['type' => 'string'],
                                 'meta_description' => ['type' => 'string', 'description' => 'Max 155 tekens.'],
                                 'faq' => [
@@ -340,24 +368,8 @@ PROMPT;
             ->all();
 
         if ($type === 'create_page') {
-            $sections = [];
             $h1 = trim((string) ($a['h1_title'] ?? $a['title'] ?? ''));
-            $intro = trim((string) ($a['intro_html'] ?? ''));
-            if ($h1 !== '' || $intro !== '') {
-                $sections[] = [
-                    'section_type' => 'rich_text',
-                    'content' => array_filter([
-                        'heading' => $h1 ?: null,
-                        'body' => $intro ?: null,
-                    ], fn ($v) => $v !== null),
-                ];
-            }
-            if ($faq) {
-                $sections[] = [
-                    'section_type' => 'faq',
-                    'content' => ['heading' => 'Veelgestelde vragen', 'items' => $faq],
-                ];
-            }
+            $sections = $this->buildLandingSections($a, $h1, $faq);
             if (! $sections) {
                 return null;
             }
@@ -410,6 +422,112 @@ PROMPT;
             'metric' => null,
             'fingerprint' => sha1($type . '|' . $fpKey),
         ];
+    }
+
+    /**
+     * Bouwt een conversie-gerichte landingspagina uit de AI-velden, met de
+     * generieke builder-blokken (hero → rich_text → faq → cta). De hero- en
+     * afsluit-CTA hergebruiken de bestaande CTA-knop van de homepage (geen
+     * verzonnen URL's); is die er niet, dan blijven die knoppen gewoon weg.
+     *
+     * Wil je nog rijker (bv. review- of stappen-blokken van de homepage klonen,
+     * zoals in bl-members), voeg dat hier per project toe — het hangt af van
+     * welke sectietypes dit project heeft.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    protected function buildLandingSections(array $a, string $h1, array $faq): array
+    {
+        $cta = $this->homepage()['cta'] ?? null; // ['label','href'] of null
+        $ctaButton = $cta ? [['label' => $cta['label'], 'href' => $cta['href'], 'variant' => 'primary']] : null;
+
+        $sections = [];
+
+        // 1. Hero — belofte + primaire CTA.
+        if ($h1 !== '') {
+            $sections[] = ['section_type' => 'hero', 'content' => array_filter([
+                'heading' => $h1,
+                'subtitle' => trim((string) ($a['hero_subtitle'] ?? '')) ?: null,
+                'ctas' => $ctaButton,
+            ], fn ($v) => $v !== null)];
+        }
+
+        // 2. Waarom — de emotionele hook.
+        $whyTitle = trim((string) ($a['why_title'] ?? ''));
+        $whyBody = trim((string) ($a['why_html'] ?? $a['intro_html'] ?? ''));
+        if ($whyTitle !== '' || $whyBody !== '') {
+            $sections[] = ['section_type' => 'rich_text', 'content' => array_filter([
+                'heading' => $whyTitle ?: null,
+                'body' => $whyBody ?: null,
+            ], fn ($v) => $v !== null)];
+        }
+
+        // 3. FAQ.
+        if ($faq) {
+            $sections[] = ['section_type' => 'faq', 'content' => ['heading' => 'Veelgestelde vragen', 'items' => $faq]];
+        }
+
+        // 4. Afsluitende CTA met risico-omkering (enkel als er een CTA-link is).
+        $closingTitle = trim((string) ($a['closing_title'] ?? ''));
+        $closingBody = trim((string) ($a['closing_body'] ?? ''));
+        if ($ctaButton && ($closingTitle !== '' || $closingBody !== '')) {
+            $sections[] = ['section_type' => 'cta', 'content' => array_filter([
+                'heading' => $closingTitle ?: null,
+                'intro' => $closingBody ?: null,
+                'ctas' => $ctaButton,
+            ], fn ($v) => $v !== null)];
+        }
+
+        return $sections;
+    }
+
+    /**
+     * Leidt herbruikbare ankers af uit de homepage: de eerste CTA-knop (uit een
+     * hero- of cta-sectie) en enkele tekstfragmenten als huisstijl-toon. Alles
+     * uit echte, gepubliceerde content — geen hardcoded slugs.
+     *
+     * Webgoeroe-specifiek: CTA's zijn een PageLinkField ({link_type, page_id,
+     * href}). Bij `link_type: 'page'` is `href` leeg — de echte bestemming lossen
+     * we live op via {@see Url::resolveCtaHref()}. Homepage-lokale ankers (#…)
+     * slaan we over: die bestaan enkel op de homepage en zijn dus een dode link
+     * op een nieuwe pagina.
+     */
+    protected function homepage(): array
+    {
+        if ($this->homepageBlueprint !== null) {
+            return $this->homepageBlueprint;
+        }
+
+        $anchors = ['cta' => null, 'voice' => []];
+        $page = Page::where('is_homepage', true)->first();
+
+        if ($page) {
+            foreach ($page->sections()->orderBy('position')->get() as $s) {
+                $c = is_array($s->content) ? $s->content : (array) json_decode((string) $s->content, true);
+
+                if (in_array($s->section_type, ['hero', 'cta'], true)) {
+                    foreach ($c['ctas'] ?? [] as $cta) {
+                        if (empty($cta['label'])) {
+                            continue;
+                        }
+                        $href = Url::resolveCtaHref($cta, '');
+                        if ($href === '' || str_starts_with($href, '#')) {
+                            continue;
+                        }
+                        $anchors['cta'] ??= ['label' => (string) $cta['label'], 'href' => $href];
+                        break;
+                    }
+                }
+
+                $sample = $s->section_type === 'hero' ? ($c['subtitle'] ?? '') : ($s->section_type === 'cta' ? ($c['intro'] ?? '') : '');
+                $sample = trim(strip_tags((string) $sample));
+                if ($sample !== '') {
+                    $anchors['voice'][] = $sample;
+                }
+            }
+        }
+
+        return $this->homepageBlueprint = $anchors;
     }
 
     /** Zoek een bestaande pagina op slug ("/" of "home" → homepage). */

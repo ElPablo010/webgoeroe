@@ -17,11 +17,16 @@ use Illuminate\Support\Str;
  * SEO die code raakt (JSON-LD-templates, nieuwe sectietypes, …) valt buiten
  * scope en handel je ad-hoc af.
  *
- * De sectie-content volgt het builder-contract van dit project:
+ * De sectie-content volgt het contract van de new-website page-builder:
+ *   - `hero`-sectie:      { heading, subtitle, ctas: [{ label, href, variant }] }
  *   - `rich_text`-sectie: { heading, body }  (body = rich-text HTML)
  *   - `faq`-sectie:       { heading, items: [{ question, answer }] }
- * Deze `section_type`-strings komen uit `SeoAdvisorService::normalizeAction()`;
- * wijzigt het contract, pas beide samen aan.
+ *   - `cta`-sectie:       { heading, intro, ctas: [{ label, href, variant }] }
+ * De secties worden opgebouwd in SeoAdvisorService::buildLandingSections();
+ * hier worden ze enkel weggeschreven. `create_page` levert een volledige
+ * landingspagina, en `add_section` (FAQ) merget in een bestaande FAQ-sectie
+ * i.p.v. een duplicaat aan te maken. Wijkt jouw project van dit contract af,
+ * pas dan die builder + de merge/positie-helpers hieronder aan.
  */
 class SeoActionApplier
 {
@@ -96,12 +101,26 @@ class SeoActionApplier
             throw new \RuntimeException('Geen doelpagina gekoppeld aan deze actie.');
         }
 
-        $position = ((int) $page->sections()->max('position')) + 1;
+        $type = $proposed['section_type'] ?? 'faq';
+        $content = $proposed['content'] ?? [];
+
+        // Heeft de pagina al een FAQ-sectie? Voeg de nieuwe vragen daaraan toe
+        // i.p.v. een duplicaat aan te maken (met dedup op de vraag).
+        if ($type === 'faq' && $this->mergeIntoExistingFaq($page, $content)) {
+            $this->trackSourceKeyword($item);
+            $item->update([
+                'status' => 'published',
+                'applied_at' => now(),
+                'result_url' => $page->publicUrl(),
+            ]);
+
+            return;
+        }
 
         $page->sections()->create([
-            'section_type' => $proposed['section_type'] ?? 'faq',
-            'position' => $position,
-            'content' => $proposed['content'] ?? [],
+            'section_type' => $type,
+            'position' => $this->positionBeforeTrailingCta($page),
+            'content' => $content,
             'locale' => $page->locale ?: 'nl',
         ]);
 
@@ -112,6 +131,71 @@ class SeoActionApplier
             'applied_at' => now(),
             'result_url' => $page->publicUrl(),
         ]);
+    }
+
+    /**
+     * Voegt de FAQ-items uit $content toe aan de eerste bestaande FAQ-sectie van
+     * de pagina (dedup op de genormaliseerde vraag). Geeft false als er nog geen
+     * FAQ-sectie is — dan wordt er een nieuwe aangemaakt.
+     */
+    protected function mergeIntoExistingFaq(Page $page, array $content): bool
+    {
+        $existing = $page->sections()
+            ->where('section_type', 'faq')
+            ->orderBy('position')
+            ->first();
+
+        if (! $existing) {
+            return false;
+        }
+
+        $current = is_array($existing->content) ? $existing->content : (array) json_decode((string) $existing->content, true);
+        $items = array_values($current['items'] ?? []);
+
+        $seen = [];
+        foreach ($items as $it) {
+            $seen[$this->faqKey($it['question'] ?? '')] = true;
+        }
+
+        foreach ($content['items'] ?? [] as $new) {
+            $question = trim((string) ($new['question'] ?? ''));
+            $answer = trim((string) ($new['answer'] ?? ''));
+            $key = $this->faqKey($question);
+            if ($key === '' || $answer === '' || isset($seen[$key])) {
+                continue;
+            }
+            $items[] = ['question' => $question, 'answer' => $answer];
+            $seen[$key] = true;
+        }
+
+        $current['items'] = $items;
+        $existing->update(['content' => $current]);
+
+        return true;
+    }
+
+    /** Genormaliseerde sleutel voor dedup van FAQ-vragen. */
+    protected function faqKey(string $question): string
+    {
+        return Str::of($question)->lower()->squish()->trim(" ?.!")->value();
+    }
+
+    /**
+     * Positie voor een nieuwe sectie: net vóór een eventuele afsluitende
+     * CTA-sectie (die hoort onderaan te blijven), anders helemaal achteraan.
+     */
+    protected function positionBeforeTrailingCta(Page $page): int
+    {
+        $last = $page->sections()->orderByDesc('position')->first();
+
+        if ($last && $last->section_type === 'cta') {
+            $position = (int) $last->position;
+            $last->update(['position' => $position + 1]);
+
+            return $position;
+        }
+
+        return ((int) $page->sections()->max('position')) + 1;
     }
 
     protected function applyOptimizeMeta(SeoActionItem $item, array $proposed): void

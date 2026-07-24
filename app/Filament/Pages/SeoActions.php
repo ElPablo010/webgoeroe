@@ -158,7 +158,7 @@ class SeoActions extends Page
         $item = SeoActionItem::findOrFail($id);
         $proposed = $item->proposed ?? [];
 
-        $text = collect($proposed['sections'] ?? [])->firstWhere('section_type', 'text');
+        $text = collect($proposed['sections'] ?? [])->firstWhere('section_type', 'rich_text');
         $faqSection = collect($proposed['sections'] ?? [])->firstWhere('section_type', 'faq');
         $faq = data_get($faqSection, 'content.items', data_get($proposed, 'content.items', []));
 
@@ -268,8 +268,10 @@ class SeoActions extends Page
     /* ---------------------------------------------------------------- */
 
     /**
-     * Bouw een `proposed`-payload uit het inline-bewerkte formulier, in het
-     * new-website builder-contract (`text` = heading+body, `faq` = items).
+     * Bouw een `proposed`-payload uit het inline-bewerkte formulier. Voor
+     * `create_page` behouden we de volledige landingspagina-blueprint (hero, cta,
+     * …) en patchen we enkel het "waarom"-tekstblok (`rich_text`) + de FAQ + meta.
+     * Zo overschrijft "Aanpassen" de rijke secties niet.
      *
      * @return array<string,mixed>
      */
@@ -282,14 +284,31 @@ class SeoActions extends Page
             ->all();
 
         if ($item->action_type === 'create_page') {
-            $sections = [];
+            $sections = $item->proposed['sections'] ?? [];
+
+            // Patch het "waarom"-tekstblok (eerste rich_text) als het bewerkt is.
             if (trim((string) ($f['heading'] ?? '')) !== '' || trim((string) ($f['body'] ?? '')) !== '') {
-                $sections[] = ['section_type' => 'text', 'content' => array_filter([
+                $patched = array_filter([
                     'heading' => $f['heading'] ?? null,
                     'body' => $f['body'] ?? null,
-                ])];
+                ], fn ($v) => $v !== null && $v !== '');
+                $idx = collect($sections)->search(fn ($s) => ($s['section_type'] ?? '') === 'rich_text');
+                if ($idx !== false) {
+                    $sections[$idx]['content'] = array_merge($sections[$idx]['content'] ?? [], $patched);
+                } elseif ($patched) {
+                    $sections[] = ['section_type' => 'rich_text', 'content' => $patched];
+                }
             }
-            if ($faq) {
+
+            // Patch de FAQ; verwijderen als alle vragen zijn weggehaald.
+            $faqIdx = collect($sections)->search(fn ($s) => ($s['section_type'] ?? '') === 'faq');
+            if ($faqIdx !== false) {
+                if ($faq) {
+                    $sections[$faqIdx]['content'] = array_merge($sections[$faqIdx]['content'] ?? [], ['items' => $faq]);
+                } else {
+                    unset($sections[$faqIdx]);
+                }
+            } elseif ($faq) {
                 $sections[] = ['section_type' => 'faq', 'content' => ['heading' => 'Veelgestelde vragen', 'items' => $faq]];
             }
 
@@ -297,7 +316,7 @@ class SeoActions extends Page
                 'slug' => $item->proposed['slug'] ?? null,
                 'meta_title' => $f['meta_title'] ?: null,
                 'meta_description' => $f['meta_description'] ?: null,
-                'sections' => $sections,
+                'sections' => array_values($sections),
             ], fn ($v) => $v !== null && $v !== []);
         }
 

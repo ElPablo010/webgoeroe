@@ -27,7 +27,9 @@
             [$statusText, $statusColor] = $statusBadge[$item['status']] ?? ['—', 'gray'];
             $proposed = $item['proposed'] ?? [];
             $sections = $proposed['sections'] ?? [];
-            $text = collect($sections)->firstWhere('section_type', 'text');
+            $text = collect($sections)->firstWhere('section_type', 'rich_text');
+            $sectionLabels = ['hero' => 'Hero + CTA', 'rich_text' => 'Tekst', 'faq' => 'FAQ', 'cta' => 'Afsluitende CTA'];
+            $structure = collect($sections)->pluck('section_type')->map(fn ($t) => $sectionLabels[$t] ?? $t)->all();
             $faqSection = collect($sections)->firstWhere('section_type', 'faq');
             $faqItems = data_get($faqSection, 'content.items', data_get($proposed, 'content.items', []));
             $metaTitle = $proposed['meta_title'] ?? (data_get($text, 'content.heading') ?: $item['title']);
@@ -101,6 +103,15 @@
                 {{-- Voorgestelde oplossing --}}
                 <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;font-weight:700;opacity:.5;margin-bottom:.25rem;">Voorgestelde oplossing</div>
                 <div style="font-weight:600;margin-bottom:.5rem;">{{ $item['title'] }}</div>
+
+                @if (count($structure) > 1)
+                    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:.35rem;margin-bottom:.75rem;">
+                        <span style="font-size:.7rem;opacity:.5;">Pagina-opbouw:</span>
+                        @foreach ($structure as $i => $label)
+                            <span style="font-size:.7rem;font-weight:500;padding:.1rem .5rem;border-radius:1rem;background:rgba(128,128,128,.12);">{{ $i + 1 }}. {{ $label }}</span>
+                        @endforeach
+                    </div>
+                @endif
 
                 @if ($showSerp && ($metaTitle || $metaDesc))
                     <div style="border:1px solid rgba(128,128,128,.25);border-radius:.5rem;padding:.6rem .75rem;margin-bottom:.75rem;">
