@@ -7,7 +7,6 @@ use App\Models\SeoGeoCheck;
 use App\Models\SeoKeyword;
 use App\Models\SeoSiteSnapshot;
 use App\Models\Setting;
-use App\Support\Url;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -482,15 +481,9 @@ PROMPT;
     }
 
     /**
-     * Leidt herbruikbare ankers af uit de homepage: de eerste CTA-knop (uit een
-     * hero- of cta-sectie) en enkele tekstfragmenten als huisstijl-toon. Alles
-     * uit echte, gepubliceerde content — geen hardcoded slugs.
-     *
-     * Webgoeroe-specifiek: CTA's zijn een PageLinkField ({link_type, page_id,
-     * href}). Bij `link_type: 'page'` is `href` leeg — de echte bestemming lossen
-     * we live op via {@see Url::resolveCtaHref()}. Homepage-lokale ankers (#…)
-     * slaan we over: die bestaan enkel op de homepage en zijn dus een dode link
-     * op een nieuwe pagina.
+     * Leidt herbruikbare ankers af uit de homepage: de eerste bruikbare CTA-knop
+     * (uit een hero- of cta-sectie) en enkele tekstfragmenten als huisstijl-toon.
+     * Alles uit echte, gepubliceerde content — geen hardcoded slugs.
      */
     protected function homepage(): array
     {
@@ -510,12 +503,10 @@ PROMPT;
                         if (empty($cta['label'])) {
                             continue;
                         }
-                        $href = Url::resolveCtaHref($cta, '');
-                        if ($href === '' || str_starts_with($href, '#')) {
-                            continue;
+                        if ($href = $this->resolveCtaHref($cta)) {
+                            $anchors['cta'] ??= ['label' => (string) $cta['label'], 'href' => $href];
+                            break;
                         }
-                        $anchors['cta'] ??= ['label' => (string) $cta['label'], 'href' => $href];
-                        break;
                     }
                 }
 
@@ -528,6 +519,36 @@ PROMPT;
         }
 
         return $this->homepageBlueprint = $anchors;
+    }
+
+    /**
+     * Bepaalt de definitieve, herbruikbare bestemming van een CTA uit de
+     * page-builder. Robuust tegen beide manieren waarop een project CTA's
+     * opslaat:
+     *  - de new-website `PageLinkField` ({link_type: 'page', page_id, href}),
+     *    waar `href` bij een page-link vaak leeg is omdat Filament het verborgen
+     *    veld niet altijd bewaart → dan lossen we de slug live op uit page_id;
+     *  - een kale `href`-string (oudere/andere projecten) → die gebruiken we direct.
+     *
+     * Ankers (#diensten) bestaan enkel op de bronpagina en zijn dus nutteloos
+     * als knop op een nieuwe pagina — die geven we niet terug (null).
+     *
+     * @param  array<string,mixed>  $cta
+     */
+    protected function resolveCtaHref(array $cta): ?string
+    {
+        $href = trim((string) ($cta['href'] ?? ''));
+
+        // Page-link zonder betrouwbare href: leid het pad af uit de pagina zelf.
+        if ($href === '' && ! empty($cta['page_id']) && ($p = Page::find($cta['page_id']))) {
+            $href = $p->is_homepage ? '/' : '/'.$p->slug;
+        }
+
+        if ($href === '' || str_starts_with($href, '#')) {
+            return null;
+        }
+
+        return $href;
     }
 
     /** Zoek een bestaande pagina op slug ("/" of "home" → homepage). */
