@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 #[Fillable([
     'title',
@@ -49,6 +51,59 @@ class Page extends Model
     public function publicUrl(): string
     {
         return route('page.show', $this->is_homepage ? [] : ['slug' => $this->slug]);
+    }
+
+    /**
+     * Maak een volledige kopie van deze pagina, inclusief alle secties.
+     *
+     * De kopie is bewust nooit de homepage en nooit gepubliceerd: ze is een
+     * werkversie tot iemand ze zelf live zet. Ze is ook geen vertaling van de
+     * bron — een kopie staat op zichzelf.
+     */
+    public function duplicate(): self
+    {
+        return DB::transaction(function (): self {
+            // Fallback op de kolom-default: `locale` is null zolang een net
+            // aangemaakte pagina niet opnieuw uit de database geladen is.
+            $locale = $this->locale ?? 'nl';
+
+            $copy = $this->replicate();
+            $copy->title = "{$this->title} (kopie)";
+            $copy->locale = $locale;
+            $copy->slug = static::uniqueSlug("{$this->slug}-kopie", $locale);
+            $copy->is_homepage = false;
+            $copy->published = false;
+            $copy->translation_of = null;
+            $copy->save();
+
+            foreach ($this->sections()->get() as $section) {
+                $sectionCopy = $section->replicate();
+                $sectionCopy->sectionable_id = $copy->getKey();
+                $sectionCopy->translation_of = null;
+                $sectionCopy->save();
+            }
+
+            return $copy;
+        });
+    }
+
+    /** Garandeer een unieke slug binnen de locale (unique index: locale + slug). */
+    public static function uniqueSlug(string $source, string $locale = 'nl'): string
+    {
+        $base = Str::slug($source) ?: 'pagina';
+        $slug = $base;
+        $i = 2;
+
+        while (static::query()
+            ->where('locale', $locale)
+            ->where('slug', $slug)
+            ->exists()
+        ) {
+            $slug = "{$base}-{$i}";
+            $i++;
+        }
+
+        return $slug;
     }
 
     public function sourceTranslation(): BelongsTo

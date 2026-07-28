@@ -13,7 +13,8 @@ use Filament\Schemas\Components\Grid;
  * toevoegen = drie plekken (zie SKILL / CLAUDE.md):
  *   1. Blade-partial in resources/views/components/site/sections/<type-met-streepjes>.blade.php
  *   2. <Type>Fields::make() met de admin-velden
- *   3. een Block::make('<type_snake_case>') hieronder registreren
+ *   3. een '<Label>' => Block::make('<type_snake_case>') hieronder registreren
+ *      (gekeyed op label — de lijst wordt alfabetisch gesorteerd, zie blocks())
  *
  * De render-dispatch (pages/show.blade.php) mapt section_type → partial via
  * str_replace('_', '-', $type), dus geen route-aanpassingen nodig.
@@ -36,10 +37,15 @@ class PageSectionsBuilder
             ->expandAllAction(fn ($action) => $action->hidden());
     }
 
+    /**
+     * De blocks worden gekeyed op hun label en daarna alfabetisch gesorteerd
+     * (project-conventie: dropdowns alfabetisch), zodat de "Sectie toevoegen"-
+     * lijst voorspelbaar blijft ongeacht de volgorde hieronder.
+     */
     protected static function blocks(): array
     {
-        return [
-            Block::make('hero')
+        $blocks = [
+            'Hero' => Block::make('hero')
                 ->label(self::numberedLabel('Hero'))
                 ->schema([
                     Grid::make(['default' => 1, 'md' => 2])
@@ -55,73 +61,77 @@ class PageSectionsBuilder
                         ]),
                     ...HeroFields::make(),
                 ]),
-            Block::make('text_media')
+            'Tekst en media' => Block::make('text_media')
                 ->label(self::numberedLabel('Tekst en media'))
                 ->schema([
                     ...SectionCommonFields::make(),
                     ...TextMediaFields::make(),
                 ]),
-            Block::make('cards')
+            'Cards' => Block::make('cards')
                 ->label(self::numberedLabel('Cards'))
                 ->schema([
                     ...SectionCommonFields::make(),
                     ...CardsFields::make(),
                 ]),
-            Block::make('faq')
+            'FAQ' => Block::make('faq')
                 ->label(self::numberedLabel('FAQ'))
                 ->schema([
                     ...SectionCommonFields::make(),
                     ...FaqFields::make(),
                 ]),
-            Block::make('gallery')
+            'Gallerij' => Block::make('gallery')
                 ->label(self::numberedLabel('Gallerij'))
                 ->schema([
                     ...SectionCommonFields::make(),
                     ...GalleryFields::make(),
                 ]),
-            Block::make('form')
+            'Formulier' => Block::make('form')
                 ->label(self::numberedLabel('Formulier'))
                 ->schema([
                     ...SectionCommonFields::make(),
                     ...FormFields::make(),
                 ]),
-            Block::make('cta')
+            'Call-to-action' => Block::make('cta')
                 ->label(self::numberedLabel('Call-to-action'))
                 ->schema([
                     ...SectionCommonFields::make(),
                     ...CtaFields::make(),
                 ]),
-            Block::make('testimonials')
+            'Testimonials' => Block::make('testimonials')
                 ->label(self::numberedLabel('Testimonials'))
                 ->schema([
                     ...SectionCommonFields::make(),
                     ...TestimonialsFields::make(),
                 ]),
-            Block::make('case_results')
+            'Case-resultaten' => Block::make('case_results')
                 ->label(self::numberedLabel('Case-resultaten'))
                 ->schema([
                     ...SectionCommonFields::make(),
                     ...CaseResultsFields::make(),
                 ]),
-            Block::make('calendly')
+            'Calendly' => Block::make('calendly')
                 ->label(self::numberedLabel('Calendly'))
                 ->schema([
                     ...SectionCommonFields::make(),
                     ...CalendlyFields::make(),
                 ]),
-            Block::make('cases_grid')
+            'Case studies grid' => Block::make('cases_grid')
                 ->label(self::numberedLabel('Case studies grid'))
                 ->schema([
                     ...SectionCommonFields::make(),
                     ...CasesGridFields::make(),
                 ]),
-            Block::make('rich_text')
+            'Tekst (lange inhoud)' => Block::make('rich_text')
                 ->label(self::numberedLabel('Tekst (lange inhoud)'))
                 ->schema([
                     ...SectionCommonFields::make(),
                     ...RichTextFields::make(),
                 ]),
         ];
+
+        uksort($blocks, fn (string $a, string $b): int => strnatcasecmp($a, $b));
+
+        return array_values($blocks);
     }
 
     protected static function numberedLabel(string $label): Closure

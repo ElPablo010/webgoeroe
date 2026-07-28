@@ -56,7 +56,11 @@ Drie plekken:
 
 1. `resources/views/components/site/sections/<type-met-streepjes>.blade.php`
 2. `app/Filament/Schemas/Sections/<Type>Fields.php` met `static make(): array`
-3. `Block::make('<type_snake_case>')` in `PageSectionsBuilder::blocks()`
+3. `'<Label>' => Block::make('<type_snake_case>')` in `PageSectionsBuilder::blocks()`
+   — de array is **gekeyed op het label** en wordt alfabetisch gesorteerd voor ze
+   naar de Builder gaat, zodat de "Sectie toevoegen"-lijst voorspelbaar blijft.
+   Vergeet je die key, dan krijgt het block een numerieke key en belandt het
+   bovenaan de lijst in plaats van op z'n alfabetische plek.
 
 ---
 
@@ -64,6 +68,8 @@ Drie plekken:
 
 - **Media-velden**: altijd `MediaPickerField`, nooit kaal URL-veld.
 - **Tabel-rij-acties**: icon-only (`->button()->hiddenLabel()->tooltip(...)`).
+- **Geen kolom voor een vlag die maar op één rij staat** (bv. `is_homepage`):
+  hang de markering als icoon aan de titelkolom, en geen filter erop.
 - **Dropdowns**: alfabetisch ordenen.
 - **Buttons**: `cursor-pointer` (+ `disabled:cursor-not-allowed`).
 - Code/commits in het Engels; admin-UI + validatie in het Nederlands.
