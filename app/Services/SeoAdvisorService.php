@@ -7,8 +7,11 @@ use App\Models\SeoGeoCheck;
 use App\Models\SeoKeyword;
 use App\Models\SeoSiteSnapshot;
 use App\Models\Setting;
+use App\Support\FaqQuestionMatcher;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 /**
  * Zet de verzamelde SEO-cijfers om in een concrete, geprioriteerde
@@ -18,6 +21,22 @@ use Illuminate\Support\Facades\Log;
 class SeoAdvisorService
 {
     protected string $model = 'claude-sonnet-5';
+
+    /**
+     * Hoeveel vragen een FAQ-blok hoogstens mag tellen. Boven deze grens
+     * scant het blok niet meer voor een bezoeker; nieuwe voorstellen worden
+     * dan geweigerd in plaats van blind aangevuld.
+     */
+    public const FAQ_MAX_QUESTIONS = 7;
+
+    /**
+     * Hoe lang een pagina na aanmaak of aanpassing als "recent" geldt.
+     * Google heeft weken nodig om een contentwijziging te verwerken; zolang
+     * mag een tegenvallende positie niet tot een nieuw voorstel voor
+     * diezelfde pagina of hetzelfde keyword leiden — anders krijg je week
+     * na week hetzelfde advies terug voor werk dat al gebeurd is.
+     */
+    public const RECENT_DAYS = 60;
 
     /** Gecachete ankers uit de homepage (herbruikbare CTA-link + huisstijl-toon). */
     protected ?array $homepageBlueprint = null;
@@ -196,6 +215,10 @@ Regels:
 - Maximaal 6 acties. Prioriteer op impact (zoekvolume, AI-zichtbaarheid). Verwijs naar specifieke keywords/pagina's uit de data.
 - Schrijf alle klantgerichte tekst in het **Nederlands**, spreek aan met "je", in de huisstijl-toon van {$brand}.
 - Voor `add_section` en `optimize_meta`: gebruik in `target_slug` de slug van een pagina uit de lijst hieronder ("/" voor de homepage). Verzin geen pagina's.
+- Voor `add_section`: bekijk eerst de bestaande FAQ-vragen van de doelpagina (onder "Bestaande FAQ-vragen per pagina" bij de feiten). Stel GEEN vraag voor die daar inhoudelijk al beantwoord wordt — ook niet in andere bewoordingen: "Wat kost een website?" en "Wat kost een website laten maken in Antwerpen?" zijn qua intentie en antwoord dezelfde vraag. Liever géén actie dan een variant van een bestaande vraag.
+- Een FAQ-blok moet scanbaar blijven: hoogstens zo'n 6-7 vragen per pagina. Staat een pagina als "VOL" gemarkeerd, stel er dan geen `add_section` meer voor voor. Zit ze er net onder, stel dan hoogstens het aantal vragen voor dat er nog bij kan.
+- Pagina's gemarkeerd als "NIEUW" of "RECENT aangepast" zijn pas gewijzigd; Google heeft dat nog niet verwerkt (dat duurt weken). Dat het keyword van zo'n pagina nog niet (beter) rankt, betekent dus "nog even geduld", NIET "actie nodig". Stel voor zo'n pagina geen `optimize_meta` voor (tenzij de meta volledig ontbreekt) en maak geen `create_page` voor een keyword dat zo'n pagina al afdekt.
+- Maak sowieso nooit een `create_page` voor een keyword dat al gedekt wordt door een bestaande pagina (kijk naar titels en slugs in de lijst hieronder): twee pagina's op hetzelfde keyword kannibaliseren elkaar. Verbeter dan liever die bestaande pagina, of sla het keyword over.
 - Gebruik voor concrete feiten (adres, openingsuren, prijzen, USP's) **uitsluitend** de aangeleverde feiten. Weet je iets niet zeker, laat het veld dan leeg — verzin niets.
 - Meta-description: max 155 tekens. FAQ-antwoorden: kort en concreet.
 - GEO/AI-zichtbaarheid: verschijnen we niet in AI-antwoorden, geef dan letterlijke vraag-antwoord-FAQ's die die vragen beantwoorden.
@@ -262,14 +285,47 @@ PROMPT;
             $lines[] = "Feiten (door de beheerder ingevoerd):\n{$facts}";
         }
 
-        $pages = Page::where('published', true)->orderBy('title')->get(['slug', 'title', 'meta_description', 'is_homepage']);
+        $pages = Page::where('published', true)->orderBy('title')
+            ->get(['id', 'slug', 'title', 'meta_description', 'is_homepage', 'created_at', 'updated_at']);
         if ($pages->isNotEmpty()) {
+            $recentCutoff = Carbon::now()->subDays(self::RECENT_DAYS);
             $lines[] = "\nBestaande gepubliceerde pagina's (slug — titel — meta?):";
             foreach ($pages as $p) {
                 $slug = $p->is_homepage ? '/' : $p->slug;
                 $meta = filled($p->meta_description) ? 'meta ✓' : 'GEEN meta-description';
-                $lines[] = "- {$slug} — {$p->title} — {$meta}";
+                // De leeftijd hoort erbij: zonder deze markering leest het
+                // model "keyword rankt niet" als "actie nodig", ook wanneer
+                // de pagina daarvoor vorige week pas gemaakt of herschreven was.
+                $recent = '';
+                if ($p->created_at?->gte($recentCutoff)) {
+                    $recent = ' — NIEUW sinds ' . $p->created_at->format('d/m/Y') . ', nog niet verwerkt door Google';
+                } elseif ($p->updated_at?->gte($recentCutoff)) {
+                    $recent = ' — RECENT aangepast op ' . $p->updated_at->format('d/m/Y') . ', wijzigingen sijpelen nog door in Google';
+                }
+                $lines[] = "- {$slug} — {$p->title} — {$meta}{$recent}";
             }
+        }
+
+        // Wat er al beantwoord wordt: zonder dit stelt het model week na week
+        // vragen voor die (in andere woorden) al op de pagina staan.
+        $faqLines = [];
+        foreach ($pages as $p) {
+            $items = $this->pageFaqItems($p);
+            if (! $items) {
+                continue;
+            }
+            $slug = $p->is_homepage ? '/' : $p->slug;
+            $count = count($items);
+            $full = $count >= self::FAQ_MAX_QUESTIONS ? ' — VOL, stel hier geen add_section meer voor' : '';
+            $faqLines[] = "- {$slug} ({$count} " . ($count === 1 ? 'vraag' : 'vragen') . "{$full}):";
+            foreach ($items as $item) {
+                $answer = Str::limit(trim(strip_tags((string) ($item['answer'] ?? ''))), 120);
+                $faqLines[] = "  · \"{$item['question']}\"" . ($answer !== '' ? " — {$answer}" : '');
+            }
+        }
+        if ($faqLines) {
+            $lines[] = "\nBestaande FAQ-vragen per pagina (stel deze, of inhoudelijke varianten ervan, NIET opnieuw voor):";
+            $lines = array_merge($lines, $faqLines);
         }
 
         $hp = $this->homepage();
@@ -284,6 +340,64 @@ PROMPT;
         }
 
         return implode("\n", $lines) ?: 'Geen aanvullende feiten ingevoerd.';
+    }
+
+    /**
+     * Stabiele sleutel voor de inhoud van een voorstel. Verschillen in
+     * hoofdletters, spaties of volgorde mogen niet als "nieuw" tellen.
+     *
+     * @param  array<int|string,mixed>  $values
+     */
+    protected function contentKey(array $values): string
+    {
+        $normalized = collect($values)
+            ->map(fn ($v) => preg_replace('/\s+/u', ' ', mb_strtolower(trim((string) $v))))
+            ->filter()
+            ->sort()
+            ->values()
+            ->all();
+
+        return substr(sha1(implode('|', $normalized)), 0, 12);
+    }
+
+    /**
+     * Alle FAQ-items (vraag + antwoord) die nu op de pagina staan, over alle
+     * FAQ-secties heen.
+     *
+     * @return array<int,array{question:string,answer:string}>
+     */
+    protected function pageFaqItems(Page $page): array
+    {
+        return $page->sections()
+            ->where('section_type', 'faq')
+            ->orderBy('position')
+            ->get()
+            ->flatMap(fn ($s) => collect($s->content['items'] ?? [])
+                ->map(fn ($item) => [
+                    'question' => trim((string) ($item['question'] ?? '')),
+                    'answer' => trim((string) ($item['answer'] ?? '')),
+                ])
+                ->filter(fn ($item) => $item['question'] !== ''))
+            ->values()
+            ->all();
+    }
+
+    /** Is deze pagina minder dan RECENT_DAYS geleden aangemaakt of aangepast? */
+    protected function recentlyTouched(Page $page): bool
+    {
+        $cutoff = Carbon::now()->subDays(self::RECENT_DAYS);
+
+        return (bool) ($page->updated_at?->gte($cutoff) || $page->created_at?->gte($cutoff));
+    }
+
+    /** Dekt een bestaande gepubliceerde pagina (titel of slug) dit keyword al? */
+    protected function keywordCoveredByExistingPage(string $keyword): bool
+    {
+        $matcher = new FaqQuestionMatcher();
+
+        return Page::where('published', true)
+            ->get(['title', 'slug'])
+            ->contains(fn ($p) => $matcher->keywordCoveredBy($keyword, $p->title . ' ' . $p->slug));
     }
 
     /** Tool-schema voor gestructureerde output. */
@@ -373,6 +487,21 @@ PROMPT;
                 return null;
             }
             $slug = trim((string) ($a['slug'] ?? '')) ?: null;
+            // Bestaat de pagina al, dan is dit geen nieuwe pagina meer. De
+            // fingerprint alleen volstaat hier niet: die kijkt maar een
+            // beperkt venster terug, terwijl de pagina blijft bestaan.
+            if ($slug && $this->resolvePage($slug)) {
+                return null;
+            }
+            // Dekt een bestaande pagina dit keyword al (titel of slug), dan
+            // is een tweede pagina geen verbetering maar kannibalisatie — en
+            // vaak is die pagina pas net gemaakt en heeft ze gewoon nog geen
+            // tijd gehad om te ranken. De exacte-slug-check hierboven mist
+            // dat: een nét andere slug voor hetzelfde keyword glipt er anders
+            // week na week opnieuw door.
+            if ($keyword && $this->keywordCoveredByExistingPage($keyword)) {
+                return null;
+            }
             $proposed = array_filter([
                 'slug' => $slug,
                 'meta_title' => trim((string) ($a['meta_title'] ?? '')) ?: null,
@@ -388,12 +517,42 @@ PROMPT;
             if (! $page) {
                 return null;
             }
+
+            $existing = array_column($this->pageFaqItems($page), 'question');
+
+            // Vol is vol: boven de grens scant het blok niet meer, dus daar
+            // valt met bijvullen niets te winnen.
+            if (count($existing) >= self::FAQ_MAX_QUESTIONS) {
+                return null;
+            }
+
+            // Vangnet tegen inhoudelijke herhaling: een vraag die (op een
+            // detail na) al op de pagina beantwoord wordt, is geen verbetering
+            // — ook al is de formulering net anders. De prompt vraagt het
+            // model dit zelf te vermijden; dit filtert wat toch doorglipt.
+            $matcher = new FaqQuestionMatcher();
+            $faq = array_values(array_filter(
+                $faq,
+                fn ($f) => $matcher->firstOverlapping($f['question'], $existing) === null
+            ));
+            if (! $faq) {
+                return null;
+            }
+
+            // En nooit voorbij de grens duwen: hou enkel zoveel nieuwe vragen
+            // over als er nog bij kunnen.
+            $faq = array_slice($faq, 0, self::FAQ_MAX_QUESTIONS - count($existing));
+
             $pageId = $page->id;
             $proposed = [
                 'section_type' => 'faq',
                 'content' => ['heading' => 'Veelgestelde vragen', 'items' => $faq],
             ];
-            $fpKey = 'page-' . $page->id;
+            // De vragen zelf horen in de sleutel: een tweede FAQ met ándere
+            // vragen op dezelfde pagina is een nieuw voorstel, geen duplicaat.
+            // Enkel `page-{id}` maakte de dedup permanent: elke pagina had na
+            // één voorstel haar FAQ voorgoed gehad.
+            $fpKey = 'page-' . $page->id . '|' . $this->contentKey(array_column($faq, 'question'));
         } else { // optimize_meta
             $page = $this->resolvePage($a['target_slug'] ?? null);
             if (! $page) {
@@ -404,10 +563,32 @@ PROMPT;
                 'meta_title' => trim((string) ($a['meta_title'] ?? '')) ?: null,
                 'meta_description' => trim((string) ($a['meta_description'] ?? '')) ?: null,
             ], fn ($v) => $v !== null);
+            // Houd enkel over wat écht verandert: een voorstel dat woord voor
+            // woord de huidige meta herhaalt is geen verbetering.
+            $proposed = array_filter(
+                $proposed,
+                fn ($v, $field) => trim((string) ($page->{$field} ?? '')) !== $v,
+                ARRAY_FILTER_USE_BOTH
+            );
+            // Cool-down: is de pagina recent aangemaakt of aangepast, dan is
+            // het effect daarvan nog nergens meetbaar — een bestaande meta nu
+            // alweer herschrijven is churn, geen optimalisatie. Een meta die
+            // volledig ONTBREEKT invullen mag wél: daar valt niets af te
+            // wachten. (Grof vangnet: updated_at beweegt bij elke bewerking,
+            // maar liever even te lang zwijgen dan wekelijks hetzelfde
+            // voorstel.)
+            if ($this->recentlyTouched($page)) {
+                $proposed = array_filter(
+                    $proposed,
+                    fn ($v, $field) => blank($page->{$field}),
+                    ARRAY_FILTER_USE_BOTH
+                );
+            }
             if (! $proposed) {
                 return null;
             }
-            $fpKey = 'page-' . $page->id;
+            // Andere voorgestelde tekst = nieuw voorstel, geen duplicaat.
+            $fpKey = 'page-' . $page->id . '|' . $this->contentKey($proposed);
         }
 
         return [
