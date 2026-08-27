@@ -155,8 +155,8 @@ trait InteractsWithCases
             'cta' => $schema->object([
                 'title' => $schema->string()->description('Titel van de afsluitende call-to-action.'),
                 'body' => $schema->string()->description('Tekst van de call-to-action.'),
-                'button_label' => $schema->string()->description('Knoptekst.'),
-                'button_url' => $schema->string()->description('Knop-URL, bv. /contact.'),
+                'button_label' => $schema->string()->description('Knoptekst. Laat leeg om de site-brede CTA-knop te gebruiken.'),
+                'button_url' => $schema->string()->description('Knop-URL. Laat leeg om de site-brede bestemming (de adviesgesprek-pagina) te gebruiken — dat is de aanbevolen keuze.'),
             ]),
         ]);
     }

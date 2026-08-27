@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\CaseStudy;
 use App\Support\Seo;
+use App\Support\SiteCta;
 use Illuminate\Http\Response;
 
 class CaseStudyController extends Controller
@@ -36,6 +37,8 @@ class CaseStudyController extends Controller
         return response()->view('case-studies.show', [
             'case' => $case,
             'seo' => Seo::fromCaseStudy($case),
+            // Site-brede CTA, met de eigen cta-velden van de case eroverheen.
+            'cta' => SiteCta::mergedWith($case->content['cta'] ?? null),
         ]);
     }
 }

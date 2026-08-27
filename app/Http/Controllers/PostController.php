@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Post;
 use App\Support\Seo;
+use App\Support\SiteCta;
 use Illuminate\Http\Response;
 
 class PostController extends Controller
@@ -21,7 +22,7 @@ class PostController extends Controller
 
         return response()->view('blog.index', [
             'posts' => $posts,
-            'seo'   => Seo::fromBlogIndex(),
+            'seo' => Seo::fromBlogIndex(),
         ]);
     }
 
@@ -50,9 +51,10 @@ class PostController extends Controller
             ->get();
 
         return response()->view('blog.show', [
-            'post'    => $post,
+            'post' => $post,
             'related' => $related,
-            'seo'     => Seo::fromPost($post),
+            'seo' => Seo::fromPost($post),
+            'cta' => SiteCta::current(),
         ]);
     }
 }

@@ -285,7 +285,9 @@
     @endif
 
     {{-- ── CTA ────────────────────────────────────────────────────── --}}
-    @if (! empty($c['cta']['title']))
+    {{-- $cta = de site-brede CTA (Instellingen → Algemeen) met de eigen
+         cta-velden van deze case eroverheen; leeg = erven. --}}
+    @if (! empty($cta['title']))
         <section class="bg-[#050507] py-16 md:py-24">
             <div class="mx-auto max-w-5xl px-6">
                 <div
@@ -297,22 +299,22 @@
                     <div class="pointer-events-none absolute -bottom-24 -left-24 h-64 w-64 rounded-full blur-[80px]" style="background:rgba(34,211,238,0.06);"></div>
 
                     <h2 class="relative text-3xl font-black leading-tight tracking-tight text-white md:text-4xl lg:text-5xl">
-                        {{ $c['cta']['title'] }}
+                        {{ $cta['title'] }}
                     </h2>
 
-                    @if (! empty($c['cta']['body']))
+                    @if (! empty($cta['body']))
                         <p class="relative mx-auto mt-5 max-w-lg leading-relaxed text-white/50">
-                            {{ $c['cta']['body'] }}
+                            {{ $cta['body'] }}
                         </p>
                     @endif
 
-                    @if (! empty($c['cta']['button_label']) && ! empty($c['cta']['button_url']))
+                    @if (! empty($cta['button_label']) && ! empty($cta['href']))
                         <div class="relative mt-10 flex flex-wrap justify-center gap-4">
                             <a
-                                href="{{ $c['cta']['button_url'] }}"
+                                href="{{ $cta['href'] }}"
                                 class="cursor-pointer inline-flex items-center gap-2 rounded-full bg-white px-8 py-4 text-base font-semibold text-black transition-all hover:bg-white/90"
                             >
-                                {{ $c['cta']['button_label'] }}
+                                {{ $cta['button_label'] }}
                                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
                                 </svg>

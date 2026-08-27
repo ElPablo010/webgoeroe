@@ -2,13 +2,16 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Schemas\Components\PageLinkField;
 use App\Models\Setting;
+use App\Support\SiteCta;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -55,6 +58,9 @@ class GeneralSettings extends Page
             $data[$key] = Setting::get($key);
         }
 
+        // De CTA is een genest blok en gaat als één groep naar de Setting-tabel.
+        $data['cta'] = SiteCta::current();
+
         $this->form->fill($data);
     }
 
@@ -89,6 +95,25 @@ class GeneralSettings extends Page
                             ->columnSpanFull()
                             ->helperText('Adres, openingsuren, prijzen, USP\'s… AI-functies gebruiken ENKEL deze feiten in gegenereerde content — zo verzinnen ze niets.'),
                     ]),
+
+                Section::make('Call-to-action')
+                    ->description('De afsluitende banner onderaan elk blogartikel en elke case. Wijzig je de bestemming hier, dan volgen alle CTA\'s mee.')
+                    ->schema([
+                        Group::make()
+                            ->statePath('cta')
+                            ->schema([
+                                TextInput::make('title')
+                                    ->label('Titel')
+                                    ->maxLength(120),
+                                Textarea::make('body')
+                                    ->label('Tekst')
+                                    ->rows(3),
+                                TextInput::make('button_label')
+                                    ->label('Knoptekst')
+                                    ->maxLength(80),
+                                PageLinkField::make(required: false),
+                            ]),
+                    ]),
             ])
             ->statePath('data');
     }
@@ -115,6 +140,8 @@ class GeneralSettings extends Page
         foreach ($this->keys as $key) {
             Setting::set($key, $state[$key] ?? null);
         }
+
+        Setting::set(SiteCta::KEY, $state['cta'] ?? []);
 
         Notification::make()->title('Algemene instellingen opgeslagen')->success()->send();
     }

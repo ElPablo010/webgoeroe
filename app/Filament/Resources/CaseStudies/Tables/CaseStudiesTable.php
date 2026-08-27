@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\CaseStudies\Tables;
 
+use App\Filament\Resources\CaseStudies\CaseStudyResource;
+use App\Filament\Tables\Columns\TitleColumn;
 use App\Models\CaseStudy;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -20,10 +22,7 @@ class CaseStudiesTable
         return $table
             ->defaultSort('updated_at', 'desc')
             ->columns([
-                TextColumn::make('title')
-                    ->label('Titel')
-                    ->searchable()
-                    ->sortable(),
+                TitleColumn::make(CaseStudyResource::class),
                 TextColumn::make('client')
                     ->label('Klant')
                     ->sortable()

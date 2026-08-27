@@ -64,10 +64,38 @@ Drie plekken:
 
 ---
 
+## Site-brede call-to-action
+
+De afsluitende CTA-banner onderaan **elk blogartikel** en **elke case** komt uit
+één instelling: **Instellingen → Algemeen → Call-to-action** (titel, tekst,
+knoptekst en bestemming). Code: [`App\Support\SiteCta`](app/Support/SiteCta.php),
+opgeslagen als de `cta`-sleutel in de `settings`-tabel.
+
+- De bestemming bewaar je bij voorkeur als **pagina-koppeling** (`link_type: page`
+  + `page_id`), niet als vast pad. `SiteCta::current()` rekent de href dan live
+  uit de slug van die pagina — hernoem je de pagina in het CMS, dan volgen alle
+  CTA's mee zonder code-wijziging. Zelfde afweging (en dezelfde reden dat
+  `PageLinkField` z'n href binnen een `statePath`-group niet betrouwbaar
+  wegschrijft) als in [`SiteHeader`](app/Support/SiteHeader.php).
+- Een case mag afwijken via z'n eigen `content.cta`-velden — die zijn **puur
+  override**: laat je er één leeg, dan erft de case de site-instelling
+  (`SiteCta::mergedWith()`). In de praktijk vullen cases alleen `title`/`body`
+  in en erven ze de knop.
+- Blogartikelen hebben géén eigen CTA-velden; die gebruiken de instelling volledig.
+
+Wijzig de CTA-tekst dus **niet in de blade-views** — die lezen enkel `$cta`, dat
+de controllers meegeven.
+
+---
+
 ## Harde regels (overerfd van new-website-skill)
 
 - **Media-velden**: altijd `MediaPickerField`, nooit kaal URL-veld.
 - **Tabel-rij-acties**: icon-only (`->button()->hiddenLabel()->tooltip(...)`).
+- **Titelkolom**: via [`TitleColumn::make(<Resource>::class)`](app/Filament/Tables/Columns/TitleColumn.php)
+  — klikbaar naar het bewerkscherm, met `wrap()` + een inline `max-width` zodat
+  één lange titel de volgende kolommen niet wegduwt. Chain er gerust extra's
+  achteraan (bv. het homepage-icoontje in `PagesTable`).
 - **Geen kolom voor een vlag die maar op één rij staat** (bv. `is_homepage`):
   hang de markering als icoon aan de titelkolom, en geen filter erop.
 - **Dropdowns**: alfabetisch ordenen.

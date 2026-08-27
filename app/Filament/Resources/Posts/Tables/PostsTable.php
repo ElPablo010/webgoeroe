@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Posts\Tables;
 
+use App\Filament\Resources\Posts\PostResource;
+use App\Filament\Tables\Columns\TitleColumn;
 use App\Models\Post;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -20,10 +22,7 @@ class PostsTable
         return $table
             ->defaultSort('published_at', 'desc')
             ->columns([
-                TextColumn::make('title')
-                    ->label('Titel')
-                    ->searchable()
-                    ->sortable(),
+                TitleColumn::make(PostResource::class),
                 TextColumn::make('tags')
                     ->label('Tags')
                     ->badge()

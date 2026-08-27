@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\CaseStudies\Schemas;
 
 use App\Filament\Schemas\Components\MediaPickerField;
+use App\Support\SiteCta;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
@@ -238,26 +239,30 @@ class CaseStudyForm
                                     ]),
 
                                 Section::make('Call to action')
-                                    ->description('De afsluiter van de case. Laat de bezoeker de volgende stap zetten.')
+                                    ->description('De afsluiter van de case. Laat je een veld leeg, dan gebruikt de case de site-brede CTA uit Instellingen → Algemeen.')
                                     ->schema([
                                         TextInput::make('content.cta.title')
                                             ->label('Titel')
                                             ->maxLength(120)
+                                            ->placeholder(fn () => SiteCta::current()['title'] ?? null)
                                             ->default('Past deze aanpak bij jouw situatie?'),
                                         Textarea::make('content.cta.body')
                                             ->label('Tekst')
                                             ->rows(3)
+                                            ->placeholder(fn () => SiteCta::current()['body'] ?? null)
                                             ->default('Laten we in een kort gesprek verkennen wat er mogelijk is voor jouw bedrijf. Geen verplichtingen, wel concrete inzichten.'),
                                         Grid::make(['default' => 1, 'md' => 2])
                                             ->schema([
                                                 TextInput::make('content.cta.button_label')
                                                     ->label('Knoptekst')
                                                     ->maxLength(80)
-                                                    ->default('Plan strategisch gesprek'),
+                                                    ->placeholder(fn () => SiteCta::current()['button_label'] ?? null)
+                                                    ->helperText('Leeg = de knoptekst uit de algemene instellingen.'),
                                                 TextInput::make('content.cta.button_url')
                                                     ->label('Knop-URL')
                                                     ->maxLength(255)
-                                                    ->default('/contact'),
+                                                    ->placeholder(fn () => SiteCta::current()['href'] ?? null)
+                                                    ->helperText('Leeg = de bestemming uit de algemene instellingen.'),
                                             ]),
                                     ]),
                             ]),

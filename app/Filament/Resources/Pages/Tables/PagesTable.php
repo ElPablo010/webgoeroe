@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Pages\Tables;
 
 use App\Filament\Resources\Pages\PageResource;
+use App\Filament\Tables\Columns\TitleColumn;
 use App\Models\Page;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -22,10 +23,7 @@ class PagesTable
         return $table
             ->defaultSort('title')
             ->columns([
-                TextColumn::make('title')
-                    ->label('Titel')
-                    ->searchable()
-                    ->sortable()
+                TitleColumn::make(PageResource::class)
                     // Er is er per definitie maar één homepage, dus een eigen
                     // kolom stond 99% leeg. Het hangt nu als icoontje aan de
                     // titel van die ene rij.
