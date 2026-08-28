@@ -16,7 +16,7 @@
     <div class="mx-auto max-w-6xl px-6 py-20 md:py-28">
 
         @if (! empty($content['heading']))
-            <div class="mx-auto mb-14 max-w-2xl text-center">
+            <div class="mx-auto mb-14 max-w-4xl text-center">
                 @if (! empty($content['eyebrow']))
                     <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/[0.07] px-3 py-1">
                         <span class="text-xs font-semibold tracking-wider text-cyan-400">{{ $content['eyebrow'] }}</span>

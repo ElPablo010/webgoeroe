@@ -49,15 +49,12 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                         </svg>
                     </button>
+                    {{-- x-collapse animeert de hoogte: geen dubbele-hoogte-flits
+                         wanneer het ene item sluit terwijl het andere opent. --}}
                     <div
                         x-show="open === {{ $index }}"
                         x-cloak
-                        x-transition:enter="transition ease-out duration-200"
-                        x-transition:enter-start="opacity-0 -translate-y-1"
-                        x-transition:enter-end="opacity-100 translate-y-0"
-                        x-transition:leave="transition ease-in duration-150"
-                        x-transition:leave-start="opacity-100"
-                        x-transition:leave-end="opacity-0"
+                        x-collapse.duration.200ms
                         class="px-6 pb-5"
                     >
                         <div class="prose text-sm {{ $isDark ? 'prose-invert prose-p:text-white/50' : '' }}">{!! $item['answer'] ?? '' !!}</div>

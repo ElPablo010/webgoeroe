@@ -109,6 +109,12 @@ class PageSectionsBuilder
                     ...SectionCommonFields::make(),
                     ...CaseResultsFields::make(),
                 ]),
+            'Boeking' => Block::make('booking_hero')
+                ->label(self::numberedLabel('Boeking'))
+                ->schema([
+                    ...SectionCommonFields::make(),
+                    ...BookingHeroFields::make(),
+                ]),
             'Calendly' => Block::make('calendly')
                 ->label(self::numberedLabel('Calendly'))
                 ->schema([
@@ -120,6 +126,24 @@ class PageSectionsBuilder
                 ->schema([
                     ...SectionCommonFields::make(),
                     ...CasesGridFields::make(),
+                ]),
+            'Probleemherkenning' => Block::make('problem_recognition')
+                ->label(self::numberedLabel('Probleemherkenning'))
+                ->schema([
+                    ...SectionCommonFields::make(),
+                    ...ProblemRecognitionFields::make(),
+                ]),
+            'Voordelen' => Block::make('advantages')
+                ->label(self::numberedLabel('Voordelen'))
+                ->schema([
+                    ...SectionCommonFields::make(),
+                    ...AdvantagesFields::make(),
+                ]),
+            'Werkwijze' => Block::make('process_steps')
+                ->label(self::numberedLabel('Werkwijze'))
+                ->schema([
+                    ...SectionCommonFields::make(),
+                    ...ProcessStepsFields::make(),
                 ]),
             'Tekst (lange inhoud)' => Block::make('rich_text')
                 ->label(self::numberedLabel('Tekst (lange inhoud)'))

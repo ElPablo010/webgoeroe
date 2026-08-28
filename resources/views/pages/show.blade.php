@@ -19,12 +19,20 @@
 
         // De header is fixed (zweeft over de content). Een hero compenseert dat
         // met eigen top-padding; begint een pagina zonder hero, dan zou de eerste
-        // sectie onder de menubalk schuiven. Geef die pagina's daarom top-padding
-        // ter hoogte van de header (responsief mee met het logo: h-12 / 28 / 36).
-        $startsWithHero = optional($page->sections->first())->section_type === 'hero';
+        // sectie onder de menubalk schuiven. Compenseer met een spacer die de
+        // achtergrondkleur van de eerste sectie overneemt, zodat er geen andere
+        // kleurstrook boven de sectie verschijnt. Mobiel hoger: daar neemt de
+        // zwevende menubalk relatief meer ruimte in.
+        $firstSection   = $page->sections->first();
+        $startsWithHero = optional($firstSection)->section_type === 'hero';
+        $spacerBg       = \App\Filament\Schemas\Sections\SectionBackground::classes($firstSection?->content['background'] ?? null);
     @endphp
 
-    <div @class(['pt-10 md:pt-16 lg:pt-20' => ! $startsWithHero])>
+    @unless ($startsWithHero)
+        <div class="h-24 md:h-16 lg:h-20 {{ $spacerBg }}"></div>
+    @endunless
+
+    <div>
     @foreach ($page->sections as $section)
         @php
             $componentName = 'site.sections.' . str_replace('_', '-', $section->section_type);

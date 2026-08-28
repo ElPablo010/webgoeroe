@@ -28,6 +28,10 @@ class TestimonialsFields
                 ->expandAllAction(RepeaterToggleStyle::make())
                 ->itemLabel(fn (array $state): ?string => $state['author'] ?? null)
                 ->schema([
+                    TextInput::make('title')
+                        ->label('Stat-titel (optioneel)')
+                        ->helperText('Kort resultaat boven de quote, bv. "Van 3 naar 14 aanvragen per maand".')
+                        ->maxLength(120),
                     Textarea::make('quote')
                         ->label('Quote')
                         ->required()

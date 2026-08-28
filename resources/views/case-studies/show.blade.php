@@ -10,6 +10,7 @@
     :type="$seo['type']"
     :schema="$seo['schema']"
     :page="null"
+    :edit-url="route('filament.admin.resources.cases.edit', ['record' => $case])"
 >
     @php $c = $case->content ?? []; @endphp
 

@@ -104,6 +104,10 @@
     [data-reveal], [data-reveal-scale] { opacity: 1; animation: none; }
 }
 
+/* Calendly injecteert zijn iframe zonder radius en herschrijft de stijl van
+   de widget-div; rond de iframe zelf af zodat de hoeken altijd kloppen. */
+.calendly-inline-widget iframe { border-radius: 1rem; }
+
 /* Smooth scroll voor anchor-links */
 html { scroll-behavior: smooth; }
 

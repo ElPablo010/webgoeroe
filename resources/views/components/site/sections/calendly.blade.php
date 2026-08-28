@@ -65,12 +65,23 @@
                 });
             </script>
         @else
-            {{-- Calendly inline embed --}}
-            <div
-                class="calendly-inline-widget w-full overflow-hidden rounded-2xl"
-                data-url="{{ $url }}"
-                style="min-width:320px; height:{{ $height }}px;"
-            ></div>
+            {{-- Calendly inline embed in een witte skeleton-kaart — zie booking-hero. --}}
+            <link rel="preconnect" href="https://assets.calendly.com" crossorigin>
+            <link rel="preconnect" href="https://calendly.com">
+            <div class="relative overflow-hidden rounded-2xl bg-white" style="min-height:{{ $height }}px;">
+                <div class="absolute inset-0 flex flex-col items-center justify-center gap-3">
+                    <svg class="h-6 w-6 animate-spin text-slate-300" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/>
+                    </svg>
+                    <span class="text-sm font-medium text-slate-400">Kalender laden…</span>
+                </div>
+                <div
+                    class="calendly-inline-widget relative w-full"
+                    data-url="{{ $url }}"
+                    style="min-width:320px; height:{{ $height }}px;"
+                ></div>
+            </div>
             <script src="https://assets.calendly.com/assets/external/widget.js" async></script>
         @endif
 

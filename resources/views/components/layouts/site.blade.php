@@ -10,6 +10,7 @@
     'type' => 'website',
     'schema' => [],
     'page' => null,
+    'editUrl' => null,
 ])
 
 @php
@@ -42,10 +43,13 @@
 <body class="min-h-screen bg-[#050507] text-white antialiased">
     <x-site.header />
 
+    {{-- Snelkoppeling naar het bewerkscherm: pagina's geven $page mee, blog en
+         cases hun eigen editUrl — zo wissel je heen en weer zonder van pagina
+         te veranderen (de admin heeft de omgekeerde "Bekijken"-actie). --}}
     @auth
-        @if ($page)
+        @if ($page || $editUrl)
             <a
-                href="{{ route('filament.admin.resources.pages.edit', ['record' => $page, 'tab' => 'sections']) }}"
+                href="{{ $editUrl ?? route('filament.admin.resources.pages.edit', ['record' => $page, 'tab' => 'sections']) }}"
                 class="fixed right-4 top-20 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-violet-600 text-white shadow-lg transition hover:bg-violet-700"
                 title="Bewerk deze pagina"
                 aria-label="Bewerk pagina"

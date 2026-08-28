@@ -60,7 +60,7 @@
 
             {{-- Intro --}}
             @if (! empty($content['intro']))
-                <div class="prose prose-invert mx-auto mt-5 max-w-lg prose-p:text-white/50 prose-p:leading-relaxed">
+                <div class="prose prose-invert mx-auto mt-5 max-w-2xl prose-p:text-white/50 prose-p:leading-relaxed">
                     {!! $content['intro'] !!}
                 </div>
             @endif

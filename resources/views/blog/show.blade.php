@@ -10,6 +10,7 @@
     :type="$seo['type']"
     :schema="$seo['schema']"
     :page="null"
+    :edit-url="route('filament.admin.resources.posts.edit', ['record' => $post])"
 >
     @php
         // Verwerk de body: voeg id-attributen toe aan h2-headings voor de TOC
