@@ -40,8 +40,8 @@ class UpdateCase extends Tool
             'tags.*' => ['string', 'max:50'],
             'cover_url' => ['sometimes', 'nullable', 'string', 'max:255', new MediaUrl],
             'cover_alt' => ['sometimes', 'nullable', 'string', 'max:255'],
-            'meta_title' => ['sometimes', 'nullable', 'string', 'max:60'],
-            'meta_description' => ['sometimes', 'nullable', 'string', 'max:160'],
+            'meta_title' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'meta_description' => ['sometimes', 'nullable', 'string', 'max:1000'],
             'featured' => ['sometimes', 'boolean'],
         ];
 
@@ -101,8 +101,8 @@ class UpdateCase extends Tool
             'tags' => $schema->array()->description('Vervangende lijst tags.')->items($schema->string()),
             'cover_url' => $schema->string()->description('Nieuwe coverafbeelding (media-URL uit de library).'),
             'cover_alt' => $schema->string()->description('Nieuwe alt-tekst voor de cover.'),
-            'meta_title' => $schema->string()->description('Nieuwe SEO meta-titel.')->max(60),
-            'meta_description' => $schema->string()->description('Nieuwe SEO meta-omschrijving.')->max(160),
+            'meta_title' => $schema->string()->description('Nieuwe SEO meta-titel (ideaal ~60 tekens).')->max(255),
+            'meta_description' => $schema->string()->description('Nieuwe SEO meta-omschrijving (ideaal ~160 tekens).')->max(1000),
             'featured' => $schema->boolean()->description('Uitgelicht aan/uit.'),
         ];
     }

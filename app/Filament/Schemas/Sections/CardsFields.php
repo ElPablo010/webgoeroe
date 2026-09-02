@@ -45,6 +45,8 @@ class CardsFields
                         ->placeholder('Alle'),
                 ]),
 
+            JourneyFields::repeater(),
+
             Repeater::make('cards')
                 ->label('Kaarten')
                 ->collapsible()

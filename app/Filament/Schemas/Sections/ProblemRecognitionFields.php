@@ -22,26 +22,7 @@ class ProblemRecognitionFields
         return [
             ...HeadingFields::make(),
 
-            Repeater::make('journey')
-                ->label('Klantreis-stappen')
-                ->helperText('Horizontale flow tussen intro en probleemkaarten, bv. Bezoeker → Lead → Klant. Leeg = geen klantreis.')
-                ->collapsible()
-                ->collapsed()
-                ->collapseAllAction(RepeaterToggleStyle::make())
-                ->expandAllAction(RepeaterToggleStyle::make())
-                ->itemLabel(fn (array $state): ?string => $state['label'] ?? null)
-                ->schema([
-                    TextInput::make('label')
-                        ->label('Stap')
-                        ->required()
-                        ->maxLength(60),
-                    TextInput::make('icon')
-                        ->label('Icoon (lucide-naam)')
-                        ->placeholder('bv. user, globe, handshake'),
-                ])
-                ->columns(2)
-                ->defaultItems(0)
-                ->reorderable(),
+            JourneyFields::repeater(),
 
             Repeater::make('problems')
                 ->label('Probleemkaarten')

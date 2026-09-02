@@ -88,6 +88,34 @@ de controllers meegeven.
 
 ---
 
+## Database & media: lokaal werken, dan naar live pushen
+
+Een deploy (`deploy.sh`) synct **enkel code** via git. Content (pagina's, secties,
+posts, cases, menu's, instellingen, redirects, media) leeft in de database en in
+`storage/app/public`, en die twee omgevingen lopen dus uit elkaar zodra je ergens
+iets bewerkt. Twee scripts houden ze gelijk:
+
+| Richting | Commando | Wat |
+|----------|----------|-----|
+| live → lokaal | `scripts/db-pull.sh` | **Volledige** live-DB vervangt de lokale (lokale backup eerst in `storage/db-backups/`), media erbij gehaald. |
+| lokaal → live | `scripts/db-push.sh` | Enkel de **content-tabellen** (`PUSH_TABLES` in `scripts/db-common.sh`) vervangen op live; volledige live-backup eerst op de server in `~/db-backups/`. Vraagt om `LIVE` te typen. |
+
+Werkwijze voor een reeks content-aanpassingen:
+
+1. `scripts/db-pull.sh` — vertrek van de actuele live-inhoud.
+2. **Bevries live-bewerkingen**: niets meer aanpassen in de live admin of via de
+   MCP-connector (die wijst naar `dewebgoeroe.be`) tot de push gebeurd is. Wat
+   live tussendoor verandert in de content-tabellen wordt bij de push overschreven.
+3. Werk lokaal (admin op `webgoeroe.test/admin`).
+4. `scripts/db-push.sh` — en daarna eventueel "klaar en deploy" als er ook code wijzigde.
+
+Nooit meegepusht (live is daarvoor de bron): `form_submissions`, alle `seo_*`-tabellen,
+`users`, `oauth_*`, `personal_access_tokens`, `sessions`, `cache*`, `jobs*`, `migrations`.
+Media-sync voegt toe en overschrijft, maar **verwijdert nooit** (in beide richtingen).
+`--no-media` slaat de mediastap over.
+
+---
+
 ## Harde regels (overerfd van new-website-skill)
 
 - **Media-velden**: altijd `MediaPickerField`, nooit kaal URL-veld.

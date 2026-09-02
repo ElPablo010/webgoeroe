@@ -40,8 +40,8 @@ class CreatePost extends Tool
             'cover_url' => ['nullable', 'string', 'max:255', new MediaUrl],
             'cover_alt' => ['nullable', 'string', 'max:255'],
             'author_name' => ['nullable', 'string', 'max:100'],
-            'meta_title' => ['nullable', 'string', 'max:60'],
-            'meta_description' => ['nullable', 'string', 'max:160'],
+            'meta_title' => ['nullable', 'string', 'max:255'],
+            'meta_description' => ['nullable', 'string', 'max:1000'],
             'featured' => ['nullable', 'boolean'],
             'published' => ['nullable', 'boolean'],
         ]);
@@ -99,10 +99,10 @@ class CreatePost extends Tool
                 ->description('Naam van de auteur. Standaard “De Webgoeroe”.'),
             'meta_title' => $schema->string()
                 ->description('SEO meta-titel (~60 tekens). Standaard de titel.')
-                ->max(60),
+                ->max(255),
             'meta_description' => $schema->string()
                 ->description('SEO meta-omschrijving (~160 tekens). Standaard de excerpt.')
-                ->max(160),
+                ->max(1000),
             'featured' => $schema->boolean()
                 ->description('Uitgelicht bovenaan het overzicht plaatsen. Standaard false.'),
             'published' => $schema->boolean()

@@ -5,6 +5,10 @@
     $ctas     = $content['ctas'] ?? [];
     $hasImage = ! empty($image['src']);
     $compact  = ($content['size'] ?? 'default') === 'compact';
+    // Lange titels (± 48+ tekens) passen op 72px niet op twee regels; één maat
+    // kleiner op grote schermen houdt ze op twee i.p.v. drie regels.
+    $longHeading  = mb_strlen(trim((string) ($content['heading'] ?? ''))) >= 48;
+    $headingSize  = $longHeading ? 'md:text-6xl' : 'md:text-6xl lg:text-7xl';
 @endphp
 
 <section
@@ -40,7 +44,8 @@
     @endif
 
     <div class="relative mx-auto w-full max-w-6xl px-6 {{ $compact ? 'pt-28 pb-16 md:pt-32 md:pb-20' : 'py-28 md:py-36' }}">
-        <div class="mx-auto max-w-3xl text-center">
+        {{-- Tekstkolom zo breed als de sectie zelf, zodat een titel op twee regels kan i.p.v. drie --}}
+        <div class="mx-auto max-w-6xl text-center">
 
             @if (! empty($content['eyebrow']))
                 <div class="mb-8 inline-flex animate-hero-enter items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/[0.07] px-4 py-1.5">
@@ -50,7 +55,7 @@
             @endif
 
             @if (! empty($content['heading']))
-                <h1 class="animate-hero-enter text-5xl font-black leading-[1.05] tracking-[-0.02em] [animation-delay:110ms] md:text-6xl lg:text-7xl">
+                <h1 class="animate-hero-enter text-5xl font-black leading-[1.05] tracking-[-0.02em] [animation-delay:110ms] {{ $headingSize }}">
                     <span class="bg-gradient-to-b from-white to-white/50 bg-clip-text text-transparent">
                         {!! nl2br(e($content['heading'])) !!}
                     </span>
@@ -58,7 +63,7 @@
             @endif
 
             @if (! empty($content['subtitle']))
-                <div class="mx-auto mt-6 max-w-xl animate-hero-enter text-lg leading-relaxed text-white/55 [animation-delay:210ms] [&_a]:underline [&_strong]:font-semibold [&_strong]:text-white/90">
+                <div class="mx-auto mt-6 max-w-2xl animate-hero-enter text-lg leading-relaxed text-white/55 [animation-delay:210ms] [&_a]:underline [&_strong]:font-semibold [&_strong]:text-white/90">
                     {!! $content['subtitle'] !!}
                 </div>
             @endif

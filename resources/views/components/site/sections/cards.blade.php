@@ -11,6 +11,7 @@
         default => 'sm:grid-cols-2 lg:grid-cols-3',
     };
     $cards      = $content['cards'] ?? [];
+    $journey    = $content['journey'] ?? [];
     $maxVisible = ! empty($content['max_visible']) ? (int) $content['max_visible'] : null;
     $hasMore    = $maxVisible && count($cards) > $maxVisible;
 @endphp
@@ -37,6 +38,9 @@
                 @endif
             </div>
         @endif
+
+        {{-- Optionele klantreis boven de kaarten, bv. Lead → Opvolging → Klant --}}
+        <x-site.partials.journey :steps="$journey" :spaced="! empty($cards)" />
 
         <div class="grid gap-5 {{ $colClass }}">
             @foreach ($cards as $index => $card)

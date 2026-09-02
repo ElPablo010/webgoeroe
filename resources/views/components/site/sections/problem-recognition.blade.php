@@ -22,44 +22,7 @@
             </div>
         @endif
 
-        {{-- Klantreis: de volledige commerciële keten als stille tijdlijn — de
-             kaarten eronder zijn de hoofdact, dus hier bewust géén accentkleur --}}
-        @if (! empty($journey))
-            {{-- Desktop: dunne doorlopende lijn met kleine iconen. De marge
-                 eronder is er alleen wanneer er nog kaarten volgen. --}}
-            <div class="hidden md:block {{ empty($problems) ? '' : 'mb-16' }}" data-reveal>
-                <div class="flex items-start">
-                    @foreach ($journey as $step)
-                        <div class="flex w-24 shrink-0 flex-col items-center gap-2.5 text-center">
-                            @if (! empty($step['icon']))
-                                @php $iconComponent = 'lucide-' . str_replace(['_', ' '], '-', strtolower($step['icon'])); @endphp
-                                <x-dynamic-component :component="$iconComponent" class="h-5 w-5 text-white/40" />
-                            @endif
-                            <span class="text-xs font-medium leading-snug text-white/45">{{ $step['label'] ?? '' }}</span>
-                        </div>
-                        @unless ($loop->last)
-                            <div class="mt-2.5 h-px flex-1 bg-white/10"></div>
-                        @endunless
-                    @endforeach
-                </div>
-            </div>
-
-            {{-- Mobiel: compacte verticale tijdlijn --}}
-            <div class="mx-auto max-w-xs md:hidden {{ empty($problems) ? '' : 'mb-12' }}" data-reveal>
-                @foreach ($journey as $step)
-                    <div class="flex items-center gap-4">
-                        @if (! empty($step['icon']))
-                            @php $iconComponent = 'lucide-' . str_replace(['_', ' '], '-', strtolower($step['icon'])); @endphp
-                            <x-dynamic-component :component="$iconComponent" class="h-5 w-5 shrink-0 text-white/40" />
-                        @endif
-                        <span class="text-sm font-medium text-white/50">{{ $step['label'] ?? '' }}</span>
-                    </div>
-                    @unless ($loop->last)
-                        <div class="ml-[9px] h-4 w-px bg-white/10"></div>
-                    @endunless
-                @endforeach
-            </div>
-        @endif
+        <x-site.partials.journey :steps="$journey" :spaced="! empty($problems)" />
 
         <div class="grid gap-5 md:grid-cols-2">
             @foreach ($problems as $index => $problem)

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Posts\Schemas;
 
+use App\Filament\Schemas\Components\SeoMetaFields;
 use App\Filament\Schemas\Components\MediaPickerField;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\RichEditor;
@@ -95,15 +96,8 @@ class PostForm
                         Tab::make('SEO')
                             ->id('seo')
                             ->schema([
-                                TextInput::make('meta_title')
-                                    ->label('Meta-titel')
-                                    ->maxLength(60)
-                                    ->helperText('Ideaal ~60 tekens.'),
-                                Textarea::make('meta_description')
-                                    ->label('Meta-omschrijving')
-                                    ->rows(3)
-                                    ->maxLength(160)
-                                    ->helperText('Ideaal ~160 tekens.'),
+                                SeoMetaFields::title(),
+                                SeoMetaFields::description(),
                                 Grid::make(['default' => 1, 'md' => 2])
                                     ->schema([
                                         Select::make('meta_robots')
