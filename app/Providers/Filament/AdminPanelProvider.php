@@ -59,6 +59,12 @@ class AdminPanelProvider extends PanelProvider
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
                 fn (): string => View::make('filament.admin.customizations')->render(),
+            )
+            // Altijd zichtbaar oogje in de topbalk, tussen de zoekbalk en het
+            // accountmenu: opent de publieke site vanaf élke adminpagina.
+            ->renderHook(
+                PanelsRenderHook::GLOBAL_SEARCH_AFTER,
+                fn (): string => View::make('filament.admin.view-site-button')->render(),
             );
     }
 }
