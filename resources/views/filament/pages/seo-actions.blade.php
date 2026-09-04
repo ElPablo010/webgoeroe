@@ -9,6 +9,13 @@
         $filters = ['all' => 'Alle', 'pending' => 'Te beoordelen', 'published' => 'Goedgekeurd', 'dismissed' => 'Genegeerd'];
     @endphp
 
+    {{-- Waarom er niets te beoordelen staat — anders lijkt een lege lijst op een storing --}}
+    @if ($notice = $this->runNotice())
+        <div style="border:1px solid rgb(252 211 77);background:rgb(255 251 235);color:rgb(120 53 15);border-radius:.75rem;padding:.75rem 1rem;font-size:.875rem;">
+            {{ $notice }}
+        </div>
+    @endif
+
     {{-- Filter --}}
     <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
         @foreach ($filters as $key => $label)

@@ -2,11 +2,12 @@
 
 namespace App\Filament\Pages;
 
+use App\Jobs\GenerateSeoActionsJob;
 use App\Models\SeoActionItem;
 use App\Models\SeoKeyword;
+use App\Models\Setting;
 use App\Services\DataForSeoService;
 use App\Services\SeoActionApplier;
-use App\Services\SeoAdvisorService;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
@@ -29,7 +30,7 @@ class SeoActions extends Page
 {
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedSparkles;
 
-    protected static string|UnitEnum|null $navigationGroup = 'SEO';
+    protected static string|UnitEnum|null $navigationGroup = 'Groei';
 
     protected static ?string $navigationLabel = 'Acties';
 
@@ -111,6 +112,38 @@ class SeoActions extends Page
                 'feedback' => $this->actionFeedback($i),
             ])
             ->all();
+    }
+
+    /**
+     * Legt uit waarom er niets te beoordelen staat. Zonder dit verdwijnt een
+     * run waarvan alles als duplicaat wegviel — of die niets opleverde — in
+     * stilte, en lijkt een lege lijst op een storing.
+     */
+    public function runNotice(): ?string
+    {
+        if ($this->counts()['pending'] > 0) {
+            return null;
+        }
+
+        $data = json_decode((string) Setting::get('seo_actions_last_run'), true);
+        if (! is_array($data)) {
+            return null;
+        }
+
+        $when = ! empty($data['at']) ? ' (' . Carbon::parse($data['at'])->diffForHumans() . ')' : '';
+        $proposed = (int) ($data['proposed'] ?? 0);
+
+        if ($proposed === 0) {
+            return "De laatste analyse{$when} leverde geen voorstellen op. Krijg je dit vaker, "
+                . 'kijk dan in de log naar "SEO-acties: wat het model teruggaf".';
+        }
+
+        if ((int) ($data['created'] ?? 0) === 0) {
+            return "De laatste analyse{$when} stelde {$proposed} " . ($proposed === 1 ? 'actie' : 'acties')
+                . ' voor, maar die stonden hier al eerder — er is dus niets nieuws om te beoordelen.';
+        }
+
+        return null;
     }
 
     /**
@@ -244,25 +277,17 @@ class SeoActions extends Page
         }
         RateLimiter::hit('seo-generate-actions', 120);
 
-        $advisor = app(SeoAdvisorService::class);
-        $actions = $advisor->generateActions($advisor->buildContext());
+        // Naar de queue: het model schrijft volledige landingspagina's uit en
+        // doet daar ruim een minuut over. Synchroon loopt dat op shared hosting
+        // in een time-out, zonder dat er iets wordt opgeslagen. Vereist wel een
+        // draaiende `queue:work`.
+        GenerateSeoActionsJob::dispatch();
 
-        if (! $actions) {
-            Notification::make()->title('Geen nieuwe acties gevonden')->warning()->send();
-
-            return;
-        }
-
-        $new = 0;
-        foreach ($actions as $action) {
-            if (SeoActionItem::where('fingerprint', $action['fingerprint'])->exists()) {
-                continue;
-            }
-            SeoActionItem::create($action);
-            $new++;
-        }
-
-        Notification::make()->title("{$new} nieuwe verbeteracties toegevoegd")->success()->send();
+        Notification::make()
+            ->title('De analyse loopt')
+            ->body('De voorstellen verschijnen hier na een minuut of twee — ververs de pagina.')
+            ->success()
+            ->send();
     }
 
     /* ---------------------------------------------------------------- */
@@ -364,7 +389,7 @@ class SeoActions extends Page
             'rank' => $result->rank_group,
             'delta' => $result->delta,
             'ai_cited' => (bool) $result->ai_overview_cited,
-            'checked_at' => $result->checked_at?->format('Y-m-d'),
+            'checked_at' => $result->checked_at?->format('d/m/Y'),
         ];
     }
 }

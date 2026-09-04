@@ -3,7 +3,6 @@
 namespace App\Console\Commands;
 
 use App\Mail\SeoWeeklyReport;
-use App\Models\SeoActionItem;
 use App\Models\SeoReport;
 use App\Models\Setting;
 use App\Services\DataForSeoService;
@@ -57,18 +56,12 @@ class SeoWeeklyReportCommand extends Command
         ]);
 
         // 4b. Gestructureerde verbeteracties voor het goedkeuringsdashboard.
-        //     Dedup op fingerprint: een item dat al bestaat (pending, gepubliceerd
-        //     of eerder genegeerd) komt niet opnieuw terug.
-        $actions = $advisor->generateActions($context);
-        $newActions = 0;
-        foreach ($actions as $action) {
-            if (SeoActionItem::where('fingerprint', $action['fingerprint'])->exists()) {
-                continue;
-            }
-            SeoActionItem::create(array_merge($action, ['seo_report_id' => $report->id]));
-            $newActions++;
+        //     Dedup op fingerprint binnen een venster — zie storeActions().
+        $stored = $advisor->storeActions($advisor->generateActions($context), $report->id);
+        $this->info("{$stored['created']} nieuwe verbeteracties aangemaakt ({$stored['proposed']} voorgesteld).");
+        if ($stored['duplicates'] > 0) {
+            $this->warn("{$stored['duplicates']} voorstellen overgeslagen: die stonden er al.");
         }
-        $this->info("{$newActions} nieuwe verbeteracties aangemaakt (" . count($actions) . ' voorgesteld).');
 
         // 5. Mail de stand van zaken.
         if (!$this->option('no-mail')) {

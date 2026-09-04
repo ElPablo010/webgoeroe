@@ -40,7 +40,7 @@ class SeoActionApplier
             return $item;
         }
 
-        $proposed = $editedProposed ?: ($item->proposed ?? []);
+        $proposed = $this->sanitizeFaqAnswers($editedProposed ?: ($item->proposed ?? []));
 
         DB::transaction(function () use ($item, $proposed) {
             match ($item->action_type) {
@@ -138,6 +138,37 @@ class SeoActionApplier
      * de pagina (dedup op de genormaliseerde vraag). Geeft false als er nog geen
      * FAQ-sectie is — dan wordt er een nieuwe aangemaakt.
      */
+    /**
+     * FAQ-antwoorden mogen eenvoudige HTML met interne links bevatten. Dit is
+     * het enige punt waar voorstellen (AI en dashboard-edits) gepubliceerd
+     * worden, dus hier gaat alles door de sanitizer: enkel toegestane tags,
+     * links enkel naar bestaande eigen pagina's.
+     */
+    protected function sanitizeFaqAnswers(array $proposed): array
+    {
+        $allowed = \App\Support\FaqAnswerSanitizer::allowedPaths();
+
+        $clean = fn (array $items) => array_map(function ($it) use ($allowed) {
+            if (isset($it['answer'])) {
+                $it['answer'] = \App\Support\FaqAnswerSanitizer::sanitize((string) $it['answer'], $allowed);
+            }
+
+            return $it;
+        }, $items);
+
+        if (isset($proposed['content']['items']) && ($proposed['section_type'] ?? 'faq') === 'faq') {
+            $proposed['content']['items'] = $clean($proposed['content']['items']);
+        }
+
+        foreach ($proposed['sections'] ?? [] as $i => $section) {
+            if (($section['section_type'] ?? null) === 'faq' && isset($section['content']['items'])) {
+                $proposed['sections'][$i]['content']['items'] = $clean($section['content']['items']);
+            }
+        }
+
+        return $proposed;
+    }
+
     protected function mergeIntoExistingFaq(Page $page, array $content): bool
     {
         $existing = $page->sections()
@@ -152,19 +183,34 @@ class SeoActionApplier
         $current = is_array($existing->content) ? $existing->content : (array) json_decode((string) $existing->content, true);
         $items = array_values($current['items'] ?? []);
 
+        // De vangrails van het voorstel-moment gelden hier OPNIEUW: voorstellen
+        // worden soms weken na generatie of na elkaar goedgekeurd, en de
+        // generatie-guards toetsten toen tegen een verouderde paginastand.
+        // Zonder deze herhaling ontstond in bl-members een blok van 9 vragen
+        // met drie keer dezelfde waar-vraag.
+        $matcher = new \App\Support\FaqQuestionMatcher();
+        $existingQuestions = array_map(fn ($it) => (string) ($it['question'] ?? ''), $items);
+
         $seen = [];
         foreach ($items as $it) {
             $seen[$this->faqKey($it['question'] ?? '')] = true;
         }
 
         foreach ($content['items'] ?? [] as $new) {
+            if (count($items) >= SeoAdvisorService::FAQ_MAX_QUESTIONS) {
+                break;
+            }
             $question = trim((string) ($new['question'] ?? ''));
             $answer = trim((string) ($new['answer'] ?? ''));
             $key = $this->faqKey($question);
             if ($key === '' || $answer === '' || isset($seen[$key])) {
                 continue;
             }
+            if ($matcher->firstOverlapping($question, $existingQuestions) !== null) {
+                continue;
+            }
             $items[] = ['question' => $question, 'answer' => $answer];
+            $existingQuestions[] = $question;
             $seen[$key] = true;
         }
 

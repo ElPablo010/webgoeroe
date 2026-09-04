@@ -3,6 +3,9 @@
 namespace App\Filament\Resources\SeoKeywords\Pages;
 
 use App\Filament\Resources\SeoKeywords\SeoKeywordResource;
+use App\Filament\Widgets\SeoKeywordSuggestions;
+use App\Jobs\SuggestKeywordsJob;
+use App\Models\Setting;
 use App\Models\SeoKeyword;
 use App\Services\DataForSeoService;
 use Filament\Actions\Action;
@@ -12,6 +15,8 @@ use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Support\Facades\RateLimiter;
+use Livewire\Attributes\On;
 
 class ListSeoKeywords extends ListRecords
 {
@@ -23,11 +28,39 @@ class ListSeoKeywords extends ListRecords
     }
 
     /**
+     * Het voorstellenblok (checkboxes) boven de tabel — enkel zichtbaar als er
+     * voorstellen bewaard zijn (zie SeoKeywordSuggestions::canView).
+     *
+     * @return array<class-string>
+     */
+    protected function getHeaderWidgets(): array
+    {
+        return [SeoKeywordSuggestions::class];
+    }
+
+    /** Het widget voegde keywords toe: opnieuw renderen ververst de tabel. */
+    #[On('seo-keywords-added')]
+    public function refreshAfterSuggestions(): void
+    {
+    }
+
+    /**
      * @return array<Action>
      */
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('suggest')
+                ->label('Stel keywords voor')
+                ->icon(Heroicon::OutlinedSparkles)
+                ->color('gray')
+                ->requiresConfirmation()
+                ->modalHeading('Keyword-onderzoek starten')
+                ->modalDescription('De AI bedenkt zoektermen in de taal van je klanten en DataForSEO hangt er zoekvolumes aan. Dat duurt enkele minuten; de voorstellen verschijnen daarna bovenaan dit scherm. Niets wordt automatisch opgevolgd.')
+                ->modalSubmitActionLabel('Starten')
+                ->disabled(fn () => blank(Setting::get('anthropic_api_key') ?: config('services.anthropic.api_key')))
+                ->action(fn () => $this->suggestKeywords()),
+
             CreateAction::make()
                 ->label('Keyword toevoegen')
                 ->mutateDataUsing(fn (array $data) => [...$data, ...static::locale()]),
@@ -87,6 +120,33 @@ class ListSeoKeywords extends ListRecords
         Notification::make()
             ->title("{$added} nieuwe keywords geïmporteerd")
             ->body($skipped > 0 ? "{$skipped} stonden er al in en zijn overgeslagen." : null)
+            ->success()
+            ->send();
+    }
+
+    /**
+     * Zet het keyword-onderzoek op de queue. AI-call + twee DataForSEO-calls
+     * zijn te traag voor een web-request op shared hosting. Rate-limited: één
+     * run per tien minuten volstaat, elke run kost API-credits.
+     */
+    protected function suggestKeywords(): void
+    {
+        if (RateLimiter::tooManyAttempts('seo-suggest-keywords', 1)) {
+            Notification::make()
+                ->title('Er loopt al een keyword-onderzoek')
+                ->body('Wacht enkele minuten; de voorstellen verschijnen vanzelf bovenaan dit scherm.')
+                ->warning()
+                ->send();
+
+            return;
+        }
+        RateLimiter::hit('seo-suggest-keywords', 600);
+
+        SuggestKeywordsJob::dispatch();
+
+        Notification::make()
+            ->title('Keyword-onderzoek gestart')
+            ->body('De voorstellen verschijnen binnen enkele minuten bovenaan dit scherm (herlaad de pagina).')
             ->success()
             ->send();
     }

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Page;
+use App\Models\SeoActionItem;
 use App\Models\SeoGeoCheck;
 use App\Models\SeoKeyword;
 use App\Models\SeoSiteSnapshot;
@@ -21,6 +22,18 @@ use Illuminate\Support\Str;
 class SeoAdvisorService
 {
     protected string $model = 'claude-sonnet-5';
+
+    /** Hoelang een afgehandeld voorstel een identiek nieuw voorstel blokkeert. */
+    protected const DEDUPE_DAYS = 90;
+
+    /**
+     * Ruimte voor de actie-tool. Elke `create_page` is een volledig
+     * uitgeschreven landingspagina, dus dit moet royaal zijn: raakt het
+     * antwoord de limiet, dan is de tool-call afgekapt en komt er geen énkele
+     * actie door — een afgekapte tool-call levert een lege `actions`-array,
+     * geen halve. Verlaag dit nooit "om te besparen".
+     */
+    protected const ACTIONS_MAX_TOKENS = 16000;
 
     /**
      * Hoeveel vragen een FAQ-blok hoogstens mag tellen. Boven deze grens
@@ -93,6 +106,42 @@ class SeoAdvisorService
             'down' => $movers->filter(fn ($m) => $m['delta'] < 0)->sortBy('delta')->take(8)->values()->all(),
             'opportunities' => $opportunities->values()->all(),
             'geo' => $geo->values()->all(),
+
+            // First-party leads (indien de leads-tabel bestaat): hiermee gaan
+            // pagina's met bewezen conversie voor op pagina's met enkel
+            // vertoningen.
+            'leads' => $this->leadsContext(),
+        ];
+    }
+
+    /**
+     * First-party gemeten conversies (contactaanvragen enz.) met herkomst.
+     * Null zolang de leads-tabel niet bestaat of er niets gemeten is.
+     */
+    protected function leadsContext(): ?array
+    {
+        if (! \Illuminate\Support\Facades\Schema::hasTable('leads')) {
+            return null;
+        }
+
+        $now = \Illuminate\Support\Carbon::now();
+        $recent = \App\Models\Lead::where('created_at', '>=', $now->copy()->subDays(28))
+            ->get(['channel', 'landing_path']);
+        $previous = \App\Models\Lead::whereBetween('created_at', [
+            $now->copy()->subDays(56), $now->copy()->subDays(28),
+        ])->count();
+
+        if ($recent->isEmpty() && $previous === 0) {
+            return null;
+        }
+
+        return [
+            'total' => $recent->count(),
+            'previous' => $previous,
+            'by_channel' => $recent->groupBy('channel')->map->count()->sortDesc()
+                ->map(fn ($count, $channel) => ($channel ?: 'onbekend') . ": {$count}")->values()->all(),
+            'by_page' => $recent->whereNotNull('landing_path')->groupBy('landing_path')->map->count()->sortDesc()
+                ->take(10)->map(fn ($count, $path) => "{$path}: {$count}")->values()->all(),
         ];
     }
 
@@ -212,15 +261,17 @@ Zet de onderstaande cijfers om in een korte lijst **uitvoerbare content-acties**
 
 Regels:
 - Enkel content-acties, één van: `create_page` (nieuwe pagina voor een keyword zonder ranking), `add_section` (FAQ-blok toevoegen aan een bestaande pagina), `optimize_meta` (ontbrekende/zwakke meta-title of -description invullen).
-- Maximaal 6 acties. Prioriteer op impact (zoekvolume, AI-zichtbaarheid). Verwijs naar specifieke keywords/pagina's uit de data.
+- Maximaal 6 acties. Prioriteer op impact (zoekvolume, AI-zichtbaarheid — en leads: staat er een blok "LEADS" in de data, werk dan aan keywords/pagina's met bewezen conversie vóór keywords met enkel vertoningen; "rankt wel maar converteert niet" betekent dat de pagina het probleem is, niet de vindbaarheid). Verwijs naar specifieke keywords/pagina's uit de data.
 - Schrijf alle klantgerichte tekst in het **Nederlands**, spreek aan met "je", in de huisstijl-toon van {$brand}.
 - Voor `add_section` en `optimize_meta`: gebruik in `target_slug` de slug van een pagina uit de lijst hieronder ("/" voor de homepage). Verzin geen pagina's.
-- Voor `add_section`: bekijk eerst de bestaande FAQ-vragen van de doelpagina (onder "Bestaande FAQ-vragen per pagina" bij de feiten). Stel GEEN vraag voor die daar inhoudelijk al beantwoord wordt — ook niet in andere bewoordingen: "Wat kost een website?" en "Wat kost een website laten maken in Antwerpen?" zijn qua intentie en antwoord dezelfde vraag. Liever géén actie dan een variant van een bestaande vraag.
+- Voor `add_section`: bekijk eerst de bestaande FAQ-vragen van de doelpagina (onder "Bestaande FAQ-vragen per pagina" bij de feiten). Stel GEEN vraag voor die daar inhoudelijk al beantwoord wordt — ook niet in andere bewoordingen: "Waar vind ik X?" en "Waar vind ik X in de buurt van Antwerpen?" zijn qua intentie en antwoord dezelfde vraag. Liever géén actie dan een variant van een bestaande vraag.
 - Een FAQ-blok moet scanbaar blijven: hoogstens zo'n 6-7 vragen per pagina. Staat een pagina als "VOL" gemarkeerd, stel er dan geen `add_section` meer voor voor. Zit ze er net onder, stel dan hoogstens het aantal vragen voor dat er nog bij kan.
 - Pagina's gemarkeerd als "NIEUW" of "RECENT aangepast" zijn pas gewijzigd; Google heeft dat nog niet verwerkt (dat duurt weken). Dat het keyword van zo'n pagina nog niet (beter) rankt, betekent dus "nog even geduld", NIET "actie nodig". Stel voor zo'n pagina geen `optimize_meta` voor (tenzij de meta volledig ontbreekt) en maak geen `create_page` voor een keyword dat zo'n pagina al afdekt.
 - Maak sowieso nooit een `create_page` voor een keyword dat al gedekt wordt door een bestaande pagina (kijk naar titels en slugs in de lijst hieronder): twee pagina's op hetzelfde keyword kannibaliseren elkaar. Verbeter dan liever die bestaande pagina, of sla het keyword over.
 - Gebruik voor concrete feiten (adres, openingsuren, prijzen, USP's) **uitsluitend** de aangeleverde feiten. Weet je iets niet zeker, laat het veld dan leeg — verzin niets.
 - Meta-description: max 155 tekens. FAQ-antwoorden: kort en concreet.
+- **Interne links in FAQ-antwoorden zijn welkom** waar ze de bezoeker verder helpen ("bekijk het aanbod"): schrijf ze als HTML, `<a href="/pad">ankertekst</a>`. Gebruik UITSLUITEND paden van bestaande pagina's uit de lijst hieronder — nooit externe links, nooit een verzonnen pad. Hoogstens één link per antwoord; verder geen HTML.
+- Twijfel je of een sectie op deze pagina past (bv. een aanbod-blok dat hier niets toevoegt), laat ze dan weg: een kortere, kloppende pagina verslaat een volledige met misplaatste blokken.
 - GEO/AI-zichtbaarheid: verschijnen we niet in AI-antwoorden, geef dan letterlijke vraag-antwoord-FAQ's die die vragen beantwoorden.
 
 Voor `create_page` denk je als **conversie-copywriter**: een bezoeker komt met concrete intentie binnen en moet binnen enkele seconden kunnen klikken. Lever een **volledige landingspagina** (niet enkel introtekst):
@@ -242,9 +293,11 @@ PROMPT;
                 'x-api-key' => $apiKey,
                 'anthropic-version' => '2023-06-01',
                 'content-type' => 'application/json',
-            ])->timeout(120)->post('https://api.anthropic.com/v1/messages', [
+            // Zes uitgeschreven landingspagina's duren ruim een minuut; de
+            // marge is er zodat een trage dag niet halverwege afbreekt.
+            ])->timeout(300)->post('https://api.anthropic.com/v1/messages', [
                 'model' => $this->model,
-                'max_tokens' => 8000,
+                'max_tokens' => self::ACTIONS_MAX_TOKENS,
                 'tools' => [$this->actionsToolSchema()],
                 'tool_choice' => ['type' => 'tool', 'name' => 'report_actions'],
                 'messages' => [['role' => 'user', 'content' => $prompt]],
@@ -259,11 +312,30 @@ PROMPT;
             $toolUse = collect($response->json('content', []))->firstWhere('type', 'tool_use');
             $actions = $toolUse['input']['actions'] ?? [];
 
-            return collect($actions)
+            $usable = collect($actions)
                 ->map(fn ($a) => is_array($a) ? $this->normalizeAction($a) : null)
                 ->filter()
                 ->values()
                 ->all();
+
+            // Zonder dit is "0 acties" niet te onderscheiden van een afgekapt
+            // antwoord of van voorstellen die allemaal op een guard sneuvelen.
+            if (count($usable) < count($actions) || ! $usable) {
+                Log::log(
+                    $usable ? 'info' : 'warning',
+                    'SEO-acties: wat het model teruggaf',
+                    [
+                        'stop_reason' => $response->json('stop_reason'),
+                        'output_tokens' => $response->json('usage.output_tokens'),
+                        'max_tokens' => self::ACTIONS_MAX_TOKENS,
+                        'voorgesteld' => count($actions),
+                        'bruikbaar' => count($usable),
+                        'types' => collect($actions)->pluck('action_type')->all(),
+                    ]
+                );
+            }
+
+            return $usable;
         } catch (\Throwable $e) {
             Log::error('SEO-acties fout', ['error' => $e->getMessage()]);
 
@@ -277,6 +349,120 @@ PROMPT;
      * locaties, …) blijven hier bewust buiten — dit is project-agnostisch. Wil
      * je die meevoeden, breid deze methode dan per project uit.
      */
+    /**
+     * Bewaart de voorgestelde acties en slaat over wat al bekend is.
+     *
+     * Duplicaat = dezelfde fingerprint bij een voorstel dat nog openstaat, of
+     * dat hoogstens DEDUPE_DAYS geleden aangemaakt werd. Ouder dan dat mag
+     * opnieuw ter beoordeling komen: de cijfers en de site zijn intussen
+     * veranderd. Een permanente blokkade legt de actielijst na een paar weken
+     * volledig stil — elke pagina heeft haar ene FAQ- en meta-voorstel dan al
+     * gehad, dus valt élk nieuw voorstel stilzwijgend weg.
+     *
+     * De uitkomst gaat naar `seo_actions_last_run`, zodat het dashboard
+     * "niets nieuws" kan onderscheiden van "niets gegenereerd".
+     *
+     * @param  array<int,array<string,mixed>>  $actions
+     * @return array{proposed:int,created:int,duplicates:int}
+     */
+    public function storeActions(array $actions, ?int $reportId = null): array
+    {
+        $created = 0;
+
+        foreach ($actions as $action) {
+            if ($this->isDuplicateAction($action['fingerprint'])) {
+                continue;
+            }
+
+            SeoActionItem::create($reportId
+                ? array_merge($action, ['seo_report_id' => $reportId])
+                : $action);
+            $created++;
+        }
+
+        $summary = [
+            'proposed' => count($actions),
+            'created' => $created,
+            'duplicates' => count($actions) - $created,
+        ];
+
+        Setting::set('seo_actions_last_run', json_encode($summary + ['at' => Carbon::now()->toIso8601String()]));
+
+        if ($summary['duplicates'] > 0) {
+            Log::info('SEO-acties: voorstellen overgeslagen als duplicaat', $summary);
+        }
+
+        return $summary;
+    }
+
+    /** Staat dit voorstel al open, of is het net afgehandeld? */
+    protected function isDuplicateAction(string $fingerprint): bool
+    {
+        return SeoActionItem::where('fingerprint', $fingerprint)
+            ->where(fn ($q) => $q
+                ->where('status', 'pending')
+                ->orWhere('created_at', '>=', Carbon::now()->subDays(self::DEDUPE_DAYS)))
+            ->exists();
+    }
+
+    /**
+     * Stabiele sleutel voor de inhoud van een voorstel. Verschillen in
+     * hoofdletters, spaties of volgorde mogen niet als "nieuw" tellen.
+     *
+     * @param  array<int|string,mixed>  $values
+     */
+    protected function contentKey(array $values): string
+    {
+        $normalized = collect($values)
+            ->map(fn ($v) => preg_replace('/\s+/u', ' ', mb_strtolower(trim((string) $v))))
+            ->filter()
+            ->sort()
+            ->values()
+            ->all();
+
+        return substr(sha1(implode('|', $normalized)), 0, 12);
+    }
+
+    /**
+     * Alle FAQ-items (vraag + antwoord) die nu op de pagina staan, over alle
+     * FAQ-secties heen.
+     *
+     * @return array<int,array{question:string,answer:string}>
+     */
+    protected function pageFaqItems(Page $page): array
+    {
+        return $page->sections()
+            ->where('section_type', 'faq')
+            ->orderBy('position')
+            ->get()
+            ->flatMap(fn ($s) => collect($s->content['items'] ?? [])
+                ->map(fn ($item) => [
+                    'question' => trim((string) ($item['question'] ?? '')),
+                    'answer' => trim((string) ($item['answer'] ?? '')),
+                ])
+                ->filter(fn ($item) => $item['question'] !== ''))
+            ->values()
+            ->all();
+    }
+
+    /** Is deze pagina minder dan RECENT_DAYS geleden aangemaakt of aangepast? */
+    protected function recentlyTouched(Page $page): bool
+    {
+        $cutoff = Carbon::now()->subDays(self::RECENT_DAYS);
+
+        return (bool) ($page->updated_at?->gte($cutoff) || $page->created_at?->gte($cutoff));
+    }
+
+    /** Dekt een bestaande gepubliceerde pagina (titel of slug) dit keyword al? */
+    protected function keywordCoveredByExistingPage(string $keyword): bool
+    {
+        $matcher = new FaqQuestionMatcher();
+
+        return Page::where('published', true)
+            ->get(['title', 'slug'])
+            ->contains(fn ($p) => $matcher->keywordCoveredBy($keyword, $p->title . ' ' . $p->slug));
+    }
+
     protected function buildGroundingText(): string
     {
         $lines = [];
@@ -340,64 +526,6 @@ PROMPT;
         }
 
         return implode("\n", $lines) ?: 'Geen aanvullende feiten ingevoerd.';
-    }
-
-    /**
-     * Stabiele sleutel voor de inhoud van een voorstel. Verschillen in
-     * hoofdletters, spaties of volgorde mogen niet als "nieuw" tellen.
-     *
-     * @param  array<int|string,mixed>  $values
-     */
-    protected function contentKey(array $values): string
-    {
-        $normalized = collect($values)
-            ->map(fn ($v) => preg_replace('/\s+/u', ' ', mb_strtolower(trim((string) $v))))
-            ->filter()
-            ->sort()
-            ->values()
-            ->all();
-
-        return substr(sha1(implode('|', $normalized)), 0, 12);
-    }
-
-    /**
-     * Alle FAQ-items (vraag + antwoord) die nu op de pagina staan, over alle
-     * FAQ-secties heen.
-     *
-     * @return array<int,array{question:string,answer:string}>
-     */
-    protected function pageFaqItems(Page $page): array
-    {
-        return $page->sections()
-            ->where('section_type', 'faq')
-            ->orderBy('position')
-            ->get()
-            ->flatMap(fn ($s) => collect($s->content['items'] ?? [])
-                ->map(fn ($item) => [
-                    'question' => trim((string) ($item['question'] ?? '')),
-                    'answer' => trim((string) ($item['answer'] ?? '')),
-                ])
-                ->filter(fn ($item) => $item['question'] !== ''))
-            ->values()
-            ->all();
-    }
-
-    /** Is deze pagina minder dan RECENT_DAYS geleden aangemaakt of aangepast? */
-    protected function recentlyTouched(Page $page): bool
-    {
-        $cutoff = Carbon::now()->subDays(self::RECENT_DAYS);
-
-        return (bool) ($page->updated_at?->gte($cutoff) || $page->created_at?->gte($cutoff));
-    }
-
-    /** Dekt een bestaande gepubliceerde pagina (titel of slug) dit keyword al? */
-    protected function keywordCoveredByExistingPage(string $keyword): bool
-    {
-        $matcher = new FaqQuestionMatcher();
-
-        return Page::where('published', true)
-            ->get(['title', 'slug'])
-            ->contains(fn ($p) => $matcher->keywordCoveredBy($keyword, $p->title . ' ' . $p->slug));
     }
 
     /** Tool-schema voor gestructureerde output. */
@@ -497,7 +625,7 @@ PROMPT;
             // is een tweede pagina geen verbetering maar kannibalisatie — en
             // vaak is die pagina pas net gemaakt en heeft ze gewoon nog geen
             // tijd gehad om te ranken. De exacte-slug-check hierboven mist
-            // dat: een nét andere slug voor hetzelfde keyword glipt er anders
+            // dat: "salsa-antwerpen" naast "salsalessen-antwerpen" glipte er
             // week na week opnieuw door.
             if ($keyword && $this->keywordCoveredByExistingPage($keyword)) {
                 return null;
@@ -543,6 +671,7 @@ PROMPT;
             // over als er nog bij kunnen.
             $faq = array_slice($faq, 0, self::FAQ_MAX_QUESTIONS - count($existing));
 
+            $questions = array_column($faq, 'question');
             $pageId = $page->id;
             $proposed = [
                 'section_type' => 'faq',
@@ -550,9 +679,7 @@ PROMPT;
             ];
             // De vragen zelf horen in de sleutel: een tweede FAQ met ándere
             // vragen op dezelfde pagina is een nieuw voorstel, geen duplicaat.
-            // Enkel `page-{id}` maakte de dedup permanent: elke pagina had na
-            // één voorstel haar FAQ voorgoed gehad.
-            $fpKey = 'page-' . $page->id . '|' . $this->contentKey(array_column($faq, 'question'));
+            $fpKey = 'page-' . $page->id . '|' . $this->contentKey($questions);
         } else { // optimize_meta
             $page = $this->resolvePage($a['target_slug'] ?? null);
             if (! $page) {
@@ -587,7 +714,8 @@ PROMPT;
             if (! $proposed) {
                 return null;
             }
-            // Andere voorgestelde tekst = nieuw voorstel, geen duplicaat.
+            // Idem: een andere voorgestelde title/description op dezelfde
+            // pagina mag opnieuw ter beoordeling komen.
             $fpKey = 'page-' . $page->id . '|' . $this->contentKey($proposed);
         }
 
@@ -746,6 +874,134 @@ PROMPT;
         return Page::where('slug', ltrim($slug, '/'))->first();
     }
 
+    /* ---------------------------------------------------------------------
+     | Keyword-onderzoek (kandidaten voor de opgevolgde lijst)
+     * ------------------------------------------------------------------- */
+
+    /** Setting-key waaronder de laatste keyword-voorstellen bewaard worden. */
+    public const KEYWORD_SUGGESTIONS_SETTING = 'seo_keyword_suggestions';
+
+    /**
+     * Stel kandidaat-keywords voor: AI genereert seeds in klanttaal op basis
+     * van merk, omschrijving, AI-feiten en paginatitels; DataForSEO Labs
+     * breidt uit met verwante zoektermen en hangt er volumes aan. Al
+     * opgevolgde keywords vallen weg. Resultaat als voorstel in Setting —
+     * toevoegen blijft een menselijke keuze (elke keyword kost wekelijks een
+     * SERP-meting). Draai dit via SuggestKeywordsJob op de queue.
+     */
+    public function suggestKeywords(): array
+    {
+        $seeds = $this->aiSeedKeywords();
+
+        $candidates = collect();
+        if ($this->api->isConfigured()) {
+            $ideas = $this->api->keywordIdeas($seeds !== [] ? $seeds : [$this->api->target], 100);
+            $candidates = collect($ideas)->keyBy('keyword');
+
+            $missing = collect($seeds)
+                ->map(fn ($kw) => mb_strtolower(trim($kw)))
+                ->filter()
+                ->unique()
+                ->reject(fn ($kw) => $candidates->has($kw))
+                ->values();
+            if ($missing->isNotEmpty()) {
+                $volumes = $this->api->keywordSearchVolumes($missing->all());
+                foreach ($missing as $kw) {
+                    $candidates->put($kw, ['keyword' => $kw, 'search_volume' => $volumes[$kw] ?? null]);
+                }
+            }
+        } else {
+            $candidates = collect($seeds)
+                ->map(fn ($kw) => mb_strtolower(trim($kw)))
+                ->filter()
+                ->unique()
+                ->mapWithKeys(fn ($kw) => [$kw => ['keyword' => $kw, 'search_volume' => null]]);
+        }
+
+        $tracked = SeoKeyword::pluck('keyword')
+            ->map(fn ($kw) => mb_strtolower(trim($kw)))
+            ->flip();
+
+        $list = $candidates->values()
+            ->reject(fn ($c) => isset($tracked[$c['keyword']]))
+            ->sortByDesc(fn ($c) => $c['search_volume'] ?? -1)
+            ->take(40)
+            ->values()
+            ->all();
+
+        Setting::set(self::KEYWORD_SUGGESTIONS_SETTING, json_encode([
+            'generated_at' => now()->toDateTimeString(),
+            'items' => $list,
+        ]));
+
+        return $list;
+    }
+
+    /**
+     * AI-seeds in klanttaal. Leeg bij ontbrekende key of fout — het
+     * onderzoek valt dan terug op DataForSEO-suggesties rond het domein.
+     */
+    protected function aiSeedKeywords(): array
+    {
+        $apiKey = Setting::get('anthropic_api_key') ?: config('services.anthropic.api_key');
+        if (empty($apiKey)) {
+            return [];
+        }
+
+        $brand = Setting::get('brand_name', '');
+        $description = Setting::get('business_description', '');
+        $facts = Setting::get('ai_facts', '');
+        $pages = Page::where('published', true)->pluck('title')->take(30)->implode('; ');
+
+        $prompt = <<<PROMPT
+Je doet keyword-onderzoek voor {$brand} (domein {$this->api->target}).
+
+Context:
+- Omschrijving: {$description}
+- Feiten: {$facts}
+- Pagina's: {$pages}
+
+Genereer 25 kandidaat-zoektermen waarop deze site gevonden zou willen worden. Regels:
+- Schrijf in de taal van de klant, niet van het bedrijf zelf (denk aan hoe iemand zoekt, niet aan vakjargon).
+- Mix van dienst + plaats, dienst + intentie ("prijs", "in de buurt", "beginners"), en bredere categorie-termen.
+- Nederlands, kleine letters, geen merknaam, geen duplicaten.
+- Antwoord met UITSLUITEND een JSON-array van strings, zonder uitleg of markdown.
+PROMPT;
+
+        try {
+            $response = Http::withHeaders([
+                'x-api-key' => $apiKey,
+                'anthropic-version' => '2023-06-01',
+                'content-type' => 'application/json',
+            ])->timeout(60)->post('https://api.anthropic.com/v1/messages', [
+                'model' => $this->model,
+                'max_tokens' => 1500,
+                'messages' => [['role' => 'user', 'content' => $prompt]],
+            ]);
+
+            if (! $response->successful()) {
+                Log::warning('Keyword-seeds mislukt', ['status' => $response->status(), 'body' => $response->body()]);
+
+                return [];
+            }
+
+            $text = trim((string) $response->json('content.0.text', ''));
+            $text = preg_replace('/^```(?:json)?|```$/m', '', $text);
+            $decoded = json_decode(trim($text), true);
+
+            return collect(is_array($decoded) ? $decoded : [])
+                ->filter(fn ($kw) => is_string($kw) && trim($kw) !== '')
+                ->map(fn ($kw) => mb_strtolower(trim($kw)))
+                ->unique()
+                ->values()
+                ->all();
+        } catch (\Throwable $e) {
+            Log::error('Keyword-seeds fout', ['error' => $e->getMessage()]);
+
+            return [];
+        }
+    }
+
     protected function contextToText(array $c): string
     {
         $l = $c['latest'];
@@ -771,6 +1027,18 @@ PROMPT;
         if ($c['opportunities']) {
             $lines[] = "\nKansen (volume maar niet in top 10): " . collect($c['opportunities'])->map(fn ($o) => "{$o['keyword']} (vol {$o['volume']}, " . ($o['rank'] ? "#{$o['rank']}" : 'niet rankend') . ")")->implode(', ');
         }
+        if (!empty($c['leads'])) {
+            $ld = $c['leads'];
+            $lines[] = "\n== LEADS (first-party gemeten conversies) ==";
+            $lines[] = "Laatste 28 dagen: {$ld['total']} (vorige periode: {$ld['previous']})";
+            if (!empty($ld['by_channel'])) {
+                $lines[] = 'Per kanaal: ' . implode(', ', $ld['by_channel']);
+            }
+            if (!empty($ld['by_page'])) {
+                $lines[] = "Landingspagina's die leads opleveren: " . implode(', ', $ld['by_page']);
+            }
+        }
+
         if ($c['geo']) {
             $cited = collect($c['geo'])->filter(fn ($g) => $g['cited'])->count();
             $lines[] = "\nGEO: {$cited}/" . count($c['geo']) . " AI-checks citeren ons domein. Vragen: " . collect($c['geo'])->take(5)->map(fn ($g) => "\"{$g['prompt']}\" (" . ($g['cited'] ? 'gelinkt' : ($g['mentioned'] ? 'vermeld' : 'afwezig')) . ")")->implode('; ');

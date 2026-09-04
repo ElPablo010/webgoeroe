@@ -26,7 +26,7 @@ class SeoDashboard extends Page
 {
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedChartBar;
 
-    protected static string|UnitEnum|null $navigationGroup = 'SEO';
+    protected static string|UnitEnum|null $navigationGroup = 'Groei';
 
     protected static ?string $navigationLabel = 'Overzicht';
 

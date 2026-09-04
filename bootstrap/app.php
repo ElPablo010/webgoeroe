@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\CaptureFirstTouch;
 use App\Http\Middleware\HandleRedirects;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -15,6 +16,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
             HandleRedirects::class,
+            // Groei-meetlaag: herkomst van elke bezoeker (first touch), ná StartSession.
+            CaptureFirstTouch::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

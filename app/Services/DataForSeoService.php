@@ -162,6 +162,40 @@ class DataForSeoService
         return $map;
     }
 
+    /**
+     * Keyword-suggesties uit DataForSEO Labs op basis van seed-keywords:
+     * "mensen die dit zoeken, zoeken ook…", met volume per suggestie.
+     * Voedt het keyword-onderzoek ("Stel keywords voor").
+     */
+    public function keywordIdeas(array $seeds, int $limit = 100): array
+    {
+        $seeds = array_values(array_unique(array_filter(array_map('trim', $seeds))));
+        if (empty($seeds)) {
+            return [];
+        }
+
+        $res = $this->post('/dataforseo_labs/google/keyword_ideas/live', [[
+            // keyword_ideas accepteert max 200 seeds.
+            'keywords' => array_slice($seeds, 0, 200),
+            'location_code' => $this->locationCode,
+            'language_code' => $this->languageCode,
+            'limit' => max(1, min($limit, 700)),
+            'order_by' => ['keyword_info.search_volume,desc'],
+        ]]);
+
+        $result = $this->firstResult($res);
+
+        return collect($result['items'] ?? [])
+            ->map(fn ($item) => [
+                'keyword' => mb_strtolower(trim((string) ($item['keyword'] ?? ''))),
+                'search_volume' => $item['keyword_info']['search_volume'] ?? null,
+            ])
+            ->filter(fn ($i) => $i['keyword'] !== '')
+            ->unique('keyword')
+            ->values()
+            ->all();
+    }
+
     /* ---------------------------------------------------------------------
      | Positie-tracking + GEO (SERP API, live)
      * ------------------------------------------------------------------- */

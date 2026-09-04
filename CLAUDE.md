@@ -109,7 +109,7 @@ Werkwijze voor een reeks content-aanpassingen:
 3. Werk lokaal (admin op `webgoeroe.test/admin`).
 4. `scripts/db-push.sh` — en daarna eventueel "klaar en deploy" als er ook code wijzigde.
 
-Nooit meegepusht (live is daarvoor de bron): `form_submissions`, alle `seo_*`-tabellen,
+Nooit meegepusht (live is daarvoor de bron): `form_submissions`, `leads`, alle `seo_*`-tabellen,
 `users`, `oauth_*`, `personal_access_tokens`, `sessions`, `cache*`, `jobs*`, `migrations`.
 Media-sync voegt toe en overschrijft, maar **verwijdert nooit** (in beide richtingen).
 `--no-media` slaat de mediastap over.
@@ -128,7 +128,49 @@ Media-sync voegt toe en overschrijft, maar **verwijdert nooit** (in beide richti
   hang de markering als icoon aan de titelkolom, en geen filter erop.
 - **Dropdowns**: alfabetisch ordenen.
 - **Buttons**: `cursor-pointer` (+ `disabled:cursor-not-allowed`).
+- **Elk conversiepunt is een lead** (Groei-meetlaag, zie hieronder). Formulieren
+  lopen via `FormSubmission` en tellen automatisch (hook in het model). Bouw je
+  een conversie die géén formulier is — boeking, betaling, aanmelding via een
+  externe koppeling — dan roep je `Lead::record()` aan op het punt waar ze
+  definitief wordt, bínnen de idempotency-guard als er een webhook in het spel is.
 - Code/commits in het Engels; admin-UI + validatie in het Nederlands.
+
+---
+
+## Groei — SEO-module + leads-meetlaag
+
+De sidebar-groep **Groei** (`/admin`) bundelt de SEO-module uit de
+`seo-analytics`-skill (Overzicht, Keywords, Acties, Instellingen) én het
+**Leads**-scherm. Interne namen blijven `Seo*` / `seo_*`; enkel het zichtbare
+label heet Groei — dat is wat we verkopen: verkeer → leads, aantoonbaar sinds
+de livegang. Geïnstalleerd/bijgewerkt op 04/09/2026 naar de stand van de skill.
+
+- **Herkomst**: `CaptureFirstTouch` (web-groep, ná `HandleRedirects`) legt bij
+  het eerste GET van een sessie kanaal, landingspagina, referrer en utm's vast
+  (`App\Support\Attribution`, sessiekey `wg_first_touch`). Sessie-only, geen
+  cookie, bots (UA-match) krijgen niets. Bewust geen GA4.
+- **Leads**: `FormSubmission::booted()` schrijft bij élke inzending een `Lead`
+  (type = formuliertype, morph naar de inzending). `Lead::record()` faalt nooit
+  hard — een fout in de meting mag geen formulier blokkeren. Labels: eerst
+  `Lead::TYPE_LABELS`, dan `FormSubmission::TYPE_LABELS` (`Lead::typeLabel()`).
+- **Leads-scherm** (`SeoLeads`, `/admin/seo-leads`): kop-cijfers t.o.v. het
+  maanddoel, leads per maand met doellijn en livegang-markering, verdeling per
+  kanaal/type/landingspagina (90 d.), recentste 50, en de nulmeting-velden
+  (`seo_live_since`, `seo_goal_leads_month`, `seo_leads_baseline` in
+  `Setting`). Alle cijfers uit `App\Support\LeadStats` — de enige bron.
+  Zonder `leads`-tabel toont het scherm een migratie-melding i.p.v. te crashen.
+- **Keyword-onderzoek**: knop "Stel keywords voor" op Keywords dispatcht
+  `SuggestKeywordsJob` (queue, rate-limit 10 min); de voorstellen staan in
+  Setting `seo_keyword_suggestions` en verschijnen als checkbox-blok
+  (`SeoKeywordSuggestions`-widget) boven de tabel. Aangevinkt = opgevolgd, nooit
+  automatisch: elke keyword kost wekelijks een SERP-meting.
+- **Acties lopen over de queue** (`GenerateSeoActionsJob`), niet meer synchroon
+  in de knop — de scheduler-worker (`queue:work --stop-when-empty`, elke minuut)
+  moet dus draaien, ook op Combell.
+- Datums in deze schermen altijd `dd/mm/jjjj`.
+
+Vastgelegd in `tests/Feature/LeadAttributionTest.php`,
+`tests/Feature/SeoLeadsPageTest.php` en `tests/Feature/SeoKeywordSuggestTest.php`.
 
 ---
 

@@ -25,7 +25,7 @@ class SeoKeywordResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedMagnifyingGlass;
 
-    protected static string|UnitEnum|null $navigationGroup = 'SEO';
+    protected static string|UnitEnum|null $navigationGroup = 'Groei';
 
     protected static ?int $navigationSort = 20;
 

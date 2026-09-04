@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Models\SeoActionItem;
 use App\Services\SeoAdvisorService;
 use Illuminate\Console\Command;
 
@@ -28,16 +27,12 @@ class SeoGenerateActionsCommand extends Command
             return self::SUCCESS;
         }
 
-        $new = 0;
-        foreach ($actions as $action) {
-            if (SeoActionItem::where('fingerprint', $action['fingerprint'])->exists()) {
-                continue;
-            }
-            SeoActionItem::create($action);
-            $new++;
-        }
+        $stored = $advisor->storeActions($actions);
 
-        $this->info("{$new} nieuwe verbeteracties aangemaakt (" . count($actions) . ' voorgesteld).');
+        $this->info("{$stored['created']} nieuwe verbeteracties aangemaakt ({$stored['proposed']} voorgesteld).");
+        if ($stored['duplicates'] > 0) {
+            $this->warn("{$stored['duplicates']} voorstellen overgeslagen: die stonden er al.");
+        }
 
         return self::SUCCESS;
     }
