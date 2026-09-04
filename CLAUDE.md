@@ -109,7 +109,7 @@ Werkwijze voor een reeks content-aanpassingen:
 3. Werk lokaal (admin op `webgoeroe.test/admin`).
 4. `scripts/db-push.sh` — en daarna eventueel "klaar en deploy" als er ook code wijzigde.
 
-Nooit meegepusht (live is daarvoor de bron): `form_submissions`, `leads`, alle `seo_*`-tabellen,
+Nooit meegepusht (live is daarvoor de bron): `form_submissions`, `leads`, `gsc_*`, alle `seo_*`-tabellen,
 `users`, `oauth_*`, `personal_access_tokens`, `sessions`, `cache*`, `jobs*`, `migrations`.
 Media-sync voegt toe en overschrijft, maar **verwijdert nooit** (in beide richtingen).
 `--no-media` slaat de mediastap over.
@@ -159,6 +159,21 @@ de livegang. Geïnstalleerd/bijgewerkt op 04/09/2026 naar de stand van de skill.
   (`seo_live_since`, `seo_goal_leads_month`, `seo_leads_baseline` in
   `Setting`). Alle cijfers uit `App\Support\LeadStats` — de enige bron.
   Zonder `leads`-tabel toont het scherm een migratie-melding i.p.v. te crashen.
+- **Verkeer** (`SearchConsole`, `/admin/search-console`): het **gemeten**
+  Google-verkeer uit Search Console — niet de DataForSEO-schatting. Clicks,
+  vertoningen, CTR en positie (28 d. t.o.v. 28 d. ervoor, gewogen op
+  vertoningen), weekverloop met livegang-markering, top-zoektermen/-pagina's en
+  "kansen" (≥ 20 vertoningen, positie 4-20). Koppeling via **OAuth** op het
+  eigen Google-account: client-ID/secret uit Google Cloud (`gsc_oauth_*`),
+  consent-flow via `SearchConsoleOAuthController` (`/admin/search-console/oauth/
+  redirect|callback`, `auth` + panel-check, state in sessie), refresh token in
+  `gsc_refresh_token`, property in `gsc_site_url` (na koppelen automatisch
+  gekozen: domein-property > https > www). Sync: `seo:sync-search-console`
+  dagelijks 6:00 (`GscCollector`: 16 maanden backfill bij de eerste run, daarna
+  rollend 7-dagenvenster met upsert per dag). Valkuilen: `access_type=offline`
+  + `prompt=consent` zijn verplicht (anders geen refresh token) en de
+  OAuth-app moet in Google Cloud op "In productie" staan (anders vervalt het
+  token na 7 dagen). Bij `invalid_grant` wist de service het token zelf.
 - **Keyword-onderzoek**: knop "Stel keywords voor" op Keywords dispatcht
   `SuggestKeywordsJob` (queue, rate-limit 10 min); de voorstellen staan in
   Setting `seo_keyword_suggestions` en verschijnen als checkbox-blok
@@ -170,7 +185,8 @@ de livegang. Geïnstalleerd/bijgewerkt op 04/09/2026 naar de stand van de skill.
 - Datums in deze schermen altijd `dd/mm/jjjj`.
 
 Vastgelegd in `tests/Feature/LeadAttributionTest.php`,
-`tests/Feature/SeoLeadsPageTest.php` en `tests/Feature/SeoKeywordSuggestTest.php`.
+`tests/Feature/SeoLeadsPageTest.php`, `tests/Feature/SearchConsoleTest.php` en
+`tests/Feature/SeoKeywordSuggestTest.php`.
 
 ---
 

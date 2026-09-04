@@ -20,3 +20,10 @@ Schedule::command('queue:work --stop-when-empty --queue=default --tries=3')
 Schedule::command('seo:weekly-report')
     ->weeklyOn(1, '7:00') // maandag 7:00
     ->withoutOverlapping();
+
+// Google Search Console-cijfers ophalen (dagelijks 6:00, Groei-meetlaag).
+// Google levert met ~3 dagen vertraging en herziet recente dagen nog; de sync
+// haalt telkens het laatste venster opnieuw op en overschrijft per dag.
+Schedule::command('seo:sync-search-console')
+    ->dailyAt('6:00')
+    ->withoutOverlapping();

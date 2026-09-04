@@ -3,6 +3,7 @@
 use App\Http\Controllers\CaseStudyController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\PublicPageController;
+use App\Http\Controllers\SearchConsoleOAuthController;
 use App\Http\Controllers\SeoController;
 use Illuminate\Support\Facades\Route;
 
@@ -41,6 +42,16 @@ Route::get('/blog', [PostController::class, 'index'])->name('blog.index');
 Route::get('/blog/{slug}', [PostController::class, 'show'])
     ->where('slug', '[a-z0-9\-]+')
     ->name('blog.show');
+
+// Google Search Console — OAuth-koppeling (Groei-meetlaag). De callback-URL
+// moet exact zo in Google Cloud geregistreerd staan; de pagina toont hem.
+Route::middleware('auth')
+    ->prefix('admin/search-console/oauth')
+    ->controller(SearchConsoleOAuthController::class)
+    ->group(function () {
+        Route::get('/redirect', 'redirect')->name('seo.gsc.oauth.redirect');
+        Route::get('/callback', 'callback')->name('seo.gsc.oauth.callback');
+    });
 
 // Catch-all paginarouter (homepage + alle slugs). Sluit admin/livewire/storage uit.
 Route::get('/{slug?}', [PublicPageController::class, 'show'])
