@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Support\SiteHeader;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -12,12 +13,12 @@ use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
 use Filament\View\PanelsRenderHook;
 use Filament\Widgets\AccountWidget;
-use Illuminate\Support\Facades\View;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\View;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class AdminPanelProvider extends PanelProvider
@@ -29,10 +30,15 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
-            ->favicon(fn (): ?string => \App\Support\SiteHeader::favicon())
+            ->favicon(fn (): ?string => SiteHeader::favicon())
             ->colors([
                 'primary' => Color::hex('#7c3aed'),
             ])
+            // Vaste groepsvolgorde. Zonder dit sorteert Filament op de volgorde
+            // waarin hij de pagina's ontdekt, en dan wandelt "Instellingen" naar
+            // boven zodra er een pagina bijkomt. Instellingen hoort onderaan:
+            // dat open je zelden, in tegenstelling tot content en cijfers.
+            ->navigationGroups(['Website', 'Groei', 'Instellingen'])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([
@@ -65,6 +71,12 @@ class AdminPanelProvider extends PanelProvider
             ->renderHook(
                 PanelsRenderHook::GLOBAL_SEARCH_AFTER,
                 fn (): string => View::make('filament.admin.view-site-button')->render(),
+            )
+            // Uitloggen onderaan de zijbalk, waar je het zoekt. Het zat al in het
+            // accountmenu rechtsboven, maar dat moet je eerst openklappen.
+            ->renderHook(
+                PanelsRenderHook::SIDEBAR_FOOTER,
+                fn (): string => View::make('filament.admin.sidebar-logout')->render(),
             );
     }
 }

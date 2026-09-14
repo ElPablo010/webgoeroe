@@ -28,18 +28,25 @@
         </div>
     @elseif (! $gsc->hasOAuth() && $gsc->authMethod() === null)
         <div style="border:1px solid rgb(196 181 253);background:rgb(245 243 255);color:rgb(76 29 149);border-radius:.75rem;padding:.75rem 1rem;font-size:.875rem;line-height:1.5;">
-            <strong>Nog niet gekoppeld.</strong> Vul hieronder de client-ID en het client-secret in, sla op, en klik dan op "Verbinden met Google".
+            <strong>Nog niet gekoppeld.</strong> Ga naar <a href="{{ \App\Filament\Pages\SeoSettings::getUrl() }}" style="text-decoration:underline;font-weight:600;">SEO-instellingen</a>,
+            vul de client-ID en het client-secret in en klik daar op "Verbinden met Google".
             Eén toestemming dekt Search Console én Analytics. Search Console bewaart 16 maanden historiek — na het koppelen staat er meteen een echte trendlijn.
         </div>
     @elseif (! $hasData)
         <div style="border:1px solid rgb(196 181 253);background:rgb(245 243 255);color:rgb(76 29 149);border-radius:.75rem;padding:.75rem 1rem;font-size:.875rem;">
-            Gekoppeld{{ $gsc->siteUrl !== '' ? ' met ' . $gsc->siteUrl : ', maar er is nog geen property gekozen' }}. {{ $gsc->siteUrl !== '' ? 'Klik op "Ververs nu" om de eerste 16 maanden in te lezen.' : 'Kies een site via "Andere site kiezen".' }}
+            @if ($gsc->siteUrl !== '')
+                Gekoppeld met {{ $gsc->siteUrl }}. Klik bovenaan op "Ververs Google-verkeer" om de eerste 16 maanden in te lezen.
+            @else
+                Gekoppeld, maar er is nog geen site gekozen. Eén Google-account kan er meerdere beheren: kies de juiste via
+                <a href="{{ \App\Filament\Pages\SeoSettings::getUrl() }}" style="text-decoration:underline;font-weight:600;">SEO-instellingen</a> → "Andere site kiezen".
+            @endif
         </div>
     @else
         @if ($ga->needsReconsent())
             <div style="border:1px solid rgb(196 181 253);background:rgb(245 243 255);color:rgb(76 29 149);border-radius:.75rem;padding:.75rem 1rem;font-size:.875rem;line-height:1.5;">
                 <strong>Analytics hangt er nog niet aan.</strong> Je koppeling dateert van vóór deze uitbreiding en dekt enkel Search Console.
-                Klik bovenaan op <strong>"Analytics mee koppelen"</strong>: Google vraagt dan in één keer beide rechten.
+                Klik op <a href="{{ \App\Filament\Pages\SeoSettings::getUrl() }}" style="text-decoration:underline;font-weight:600;">SEO-instellingen</a> op
+                <strong>"Analytics mee koppelen"</strong>: Google vraagt dan in één keer beide rechten.
                 Je Search Console-cijfers blijven gewoon staan.
             </div>
         @endif
@@ -66,9 +73,10 @@
             @elseif (! $hasGa)
                 <div style="border:1px solid rgb(196 181 253);background:rgb(245 243 255);color:rgb(76 29 149);border-radius:.75rem;padding:.75rem 1rem;font-size:.875rem;line-height:1.5;">
                     @if ($ga->propertyId === '')
-                        <strong>Nog geen Analytics-property gekozen.</strong> Kies er een via "Andere property kiezen".
+                        <strong>Nog geen Analytics-property gekozen.</strong> Kies er een op
+                        <a href="{{ \App\Filament\Pages\SeoSettings::getUrl() }}" style="text-decoration:underline;font-weight:600;">SEO-instellingen</a>.
                     @else
-                        <strong>Nog geen Analytics-cijfers.</strong> Klik op "Analytics verversen".
+                        <strong>Nog geen Analytics-cijfers.</strong> Klik bovenaan op "Ververs Analytics".
                         Staat de meetcode al op de site? Analytics toont niets van vóór de dag dat het script begon te meten.
                     @endif
                 </div>
@@ -164,5 +172,4 @@
         @endif
     @endunless
 
-    {{ $this->form }}
 </x-filament-panels::page>

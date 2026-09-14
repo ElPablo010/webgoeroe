@@ -2,6 +2,7 @@
 
 use App\Enums\UserRole;
 use App\Filament\Pages\SearchConsole;
+use App\Filament\Pages\SeoSettings;
 use App\Models\Ga4DailyMetric;
 use App\Models\Ga4DimensionMetric;
 use App\Models\GscDailyMetric;
@@ -264,10 +265,9 @@ describe('het tabblad op de Verkeer-pagina', function () {
     });
 });
 
-it('biedt opnieuw koppelen aan zonder dat je de koppeling moet verbreken', function () {
-    actingAs(User::factory()->create(['role' => UserRole::Admin]));
-
-    // Gekoppeld voor Search Console, maar zonder het Analytics-recht.
+/** Gekoppeld voor Search Console, maar zonder het Analytics-recht. */
+function searchConsoleOnly(): void
+{
     Setting::set('google_oauth_client_id', 'client-id');
     Setting::set('google_oauth_client_secret', 'client-secret');
     Setting::set('google_refresh_token', 'refresh-token');
@@ -278,11 +278,27 @@ it('biedt opnieuw koppelen aan zonder dat je de koppeling moet verbreken', funct
         'date' => Carbon::today()->subDays(3)->toDateString(),
         'clicks' => 3, 'impressions' => 40, 'ctr' => 0.075, 'position' => 7.0,
     ]);
+}
+
+it('biedt op de SEO-instellingen opnieuw koppelen aan, zonder eerst te verbreken', function () {
+    actingAs(User::factory()->create(['role' => UserRole::Admin]));
+    searchConsoleOnly();
+
+    get(SeoSettings::getUrl())
+        ->assertOk()
+        ->assertSee('Analytics mee koppelen')
+        // Geen "Verbinden met Google": dat suggereert dat je eerst moet verbreken.
+        ->assertDontSee('Verbinden met Google');
+});
+
+it('meldt op het cijferscherm dat Analytics ontbreekt en wijst naar de instellingen', function () {
+    actingAs(User::factory()->create(['role' => UserRole::Admin]));
+    searchConsoleOnly();
 
     get(SearchConsole::getUrl())
         ->assertOk()
-        ->assertSee('Analytics mee koppelen')
-        ->assertSee('Analytics hangt er nog niet aan');
+        ->assertSee('Analytics hangt er nog niet aan')
+        ->assertSee(SeoSettings::getUrl());
 });
 
 it('verbergt die knop weer zodra beide rechten binnen zijn', function () {

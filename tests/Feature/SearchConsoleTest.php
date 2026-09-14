@@ -2,6 +2,7 @@
 
 use App\Enums\UserRole;
 use App\Filament\Pages\SearchConsole;
+use App\Filament\Pages\SeoSettings;
 use App\Models\GscDailyMetric;
 use App\Models\GscDimensionMetric;
 use App\Models\Setting;
@@ -139,7 +140,7 @@ describe('OAuth-flow', function () {
         session(['gsc_oauth_state' => 'expected']);
 
         get(route('seo.gsc.oauth.callback', ['state' => 'wrong', 'code' => 'abc']))
-            ->assertRedirect(SearchConsole::getUrl());
+            ->assertRedirect(SeoSettings::getUrl());
 
         expect(Setting::get('google_refresh_token'))->toBeEmpty();
     });
@@ -158,7 +159,7 @@ describe('OAuth-flow', function () {
         ]);
 
         get(route('seo.gsc.oauth.callback', ['state' => 'expected', 'code' => 'the-code']))
-            ->assertRedirect(SearchConsole::getUrl());
+            ->assertRedirect(SeoSettings::getUrl());
 
         expect(Setting::get('google_refresh_token'))->toBe('new-refresh')
             ->and(Setting::get('gsc_site_url'))->toBe('sc-domain:example.be');
@@ -174,11 +175,13 @@ describe('OAuth-flow', function () {
 describe('Verkeer-scherm', function () {
     beforeEach(fn () => actingAs(User::factory()->create(['role' => UserRole::Admin])));
 
-    it('toont de koppel-instructies zolang er geen koppeling is', function () {
+    it('stuurt je naar de SEO-instellingen zolang er geen koppeling is', function () {
         get(SearchConsole::getUrl())
             ->assertOk()
             ->assertSee('Nog niet gekoppeld')
-            ->assertSee(route('seo.gsc.oauth.callback'));
+            ->assertSee(SeoSettings::getUrl())
+            // Het instelwerk zelf staat niet meer op dit cijferscherm.
+            ->assertDontSee(route('seo.gsc.oauth.callback'));
     });
 
     it('toont cijfers, zoektermen en kansen zodra er data is', function () {
@@ -197,15 +200,28 @@ describe('Verkeer-scherm', function () {
             ->assertSee('Kansen');
     });
 
-    it('bewaart de instellingen', function () {
-        Livewire::test(SearchConsole::class)
-            ->fillForm(['google_oauth_client_id' => ' id ', 'google_oauth_client_secret' => 'secret', 'gsc_site_url' => 'sc-domain:example.be'])
+    it('bewaart de instellingen op de SEO-instellingen, niet hier', function () {
+        Livewire::test(SeoSettings::class)
+            ->fillForm([
+                'google_oauth_client_id' => ' id ',
+                'google_oauth_client_secret' => 'secret',
+                'gsc_site_url' => 'sc-domain:example.be',
+                'ga4_property_id' => '123456789',
+                'google_analytics_id' => 'G-TEST12345',
+            ])
             ->call('save')
             ->assertHasNoErrors()
             ->assertNotified();
 
         expect(Setting::get('google_oauth_client_id'))->toBe('id')
-            ->and(Setting::get('gsc_site_url'))->toBe('sc-domain:example.be');
+            ->and(Setting::get('gsc_site_url'))->toBe('sc-domain:example.be')
+            ->and(Setting::get('ga4_property_id'))->toBe('123456789')
+            ->and(Setting::get('google_analytics_id'))->toBe('G-TEST12345');
+    });
+
+    it('heeft op het cijferscherm geen opslaan-knop meer', function () {
+        expect(method_exists(SearchConsole::class, 'save'))->toBeFalse()
+            ->and(method_exists(SearchConsole::class, 'form'))->toBeFalse();
     });
 
     it('haalt de cijfers op via "Ververs nu"', function () {

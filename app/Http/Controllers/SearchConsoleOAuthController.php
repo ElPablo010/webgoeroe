@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Filament\Pages\SearchConsole;
+use App\Filament\Pages\SeoSettings;
 use App\Services\GoogleAnalyticsService;
 use App\Services\GoogleSearchConsoleService;
 use Filament\Facades\Filament;
@@ -158,6 +158,6 @@ class SearchConsoleOAuthController extends Controller
         $notification = Notification::make()->title($ok ? 'Google gekoppeld' : 'Koppelen mislukt')->body($message);
         ($ok ? $notification->success() : $notification->danger())->send();
 
-        return redirect(SearchConsole::getUrl());
+        return redirect(SeoSettings::getUrl());
     }
 }

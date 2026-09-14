@@ -273,19 +273,34 @@ beide rechten. Na een geslaagde uitwisseling:
 Route en omleidings-URI blijven ongewijzigd, dus er hoeft niets aan te passen in
 Google Cloud behalve **de Analytics Data API en de Analytics Admin API aanzetten**.
 
-### 6.2 Op de Verkeer-pagina
+### 6.2 Alles wat je invult staat op SEO-instellingen
 
-Een ingeklapte sectie "Google Analytics" naast de bestaande Google-koppeling, met
-alleen het property-veld en een keuzelijst. Client-ID en secret worden gedeeld en
-staan er al.
+Bijgesteld op 14/09/2026. De koppelvelden stonden eerst op het Verkeer-scherm,
+onder de cijfers. Dat werkte, maar het klopt niet: Verkeer is een cijferscherm
+dat je wekelijks leest, en instelwerk doe je één keer. Bovendien had de sidebar
+dan twee items "Instellingen" naast elkaar — één in de groep *Instellingen*, één
+in *Groei* — wat als een fout leest.
 
-Extra kopacties:
+Dus:
 
-- **Analytics verversen** — handmatige sync, zichtbaar als er een property staat.
-- **Andere property kiezen** — keuzelijst uit `listProperties()`, alfabetisch.
+- Het Groei-item heet **"SEO-instellingen"** (`SeoSettings`) en draagt álles wat
+  je invult: de Google-koppeling (client-ID, secret, omleidings-URI,
+  Search Console-property), het GA4-meet-ID én property-ID, DataForSEO, de
+  GEO-prompts, de rapport-ontvanger en de service-account-JSON.
+- De koppelknoppen hangen als `Section::headerActions()` aan de sectie waar ze
+  over gaan: "Verbinden met Google" / "Analytics mee koppelen", "Andere site
+  kiezen" en "Koppeling verbreken" bij de koppeling; "Andere property kiezen"
+  bij Analytics. Naast de velden dus, niet als losse rij kopknoppen.
+- **Verkeer** houdt enkel "Ververs Google-verkeer", "Ververs Analytics" en een
+  doorverwijzing naar de instellingen. Elke lege toestand linkt naar
+  `SeoSettings::getUrl()` in plaats van "vul hieronder in".
+- De OAuth-callback keert terug naar `SeoSettings`, niet naar Verkeer.
+- Het meet-ID verhuisde mee van *Instellingen → Algemeen* naar hier: het is een
+  Analytics-ding en hoort bij de rest.
 
-De bestaande knop "Verbinden met Google" krijgt een aangepaste hulptekst wanneer
-`google_oauth_scopes` het Analytics-recht mist: dan is opnieuw koppelen nodig.
+De knop "Verbinden met Google" heet **"Analytics mee koppelen"** zodra er al een
+koppeling is die het Analytics-recht mist (`google_oauth_scopes`). Zo hoef je
+niet eerst te verbreken.
 
 ---
 
@@ -436,8 +451,8 @@ er nog niet is, en noteer twee nummers uit twee verschillende schermen:
 
 | Nummer | Waar | Waarvoor |
 |---|---|---|
-| `G-XXXXXXXXXX` | Beheer → Gegevensstreams → de webstream | Instellingen → Algemeen |
-| een getal | Beheer → Property-instellingen | Verkeer → Google Analytics |
+| `G-XXXXXXXXXX` | Beheer → Gegevensstreams → de webstream | Groei → SEO-instellingen |
+| een getal | Beheer → Property-instellingen | Groei → SEO-instellingen |
 
 Ze door elkaar halen is de klassieke fout: het eerste laat de site meten, het
 tweede laat de admin de cijfers ophalen.
@@ -446,11 +461,11 @@ tweede laat de admin de cijfers ophalen.
 de **Analytics Data API** én de **Analytics Admin API** aan. Zonder die twee
 geeft Google wel toestemming, maar faalt elke call.
 
-**3. In de admin** — vul het `G-`-ID in bij Instellingen → Algemeen en sla op.
+**3. In de admin** — vul het `G-`-ID in bij Groei → SEO-instellingen en sla op.
 Vanaf dat moment meet de site, mits de bezoeker cookies aanvaardt. Doe dit
 eerst: elke dag dat je wacht is een dag die je later niet kan opvragen.
 
-**4. Analytics mee koppelen** — op de Verkeer-pagina verschijnt bovenaan de knop
+**4. Analytics mee koppelen** — op Groei → SEO-instellingen verschijnt de knop
 **"Analytics mee koppelen"**. Die stuurt je naar het toestemmingsscherm van
 Google, dat nu beide rechten tegelijk vraagt.
 

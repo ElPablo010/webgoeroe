@@ -116,6 +116,28 @@ Media-sync voegt toe en overschrijft, maar **verwijdert nooit** (in beide richti
 
 ---
 
+## Admin-chrome (zijbalk en topbalk)
+
+Alles staat in `AdminPanelProvider`:
+
+- **Groepsvolgorde ligt vast**: `navigationGroups(['Website', 'Groei',
+  'Instellingen'])`. Zonder die regel sorteert Filament op de volgorde waarin hij
+  pagina's ontdekt, en wandelt Instellingen naar boven zodra er een pagina
+  bijkomt. Instellingen hoort onderaan — dat open je zelden.
+- **Uitlogknop onderaan de zijbalk** via render hook `SIDEBAR_FOOTER` →
+  `filament.admin.sidebar-logout`. Uitloggen zat al in het accountmenu
+  rechtsboven, maar dat moet je eerst openklappen. De view hergebruikt de
+  Filament-klassen van een navigatie-item zodat hij er identiek uitziet; padding
+  staat inline, want dit valt buiten `.fi-sidebar-nav` en de app-Tailwind wordt
+  niet in de admin geladen.
+- **Oogje naar de site** via `GLOBAL_SEARCH_AFTER` →
+  `filament.admin.view-site-button`.
+
+Vastgelegd in `tests/Feature/AdminSidebarTest.php`, dat óók de volgorde in de
+gerenderde HTML controleert. Let op bij het schrijven van zo'n test: "Uitloggen"
+staat twee keer op de pagina, want het accountmenu heeft het ook. De zijbalk-knop
+is de láátste.
+
 ## Harde regels (overerfd van new-website-skill)
 
 - **Media-velden**: altijd `MediaPickerField`, nooit kaal URL-veld.
@@ -140,10 +162,24 @@ Media-sync voegt toe en overschrijft, maar **verwijdert nooit** (in beide richti
 ## Groei — SEO-module + leads-meetlaag
 
 De sidebar-groep **Groei** (`/admin`) bundelt de SEO-module uit de
-`seo-analytics`-skill (Overzicht, Keywords, Acties, Instellingen) én het
-**Leads**-scherm. Interne namen blijven `Seo*` / `seo_*`; enkel het zichtbare
-label heet Groei — dat is wat we verkopen: verkeer → leads, aantoonbaar sinds
-de livegang. Geïnstalleerd/bijgewerkt op 04/09/2026 naar de stand van de skill.
+`seo-analytics`-skill (Overzicht, Verkeer, Keywords, Acties, SEO-instellingen)
+én het **Leads**-scherm. Interne namen blijven `Seo*` / `seo_*`; enkel het
+zichtbare label heet Groei — dat is wat we verkopen: verkeer → leads, aantoonbaar
+sinds de livegang. Geïnstalleerd/bijgewerkt op 04/09/2026 naar de stand van de skill.
+
+**Instelwerk en cijfers staan strikt gescheiden** (sinds 14/09/2026). Álles wat je
+invult staat op **Groei → SEO-instellingen** (`SeoSettings`): de Google-koppeling
+met client-ID/secret en omleidings-URI, de knoppen "Verbinden met Google",
+"Andere site kiezen", "Andere property kiezen" en "Koppeling verbreken", het
+GA4-meet-ID en property-ID, de DataForSEO-credentials, de GEO-prompts en de
+rapport-ontvanger. De koppelknoppen hangen als `Section::headerActions()` aan de
+sectie waar ze over gaan, niet als losse kopknoppen.
+
+Het item heet bewust **"SEO-instellingen"** en niet "Instellingen": de sidebar
+heeft al een gróep met die naam, en twee items "Instellingen" naast elkaar leest
+als een fout. Het **Verkeer**-scherm houdt enkel de twee ververs-knoppen plus een
+doorverwijzing; z'n lege toestanden linken naar `SeoSettings::getUrl()`. De
+OAuth-callback keert ook daarheen terug.
 
 - **Herkomst**: `CaptureFirstTouch` (web-groep, ná `HandleRedirects`) legt bij
   het eerste GET van een sessie kanaal, landingspagina, referrer en utm's vast
@@ -199,7 +235,7 @@ de livegang. Geïnstalleerd/bijgewerkt op 04/09/2026 naar de stand van de skill.
     ook de **Data API én de Admin API** aan staan. Bij `invalid_grant` wist de
     service het token zelf.
 - **Analytics op de site** (`resources/views/components/site/analytics.blade.php`):
-  het meet-ID (`G-XXXX`) staat op Instellingen → Algemeen (`google_analytics_id`),
+  het meet-ID (`G-XXXX`) staat op Groei → SEO-instellingen (`google_analytics_id`),
   leeg = er gaat **geen enkel** verzoek naar Google. gtag.js wordt pas opgehaald
   nadat de bezoeker analytische cookies aanvaardt; intrekken schakelt GA uit en
   wist de `_ga`-cookies. Het script staat in `<head>` vóór Alpine, zodat de
