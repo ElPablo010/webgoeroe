@@ -39,6 +39,10 @@
     />
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+    {{-- Staat bewust vóór Alpine: de listener op cookie-consent-changed moet
+         al klaarstaan wanneer de banner een eerder bewaarde keuze doorgeeft. --}}
+    <x-site.analytics />
 </head>
 <body class="min-h-screen bg-[#050507] text-white antialiased">
     <x-site.header />

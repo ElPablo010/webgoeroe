@@ -49,6 +49,7 @@ class GeneralSettings extends Page
         'business_description',
         'anthropic_api_key',
         'ai_facts',
+        'google_analytics_id',
     ];
 
     public function mount(): void
@@ -79,6 +80,18 @@ class GeneralSettings extends Page
                             ->helperText('bv. "een dansschool in Antwerpen". Geeft AI-functies context.'),
                     ])
                     ->columns(2),
+
+                Section::make('Statistieken')
+                    ->description('Google Analytics wordt pas geladen nadat de bezoeker analytische cookies aanvaardt in de cookiebanner. Leeg = er gaat geen enkel verzoek naar Google.')
+                    ->schema([
+                        TextInput::make('google_analytics_id')
+                            ->label('Google Analytics meet-ID')
+                            ->placeholder('G-XXXXXXXXXX')
+                            ->maxLength(32)
+                            ->rule('regex:/^G-[A-Z0-9]{6,}$/i')
+                            ->validationMessages(['regex' => 'Een meet-ID ziet eruit als G-XXXXXXXXXX.'])
+                            ->helperText('Te vinden in Google Analytics onder Beheer → Gegevensstreams → de webstream. Dit is niet hetzelfde als het property-nummer dat de Verkeer-pagina gebruikt.'),
+                    ]),
 
                 Section::make('AI')
                     ->description('Gedeelde AI-configuratie voor alle features die op Claude draaien (SEO-advies, later de chatbot).')

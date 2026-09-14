@@ -2,12 +2,17 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Widgets\Ga4StatsOverview;
 use App\Filament\Widgets\GscStatsOverview;
 use App\Filament\Widgets\GscTrendChart;
 use App\Http\Controllers\SearchConsoleOAuthController;
+use App\Models\Ga4DailyMetric;
+use App\Models\Ga4DimensionMetric;
 use App\Models\GscDailyMetric;
 use App\Models\GscDimensionMetric;
 use App\Models\Setting;
+use App\Services\Ga4Collector;
+use App\Services\GoogleAnalyticsService;
 use App\Services\GoogleSearchConsoleService;
 use App\Services\GscCollector;
 use BackedEnum;
@@ -27,10 +32,23 @@ use Illuminate\Support\HtmlString;
 use UnitEnum;
 
 /**
- * Verkeer — het GEMETEN Google-verkeer uit Search Console (Groei-meetlaag):
- * clicks, vertoningen, CTR en positie met verloop, de zoektermen en
- * pagina's die het verkeer leveren, en de kansen (veel vertoningen, positie
- * 4-20). Plus de koppeling zelf: OAuth op het eigen Google-account.
+ * Verkeer — het GEMETEN verkeer (Groei-meetlaag), uit twee bronnen die elkaar
+ * aanvullen:
+ *
+ *  - **Uit Google Zoeken** (Search Console): clicks, vertoningen, CTR en
+ *    positie met verloop, de zoektermen en pagina's die het verkeer leveren,
+ *    en de kansen (veel vertoningen, positie 4-20). Dit is hoe mensen je vonden.
+ *  - **Op de site** (Analytics): sessies, bezoekers, weergaven en betrokkenheid,
+ *    de meest bekeken pagina's en de kanalen waarlangs het volk binnenkomt.
+ *    Dit is wat ze daarna deden.
+ *
+ * De kerncijfers van allebei staan bóven de tabs en zijn dus altijd zichtbaar;
+ * enkel de detailtabellen zitten per bron achter een tabblad. Zo lees je in één
+ * oogopslag of meer bezoek ook meer gedrag opleverde, zonder dat de pagina
+ * uitdijt tot vijf tabellen onder elkaar.
+ *
+ * Plus de koppeling zelf: één OAuth-consent op het eigen Google-account die
+ * beide rechten dekt.
  *
  * Niet verwarren met het DataForSEO-overzicht: dat is een schatting die
  * maandelijks ververst; dit is wat Google zelf registreerde.
@@ -43,7 +61,7 @@ class SearchConsole extends Page
 
     protected static ?string $navigationLabel = 'Verkeer';
 
-    protected static ?string $title = 'Google-verkeer';
+    protected static ?string $title = 'Verkeer';
 
     protected static ?int $navigationSort = 12;
 
@@ -51,6 +69,20 @@ class SearchConsole extends Page
 
     /** @var array<string,mixed> */
     public array $data = [];
+
+    /**
+     * Welk tabblad openstaat: 'search' of 'site'.
+     *
+     * Livewire-state, zodat de blade enkel de tabellen van het actieve tabblad
+     * opvraagt. Alles tegelijk renderen zou elke paginalading twee keer zoveel
+     * queries kosten voor cijfers die je op dat moment niet bekijkt.
+     */
+    public string $tab = 'search';
+
+    public function setTab(string $tab): void
+    {
+        $this->tab = in_array($tab, ['search', 'site'], true) ? $tab : 'search';
+    }
 
     public function getSubheading(): ?string
     {
@@ -63,16 +95,17 @@ class SearchConsole extends Page
         $synced = $this->tablesReady() ? GscDailyMetric::where('site_url', $gsc->siteUrl)->max('updated_at') : null;
 
         return ($gsc->siteUrl !== '' ? $gsc->siteUrl : 'Nog geen property gekozen')
-            . ' — ' . ($synced ? 'laatst ververst ' . Carbon::parse($synced)->diffForHumans() : 'nog geen cijfers opgehaald');
+            .' — '.($synced ? 'laatst ververst '.Carbon::parse($synced)->diffForHumans() : 'nog geen cijfers opgehaald');
     }
 
     public function mount(): void
     {
         $this->form->fill([
-            'gsc_oauth_client_id' => Setting::get('gsc_oauth_client_id'),
-            'gsc_oauth_client_secret' => Setting::get('gsc_oauth_client_secret'),
+            'google_oauth_client_id' => Setting::get('google_oauth_client_id'),
+            'google_oauth_client_secret' => Setting::get('google_oauth_client_secret'),
             'gsc_site_url' => Setting::get('gsc_site_url'),
-            'gsc_service_account_json' => Setting::get('gsc_service_account_json'),
+            'google_service_account_json' => Setting::get('google_service_account_json'),
+            'ga4_property_id' => Setting::get('ga4_property_id'),
         ]);
     }
 
@@ -83,11 +116,11 @@ class SearchConsole extends Page
                 Section::make('Google-koppeling')
                     ->description('Maak in Google Cloud een OAuth-client (type "Webtoepassing") aan met onderstaande omleidings-URI, zet de Search Console API aan en zet de app op "In productie" (anders vervalt de koppeling na 7 dagen).')
                     ->schema([
-                        TextInput::make('gsc_oauth_client_id')->label('Client-ID')->maxLength(255),
-                        TextInput::make('gsc_oauth_client_secret')->label('Client-secret')->password()->revealable()->maxLength(255),
+                        TextInput::make('google_oauth_client_id')->label('Client-ID')->maxLength(255),
+                        TextInput::make('google_oauth_client_secret')->label('Client-secret')->password()->revealable()->maxLength(255),
                         Placeholder::make('redirect_uri')
                             ->label('Omleidings-URI (kopieer exact naar Google Cloud)')
-                            ->content(fn () => new HtmlString('<code style="font-size:.8125rem;user-select:all;">' . e(SearchConsoleOAuthController::redirectUri()) . '</code>'))
+                            ->content(fn () => new HtmlString('<code style="font-size:.8125rem;user-select:all;">'.e(SearchConsoleOAuthController::redirectUri()).'</code>'))
                             ->columnSpanFull(),
                         TextInput::make('gsc_site_url')
                             ->label('Property')
@@ -97,11 +130,22 @@ class SearchConsole extends Page
                     ])
                     ->columns(2),
 
+                Section::make('Google Analytics')
+                    ->description('Dezelfde koppeling hierboven dekt ook Analytics. Zet in Google Cloud wel de Analytics Data API én de Analytics Admin API aan.')
+                    ->collapsed()
+                    ->schema([
+                        TextInput::make('ga4_property_id')
+                            ->label('Property-ID')
+                            ->numeric()
+                            ->maxLength(64)
+                            ->helperText('Wordt na het koppelen automatisch ingevuld. Dit is het getal uit Beheer → Property-instellingen, niet het G-XXXX meet-ID uit de meetcode.'),
+                    ]),
+
                 Section::make('Alternatief: service account')
                     ->description('Enkel als OAuth niet kan. Plak de JSON-sleutel en voeg het service-account-e-mailadres als gebruiker toe aan de property in Search Console.')
                     ->collapsed()
                     ->schema([
-                        Textarea::make('gsc_service_account_json')->label('JSON-sleutel')->rows(4),
+                        Textarea::make('google_service_account_json')->label('JSON-sleutel')->rows(4),
                     ]),
             ])
             ->statePath('data');
@@ -113,13 +157,18 @@ class SearchConsole extends Page
     protected function getHeaderActions(): array
     {
         $gsc = app(GoogleSearchConsoleService::class);
+        $ga = app(GoogleAnalyticsService::class);
 
         return [
+            // Ook zichtbaar wanneer je al gekoppeld bent maar het Analytics-recht
+            // mist. Google kan een bestaand token niet uitbreiden, dus je moet
+            // opnieuw door het toestemmingsscherm — maar je hoeft de koppeling
+            // daarvoor niet eerst te verbreken. Dit knopje bespaart die omweg.
             Action::make('connect')
-                ->label('Verbinden met Google')
+                ->label(fn () => $gsc->hasOAuth() ? 'Analytics mee koppelen' : 'Verbinden met Google')
                 ->icon(Heroicon::OutlinedLink)
                 ->color('primary')
-                ->visible(fn () => $gsc->canStartOAuth() && ! $gsc->hasOAuth())
+                ->visible(fn () => $gsc->canStartOAuth() && (! $gsc->hasOAuth() || $ga->needsReconsent()))
                 ->url(route('seo.gsc.oauth.redirect')),
 
             Action::make('sync')
@@ -128,6 +177,31 @@ class SearchConsole extends Page
                 ->color('primary')
                 ->visible(fn () => $gsc->isConfigured())
                 ->action('syncNow'),
+
+            Action::make('syncAnalytics')
+                ->label('Analytics verversen')
+                ->icon(Heroicon::OutlinedArrowPath)
+                ->color('primary')
+                ->visible(fn () => app(GoogleAnalyticsService::class)->isConfigured())
+                ->action('syncAnalyticsNow'),
+
+            Action::make('chooseProperty')
+                ->label('Andere property kiezen')
+                ->icon(Heroicon::OutlinedChartBar)
+                ->color('gray')
+                ->visible(fn () => app(GoogleAnalyticsService::class)->hasGrantedScope(GoogleAnalyticsService::SCOPE) && $gsc->hasOAuth())
+                ->schema([
+                    Select::make('property')
+                        ->label('Analytics-property')
+                        ->options(fn () => $this->propertyOptions())
+                        ->required(),
+                ])
+                ->action(function (array $data) {
+                    $ga = app(GoogleAnalyticsService::class);
+                    $ga->setPropertyId((string) $data['property']);
+                    $this->data['ga4_property_id'] = $ga->propertyId;
+                    Notification::make()->title('Analytics-property ingesteld')->body('Klik op "Analytics verversen" om de cijfers op te halen.')->success()->send();
+                }),
 
             Action::make('chooseSite')
                 ->label('Andere site kiezen')
@@ -172,7 +246,7 @@ class SearchConsole extends Page
     {
         $state = $this->form->getState();
 
-        foreach (['gsc_oauth_client_id', 'gsc_oauth_client_secret', 'gsc_site_url', 'gsc_service_account_json'] as $key) {
+        foreach (['google_oauth_client_id', 'google_oauth_client_secret', 'gsc_site_url', 'google_service_account_json', 'ga4_property_id'] as $key) {
             Setting::set($key, filled($state[$key] ?? null) ? trim((string) $state[$key]) : null);
         }
 
@@ -204,6 +278,57 @@ class SearchConsole extends Page
             ->send();
     }
 
+    public function syncAnalyticsNow(): void
+    {
+        $collector = app(Ga4Collector::class);
+
+        if (! $collector->isConfigured()) {
+            Notification::make()
+                ->title('Analytics is nog niet gekoppeld')
+                ->body($this->analyticsTablesReady() ? 'Koppel opnieuw met Google en kies een property.' : 'Draai eerst php artisan migrate.')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        $result = $collector->sync();
+
+        if ($result['days'] === 0) {
+            Notification::make()
+                ->title('Geen data ontvangen')
+                ->body('Staat de meetcode al op de site, en klopt de property? Analytics toont niets van vóór de dag dat het script draaide.')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        Notification::make()
+            ->title($result['backfilled'] ? 'Historiek ingelezen' : 'Analytics bijgewerkt')
+            ->body("{$result['days']} dagen, {$result['pages']} pagina's, {$result['channels']} kanalen.")
+            ->success()
+            ->send();
+    }
+
+    /** @return array<string,string> */
+    protected function propertyOptions(): array
+    {
+        $properties = app(GoogleAnalyticsService::class)->listProperties() ?? [];
+
+        $options = [];
+        foreach ($properties as $property) {
+            $label = $property['name'];
+            if ($property['account'] !== '') {
+                $label .= ' ('.$property['account'].')';
+            }
+            $options[$property['id']] = $label;
+        }
+        asort($options);
+
+        return $options;
+    }
+
     /** @return array<string,string> */
     protected function siteOptions(): array
     {
@@ -212,8 +337,8 @@ class SearchConsole extends Page
         $options = [];
         foreach ($sites as $site) {
             $options[$site] = str_starts_with($site, 'sc-domain:')
-                ? substr($site, strlen('sc-domain:')) . ' (domein)'
-                : $site . ' (URL-voorvoegsel)';
+                ? substr($site, strlen('sc-domain:')).' (domein)'
+                : $site.' (URL-voorvoegsel)';
         }
         asort($options);
 
@@ -232,17 +357,60 @@ class SearchConsole extends Page
         return $this->tablesReady() && $gsc->siteUrl !== '' && GscDailyMetric::where('site_url', $gsc->siteUrl)->exists();
     }
 
+    public function analyticsTablesReady(): bool
+    {
+        return DbSchema::hasTable('ga4_daily_metrics');
+    }
+
+    /** Gekoppeld met het Analytics-recht, een property gekozen, én cijfers binnen. */
+    public function hasAnalyticsData(): bool
+    {
+        $ga = app(GoogleAnalyticsService::class);
+
+        return $this->analyticsTablesReady()
+            && $ga->propertyId !== ''
+            && Ga4DailyMetric::where('property_id', $ga->propertyId)->exists();
+    }
+
     /**
      * @return array<class-string>
      */
     public function getWidgets(): array
     {
-        return [GscStatsOverview::class, GscTrendChart::class];
+        $widgets = [GscStatsOverview::class];
+
+        // De Analytics-cijferrij staat bóven de tabs en hoort dus bij het vaste
+        // deel van de pagina, niet bij één tabblad.
+        if ($this->hasAnalyticsData()) {
+            $widgets[] = Ga4StatsOverview::class;
+        }
+
+        $widgets[] = GscTrendChart::class;
+
+        return $widgets;
     }
 
-    /** @return array<string, array<int, array<string, mixed>>> */
+    /**
+     * De tabellen van het actieve tabblad. Bewust niet allebei tegelijk: dat
+     * zou elke paginalading queries kosten voor cijfers die je niet ziet.
+     *
+     * @return array<string, array<int, array<string, mixed>>>
+     */
     public function tables(): array
     {
+        if ($this->tab === 'site') {
+            if (! $this->hasAnalyticsData()) {
+                return ['pages' => [], 'channels' => []];
+            }
+
+            $collector = app(Ga4Collector::class);
+
+            return [
+                'pages' => $collector->top(Ga4DimensionMetric::DIMENSION_PAGE, 15),
+                'channels' => $collector->top(Ga4DimensionMetric::DIMENSION_CHANNEL, 15),
+            ];
+        }
+
         $collector = app(GscCollector::class);
 
         return [

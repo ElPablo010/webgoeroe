@@ -23,9 +23,9 @@ use function Pest\Laravel\get;
  */
 function gscConnected(): void
 {
-    Setting::set('gsc_oauth_client_id', 'client-id');
-    Setting::set('gsc_oauth_client_secret', 'client-secret');
-    Setting::set('gsc_refresh_token', 'refresh-token');
+    Setting::set('google_oauth_client_id', 'client-id');
+    Setting::set('google_oauth_client_secret', 'client-secret');
+    Setting::set('google_refresh_token', 'refresh-token');
     Setting::set('gsc_site_url', 'sc-domain:example.be');
 }
 
@@ -78,7 +78,7 @@ it('leest bij de eerste sync de historiek in en overschrijft daarna per dag', fu
     gscConnected();
     fakeGoogle(
         [['keys' => ['2026-08-01'], 'clicks' => 5, 'impressions' => 100, 'ctr' => 0.05, 'position' => 8.2],
-         ['keys' => ['2026-08-02'], 'clicks' => 7, 'impressions' => 120, 'ctr' => 0.0583, 'position' => 7.9]],
+            ['keys' => ['2026-08-02'], 'clicks' => 7, 'impressions' => 120, 'ctr' => 0.0583, 'position' => 7.9]],
         [['keys' => ['salsa antwerpen'], 'clicks' => 4, 'impressions' => 80, 'ctr' => 0.05, 'position' => 6.0]],
         [['keys' => ['https://example.be/lessen'], 'clicks' => 3, 'impressions' => 60, 'ctr' => 0.05, 'position' => 5.0]],
     );
@@ -121,8 +121,8 @@ describe('OAuth-flow', function () {
     beforeEach(fn () => actingAs(User::factory()->create(['role' => UserRole::Admin])));
 
     it('stuurt naar Google met offline-toegang, consent en een state in de sessie', function () {
-        Setting::set('gsc_oauth_client_id', 'client-id');
-        Setting::set('gsc_oauth_client_secret', 'client-secret');
+        Setting::set('google_oauth_client_id', 'client-id');
+        Setting::set('google_oauth_client_secret', 'client-secret');
 
         $response = get(route('seo.gsc.oauth.redirect'));
 
@@ -131,7 +131,7 @@ describe('OAuth-flow', function () {
         expect($location)->toStartWith('https://accounts.google.com/o/oauth2/v2/auth?')
             ->toContain('access_type=offline')
             ->toContain('prompt=consent')
-            ->toContain('state=' . session('gsc_oauth_state'))
+            ->toContain('state='.session('gsc_oauth_state'))
             ->toContain(urlencode(route('seo.gsc.oauth.callback')));
     });
 
@@ -141,12 +141,12 @@ describe('OAuth-flow', function () {
         get(route('seo.gsc.oauth.callback', ['state' => 'wrong', 'code' => 'abc']))
             ->assertRedirect(SearchConsole::getUrl());
 
-        expect(Setting::get('gsc_refresh_token'))->toBeEmpty();
+        expect(Setting::get('google_refresh_token'))->toBeEmpty();
     });
 
     it('wisselt de code in voor een refresh token en kiest de eigen property', function () {
-        Setting::set('gsc_oauth_client_id', 'client-id');
-        Setting::set('gsc_oauth_client_secret', 'client-secret');
+        Setting::set('google_oauth_client_id', 'client-id');
+        Setting::set('google_oauth_client_secret', 'client-secret');
         config(['app.url' => 'https://www.example.be']);
         session(['gsc_oauth_state' => 'expected']);
 
@@ -160,7 +160,7 @@ describe('OAuth-flow', function () {
         get(route('seo.gsc.oauth.callback', ['state' => 'expected', 'code' => 'the-code']))
             ->assertRedirect(SearchConsole::getUrl());
 
-        expect(Setting::get('gsc_refresh_token'))->toBe('new-refresh')
+        expect(Setting::get('google_refresh_token'))->toBe('new-refresh')
             ->and(Setting::get('gsc_site_url'))->toBe('sc-domain:example.be');
     });
 
@@ -199,12 +199,12 @@ describe('Verkeer-scherm', function () {
 
     it('bewaart de instellingen', function () {
         Livewire::test(SearchConsole::class)
-            ->fillForm(['gsc_oauth_client_id' => ' id ', 'gsc_oauth_client_secret' => 'secret', 'gsc_site_url' => 'sc-domain:example.be'])
+            ->fillForm(['google_oauth_client_id' => ' id ', 'google_oauth_client_secret' => 'secret', 'gsc_site_url' => 'sc-domain:example.be'])
             ->call('save')
             ->assertHasNoErrors()
             ->assertNotified();
 
-        expect(Setting::get('gsc_oauth_client_id'))->toBe('id')
+        expect(Setting::get('google_oauth_client_id'))->toBe('id')
             ->and(Setting::get('gsc_site_url'))->toBe('sc-domain:example.be');
     });
 

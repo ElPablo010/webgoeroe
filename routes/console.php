@@ -27,3 +27,12 @@ Schedule::command('seo:weekly-report')
 Schedule::command('seo:sync-search-console')
     ->dailyAt('6:00')
     ->withoutOverlapping();
+
+// Google Analytics-cijfers ophalen (dagelijks 6:15, Groei-meetlaag).
+// Een kwartier ná Search Console: twee API-syncs tegelijk op een trage shared
+// host helpt niemand, en er is geen enkele reden waarom ze gelijk moeten lopen.
+// GA4 kent geen "definitieve" dagen zoals Search Console, dus ook hier een
+// rollend venster dat de laatste dagen telkens overschrijft.
+Schedule::command('seo:sync-analytics')
+    ->dailyAt('6:15')
+    ->withoutOverlapping();

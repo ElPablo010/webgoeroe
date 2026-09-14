@@ -160,20 +160,58 @@ de livegang. Geïnstalleerd/bijgewerkt op 04/09/2026 naar de stand van de skill.
   `Setting`). Alle cijfers uit `App\Support\LeadStats` — de enige bron.
   Zonder `leads`-tabel toont het scherm een migratie-melding i.p.v. te crashen.
 - **Verkeer** (`SearchConsole`, `/admin/search-console`): het **gemeten**
-  Google-verkeer uit Search Console — niet de DataForSEO-schatting. Clicks,
-  vertoningen, CTR en positie (28 d. t.o.v. 28 d. ervoor, gewogen op
-  vertoningen), weekverloop met livegang-markering, top-zoektermen/-pagina's en
-  "kansen" (≥ 20 vertoningen, positie 4-20). Koppeling via **OAuth** op het
-  eigen Google-account: client-ID/secret uit Google Cloud (`gsc_oauth_*`),
-  consent-flow via `SearchConsoleOAuthController` (`/admin/search-console/oauth/
-  redirect|callback`, `auth` + panel-check, state in sessie), refresh token in
-  `gsc_refresh_token`, property in `gsc_site_url` (na koppelen automatisch
-  gekozen: domein-property > https > www). Sync: `seo:sync-search-console`
-  dagelijks 6:00 (`GscCollector`: 16 maanden backfill bij de eerste run, daarna
-  rollend 7-dagenvenster met upsert per dag). Valkuilen: `access_type=offline`
-  + `prompt=consent` zijn verplicht (anders geen refresh token) en de
-  OAuth-app moet in Google Cloud op "In productie" staan (anders vervalt het
-  token na 7 dagen). Bij `invalid_grant` wist de service het token zelf.
+  verkeer uit twee bronnen, met de kerncijfers van allebei bóven een tabstrip
+  en enkel de detailtabellen erachter. `$tab` is Livewire-state en `tables()`
+  haalt enkel op wat het actieve tabblad toont.
+  - Tabblad **Uit Google Zoeken** (Search Console, niet de DataForSEO-schatting):
+    clicks, vertoningen, CTR en positie (28 d. t.o.v. 28 d. ervoor, gewogen op
+    vertoningen), weekverloop met livegang-markering, top-zoektermen/-pagina's
+    en "kansen" (≥ 20 vertoningen, positie 4-20). Property in `gsc_site_url`
+    (na koppelen automatisch gekozen: domein-property > https > www). Sync:
+    `seo:sync-search-console` dagelijks 6:00 (`GscCollector`: 16 maanden
+    backfill bij de eerste run, daarna rollend 7-dagenvenster met upsert per dag).
+  - Tabblad **Op de site** (Analytics): sessies, bezoekers, weergaven en
+    betrokkenheid, de meest bekeken pagina's en de kanalen. Property-ID in
+    `ga4_property_id` — het **getal**, niet het `G-XXXX` meet-ID uit de
+    meetcode. Sync: `seo:sync-analytics` dagelijks 6:15 (`Ga4Collector`, zelfde
+    rollende venster). Zie ook "Analytics op de site" hieronder.
+- **Eén Google-koppeling voor beide** (`App\Services\Google\GoogleApiClient`).
+  Het volledige inlogwerk — consent-URL, code inwisselen, access token halen en
+  cachen, `invalid_grant` afvangen, JWT voor een service account, de HTTP-laag —
+  staat in die basisklasse; `GoogleSearchConsoleService` en
+  `GoogleAnalyticsService` vullen enkel `serviceAccountScope()`, `apiBase()` en
+  `label()` in. Consent-flow via `SearchConsoleOAuthController`
+  (`/admin/search-console/oauth/redirect|callback`, `auth` + panel-check, state
+  in sessie); **die route- en klassenaam blijven bewust "gsc"** omdat de
+  omleidings-URI zo in Google Cloud geregistreerd staat.
+  - `CONSENT_SCOPES` vraagt beide rechten in één keer; Google's antwoord landt
+    in `google_oauth_scopes`, zodat `hasGrantedScope()` weet of Analytics
+    meekwam. Een koppeling van vóór deze uitbreiding heeft dat recht niet — het
+    scherm toont dan "Analytics hangt er nog niet aan" en vraagt om opnieuw te
+    verbinden. Een lege scope-lijst betekent "enkel Search Console".
+  - Inloggegevens staan onder `google_*` (client-ID, secret, refresh token,
+    service-account-JSON). Ze heetten vroeger `gsc_*`; de migratie
+    `move_google_credentials_to_shared_keys` verplaatst ze en verwijdert de oude
+    rijen, zodat er geen tweede kopie van een refresh token blijft staan.
+  - Valkuilen: `access_type=offline` + `prompt=consent` zijn verplicht (anders
+    geen refresh token), de OAuth-app moet in Google Cloud op "In productie"
+    staan (anders vervalt het token na 7 dagen), en voor Analytics moeten daar
+    ook de **Data API én de Admin API** aan staan. Bij `invalid_grant` wist de
+    service het token zelf.
+- **Analytics op de site** (`resources/views/components/site/analytics.blade.php`):
+  het meet-ID (`G-XXXX`) staat op Instellingen → Algemeen (`google_analytics_id`),
+  leeg = er gaat **geen enkel** verzoek naar Google. gtag.js wordt pas opgehaald
+  nadat de bezoeker analytische cookies aanvaardt; intrekken schakelt GA uit en
+  wist de `_ga`-cookies. Het script staat in `<head>` vóór Alpine, zodat de
+  listener op `cookie-consent-changed` klaarstaat wanneer de banner een eerder
+  bewaarde keuze doorgeeft. **Analytics heeft geen terugwerkende kracht**: het
+  toont niets van vóór de dag dat de meetcode draaide — anders dan de 16 maanden
+  die Search Console bij het koppelen meegeeft.
+- **De cijfers sluiten niet op elkaar aan, en dat hoort zo.** Analytics telt
+  enkel wie cookies aanvaardde, Search Console telt elke klik, en de Leads-laag
+  telt iedereen. Vergelijk dus verhoudingen binnen één bron, geen absolute
+  aantallen tussen bronnen. Om die reden staat er (nog) géén conversiegraad per
+  pagina: leads delen door GA4-bezoeken geeft een structureel te hoog percentage.
 - **Keyword-onderzoek**: knop "Stel keywords voor" op Keywords dispatcht
   `SuggestKeywordsJob` (queue, rate-limit 10 min); de voorstellen staan in
   Setting `seo_keyword_suggestions` en verschijnen als checkbox-blok
@@ -185,8 +223,12 @@ de livegang. Geïnstalleerd/bijgewerkt op 04/09/2026 naar de stand van de skill.
 - Datums in deze schermen altijd `dd/mm/jjjj`.
 
 Vastgelegd in `tests/Feature/LeadAttributionTest.php`,
-`tests/Feature/SeoLeadsPageTest.php`, `tests/Feature/SearchConsoleTest.php` en
-`tests/Feature/SeoKeywordSuggestTest.php`.
+`tests/Feature/SeoLeadsPageTest.php`, `tests/Feature/SearchConsoleTest.php`,
+`tests/Feature/SeoKeywordSuggestTest.php`, `tests/Feature/GoogleApiClientTest.php`
+(de gedeelde inloglaag, op een verzonnen subklasse zodat ze echt losstaat van
+één API), `tests/Feature/AnalyticsCollectorTest.php` (de GA4-sync en het tweede
+tabblad) en `tests/Feature/AnalyticsSnippetTest.php` (geen meet-ID = geen
+verzoek naar Google, en gtag.js nooit vóór toestemming).
 
 ---
 
