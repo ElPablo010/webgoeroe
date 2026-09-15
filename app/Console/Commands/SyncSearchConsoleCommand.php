@@ -13,7 +13,7 @@ class SyncSearchConsoleCommand extends Command
 
     public function handle(GscCollector $collector): int
     {
-        if (!$collector->isConfigured()) {
+        if (! $collector->isConfigured()) {
             $this->warn('Search Console is niet gekoppeld — overgeslagen.');
 
             return self::SUCCESS;
@@ -21,6 +21,12 @@ class SyncSearchConsoleCommand extends Command
 
         $this->info('Search Console-data ophalen…');
         $result = $collector->sync();
+
+        if ($result['error'] !== null) {
+            $this->error($result['error']);
+
+            return self::FAILURE;
+        }
 
         if ($result['backfilled']) {
             $this->info('Eerste run: 16 maanden historiek ingelezen.');

@@ -234,6 +234,19 @@ OAuth-callback keert ook daarheen terug.
     staan (anders vervalt het token na 7 dagen), en voor Analytics moeten daar
     ook de **Data API én de Admin API** aan staan. Bij `invalid_grant` wist de
     service het token zelf.
+  - **Een ververs-knop die niets oplevert zegt nu waaróm.** `GoogleApiClient`
+    houdt de laatste fout bij (`lastError()`, met Google's eigen
+    `error.message` erin), de collectors geven die door als `error` in hun
+    `sync()`-resultaat, en het Verkeer-scherm splitst dat in twee meldingen:
+    "Google weigerde de opvraging" (+ de reden — instelfout, zelf oplossen) en
+    "Nog geen cijfers bij Google" (koppeling werkt, gewoon wachten). Zelfde
+    reden als de gescheiden bronnen hierboven: op gedeelde hosting sla je
+    `storage/logs/laravel.log` niet even open. `php artisan seo:sync-analytics`
+    / `seo:sync-search-console` drukken diezelfde reden af en geven exitcode 1.
+    En let op bij het debuggen via het log: op Combell staat `LOG_LEVEL=error`
+    in `.env`, dus een mislukte Google-call wordt met opzet als **error**
+    gelogd — als warning zou je 'm daar nooit zien, en dan lijkt een lege
+    grep ten onrechte op "er ging niets mis".
 - **Analytics op de site** (`resources/views/components/site/analytics.blade.php`):
   het meet-ID (`G-XXXX`) staat op Groei → SEO-instellingen (`google_analytics_id`),
   leeg = er gaat **geen enkel** verzoek naar Google. gtag.js wordt pas opgehaald

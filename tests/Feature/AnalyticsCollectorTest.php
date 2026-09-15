@@ -318,3 +318,49 @@ it('verbergt die knop weer zodra beide rechten binnen zijn', function () {
         ->assertDontSee('Analytics mee koppelen')
         ->assertDontSee('Analytics hangt er nog niet aan');
 });
+
+describe('wat de knop "Ververs Analytics" meldt', function () {
+    beforeEach(function () {
+        actingAs(User::factory()->create(['role' => UserRole::Admin]));
+        gaConnected();
+    });
+
+    it('geeft de reden van Google door wanneer de opvraging geweigerd wordt', function () {
+        // Het klassieke geval: de Data API staat niet aan in Google Cloud. Dat
+        // verschilt van "nog geen cijfers" en moet dus ook anders klinken.
+        Http::fake([
+            'oauth2.googleapis.com/*' => Http::response(['access_token' => 'at-1', 'expires_in' => 3600]),
+            'analyticsdata.googleapis.com/*' => Http::response([
+                'error' => [
+                    'code' => 403,
+                    'message' => 'Google Analytics Data API has not been used in project 42 before or it is disabled.',
+                    'status' => 'PERMISSION_DENIED',
+                ],
+            ], 403),
+        ]);
+
+        $result = app(Ga4Collector::class)->sync();
+
+        expect($result['days'])->toBe(0)
+            ->and($result['error'])->toContain('403')
+            ->and($result['error'])->toContain('has not been used in project 42');
+
+        Livewire::test(SearchConsole::class)
+            ->call('syncAnalyticsNow')
+            ->assertNotified('Google weigerde de opvraging');
+    });
+
+    it('zegt "nog geen cijfers" wanneer Google netjes antwoordt zonder rijen', function () {
+        $ga = fakeGa();
+        $ga->daily = [];
+
+        $result = app(Ga4Collector::class)->sync();
+
+        expect($result['days'])->toBe(0)
+            ->and($result['error'])->toBeNull();
+
+        Livewire::test(SearchConsole::class)
+            ->call('syncAnalyticsNow')
+            ->assertNotified('Nog geen cijfers bij Google');
+    });
+});

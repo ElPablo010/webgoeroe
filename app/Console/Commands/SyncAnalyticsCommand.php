@@ -22,6 +22,12 @@ class SyncAnalyticsCommand extends Command
         $this->info('Analytics-data ophalen…');
         $result = $collector->sync();
 
+        if ($result['error'] !== null) {
+            $this->error($result['error']);
+
+            return self::FAILURE;
+        }
+
         if ($result['backfilled']) {
             $this->info('Eerste run: de volledige beschikbare historiek ingelezen.');
         }

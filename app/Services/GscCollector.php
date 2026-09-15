@@ -32,9 +32,7 @@ class GscCollector
     /** Search Console levert max 25.000 rijen per call. */
     protected const PAGE_SIZE = 25000;
 
-    public function __construct(protected GoogleSearchConsoleService $api)
-    {
-    }
+    public function __construct(protected GoogleSearchConsoleService $api) {}
 
     /**
      * Gekoppeld én bruikbaar. De tabel-check vangt de volgorde af waarin
@@ -49,12 +47,18 @@ class GscCollector
     /**
      * De normale sync: dagcijfers bijwerken + zoekterm-/pagina-aggregaten.
      *
-     * @return array{days: int, queries: int, pages: int, backfilled: bool}
+     * `error` staat er om dezelfde reden als bij {@see Ga4Collector::sync()}:
+     * nul dagen na een geweigerde call vraagt om een andere reactie dan nul
+     * dagen na een leeg maar geldig antwoord.
+     *
+     * @return array{days: int, queries: int, pages: int, backfilled: bool, error: ?string}
      */
     public function sync(): array
     {
         $siteUrl = $this->api->siteUrl;
-        $isFirstRun = !GscDailyMetric::where('site_url', $siteUrl)->exists();
+        $isFirstRun = ! GscDailyMetric::where('site_url', $siteUrl)->exists();
+
+        $this->api->forgetLastError();
 
         $days = $isFirstRun ? $this->backfillDaily() : $this->syncRecentDaily();
 
@@ -63,6 +67,7 @@ class GscCollector
             'queries' => $this->syncDimension(GscDimensionMetric::DIMENSION_QUERY),
             'pages' => $this->syncDimension(GscDimensionMetric::DIMENSION_PAGE),
             'backfilled' => $isFirstRun,
+            'error' => $this->api->lastError(),
         ];
     }
 
@@ -100,7 +105,7 @@ class GscCollector
 
         foreach ($rows as $row) {
             $date = $row['keys'][0] ?? null;
-            if (!$date) {
+            if (! $date) {
                 continue;
             }
 
@@ -164,7 +169,7 @@ class GscCollector
     /**
      * Alle rijen van een query ophalen, over de paginering heen.
      *
-     * @return array<int,array<string,mixed>>|null  null als de API faalde
+     * @return array<int,array<string,mixed>>|null null als de API faalde
      */
     protected function fetchAllRows(Carbon $start, Carbon $end, array $dimensions): ?array
     {
@@ -201,14 +206,14 @@ class GscCollector
      * Kerncijfers over de laatste 28 dagen, met de 28 dagen daarvóór als
      * vergelijking. Dit is het antwoord op "gaan we vooruit?".
      *
-     * @return array<string,mixed>|null  null als er nog geen data is
+     * @return array<string,mixed>|null null als er nog geen data is
      */
     public function summary(int $windowDays = self::DIMENSION_WINDOW_DAYS): ?array
     {
         $siteUrl = $this->api->siteUrl;
 
         $lastDate = GscDailyMetric::where('site_url', $siteUrl)->max('date');
-        if (!$lastDate) {
+        if (! $lastDate) {
             return null;
         }
 

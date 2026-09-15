@@ -75,12 +75,20 @@ class Ga4Collector
     /**
      * De normale sync: dagcijfers bijwerken + pagina- en kanaalaggregaten.
      *
-     * @return array{days:int,pages:int,channels:int,backfilled:bool}
+     * `error` scheidt de twee manieren waarop je met nul dagen eindigt: Google
+     * wees de call af (instelfout), of Google antwoordde netjes maar heeft nog
+     * niets te melden (meetcode staat er pas net op). Zonder dat onderscheid
+     * krijgt de gebruiker dezelfde melding voor een probleem dat hij moet
+     * oplossen als voor iets waar hij alleen op moet wachten.
+     *
+     * @return array{days:int,pages:int,channels:int,backfilled:bool,error:?string}
      */
     public function sync(): array
     {
         $propertyId = $this->api->propertyId;
         $isFirstRun = ! Ga4DailyMetric::where('property_id', $propertyId)->exists();
+
+        $this->api->forgetLastError();
 
         $days = $isFirstRun ? $this->backfillDaily() : $this->syncRecentDaily();
 
@@ -89,6 +97,7 @@ class Ga4Collector
             'pages' => $this->syncDimension(Ga4DimensionMetric::DIMENSION_PAGE),
             'channels' => $this->syncDimension(Ga4DimensionMetric::DIMENSION_CHANNEL),
             'backfilled' => $isFirstRun,
+            'error' => $this->api->lastError(),
         ];
     }
 

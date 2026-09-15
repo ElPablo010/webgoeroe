@@ -131,6 +131,17 @@ class SearchConsole extends Page
 
         $result = $collector->sync();
 
+        if ($result['error'] !== null) {
+            Notification::make()
+                ->title('Google weigerde de opvraging')
+                ->body($result['error'])
+                ->persistent()
+                ->danger()
+                ->send();
+
+            return;
+        }
+
         if ($result['days'] === 0) {
             Notification::make()->title('Geen data ontvangen')->body('Controleer op SEO-instellingen of de juiste property gekozen is.')->danger()->send();
 
@@ -160,11 +171,25 @@ class SearchConsole extends Page
 
         $result = $collector->sync();
 
+        if ($result['error'] !== null) {
+            // De echte reden van Google erbij: "API has not been used in
+            // project …" en "User does not have sufficient permissions" vragen
+            // elk om iets anders, en dat zie je niet aan "geen data".
+            Notification::make()
+                ->title('Google weigerde de opvraging')
+                ->body($result['error'].' Controleer in Google Cloud of de Analytics Data API aan staat, en op SEO-instellingen of het property-ID (een getal, niet het G-nummer) klopt.')
+                ->persistent()
+                ->danger()
+                ->send();
+
+            return;
+        }
+
         if ($result['days'] === 0) {
             Notification::make()
-                ->title('Geen data ontvangen')
-                ->body('Staat de meetcode al op de site, en klopt de property? Analytics toont niets van vóór de dag dat het script draaide.')
-                ->danger()
+                ->title('Nog geen cijfers bij Google')
+                ->body('De koppeling werkt — Analytics heeft alleen nog niets klaarstaan. Nieuwe metingen zijn pas na enkele uren tot een dag zichtbaar in rapporten (Realtime loopt vooruit), en van vóór de dag dat de meetcode draaide is er niets.')
+                ->warning()
                 ->send();
 
             return;

@@ -71,6 +71,17 @@ abstract class GoogleApiClient
 
     protected ?array $credentials = null;
 
+    /**
+     * Waarom de laatste call mislukte, in mensentaal.
+     *
+     * Zonder dit blijft "geen data" dubbelzinnig: een geweigerde call en een
+     * antwoord zónder rijen zien er voor de aanroeper identiek uit (null resp.
+     * een lege lijst), terwijl het eerste een instelfout is en het tweede
+     * gewoon betekent dat Google nog niets heeft. De reden staat wel in het
+     * log, maar op gedeelde hosting sla je dat niet even open.
+     */
+    protected ?string $lastError = null;
+
     /** Hash van de sleutel: verandert de sleutel, dan vervalt het gecachete token vanzelf. */
     protected string $credentialsHash = '';
 
@@ -138,6 +149,18 @@ abstract class GoogleApiClient
         return $this->credentials !== null ? 'service_account' : null;
     }
 
+    /** Waarom de laatste call mislukte, of null als er niets misging. */
+    public function lastError(): ?string
+    {
+        return $this->lastError;
+    }
+
+    /** Vergeet de vorige fout, zodat een volgende ronde schoon begint. */
+    public function forgetLastError(): void
+    {
+        $this->lastError = null;
+    }
+
     /** Het e-mailadres dat de gebruiker bij Google moet toevoegen. */
     public function serviceAccountEmail(): ?string
     {
@@ -190,7 +213,7 @@ abstract class GoogleApiClient
             ]);
 
             if (! $response->successful()) {
-                Log::warning($this->label().': code inwisselen mislukt', [
+                Log::error($this->label().': code inwisselen mislukt', [
                     'status' => $response->status(),
                     'body' => $response->body(),
                 ]);
@@ -312,7 +335,7 @@ abstract class GoogleApiClient
             $response = Http::asForm()->timeout(30)->post(self::TOKEN_URL, $payload);
 
             if (! $response->successful()) {
-                Log::warning($this->label().': token ophalen mislukt', [
+                Log::error($this->label().': token ophalen mislukt', [
                     'method' => $this->authMethod(),
                     'status' => $response->status(),
                     'body' => $response->body(),
@@ -322,9 +345,15 @@ abstract class GoogleApiClient
                 // of verlopen is. Het token weggooien, zodat de UI meteen toont
                 // dat er opnieuw gekoppeld moet worden.
                 if ($this->hasOAuth() && $response->json('error') === 'invalid_grant') {
-                    Log::warning($this->label().': refresh token niet langer geldig, koppeling verbroken.');
+                    Log::error($this->label().': refresh token niet langer geldig, koppeling verbroken.');
                     $this->disconnect();
+
+                    $this->lastError = 'De toestemming bij Google is vervallen. Verbind opnieuw op SEO-instellingen.';
+
+                    return null;
                 }
+
+                $this->lastError = self::describeApiError($response->status(), $response->json());
 
                 return null;
             }
@@ -414,11 +443,15 @@ abstract class GoogleApiClient
     protected function request(string $method, string $path, array $payload = [], ?string $baseUrl = null): ?array
     {
         if (! $this->hasCredentials()) {
+            $this->lastError = 'Er is nog geen koppeling met Google.';
+
             return null;
         }
 
         $token = $this->accessToken();
         if (! $token) {
+            $this->lastError ??= 'Inloggen bij Google lukte niet. Koppel opnieuw op SEO-instellingen.';
+
             return null;
         }
 
@@ -432,11 +465,16 @@ abstract class GoogleApiClient
                 : $http->get($base.$path);
 
             if (! $response->successful()) {
-                Log::warning($this->label().' API-fout', [
+                // Bewust error en geen warning: op gedeelde hosting staat
+                // LOG_LEVEL=error, en dan verdwijnt net de regel die uitlegt
+                // waarom een koppeling niets oplevert.
+                Log::error($this->label().' API-fout', [
                     'path' => $path,
                     'status' => $response->status(),
                     'body' => mb_substr($response->body(), 0, 500),
                 ]);
+
+                $this->lastError = self::describeApiError($response->status(), $response->json());
 
                 return null;
             }
@@ -445,7 +483,31 @@ abstract class GoogleApiClient
         } catch (\Throwable $e) {
             Log::error($this->label().' request mislukt', ['path' => $path, 'error' => $e->getMessage()]);
 
+            $this->lastError = $e->getMessage();
+
             return null;
         }
+    }
+
+    /**
+     * Google's foutantwoord terugbrengen tot de zin die ertoe doet.
+     *
+     * Een mislukte call draagt het echte verhaal in `error.message` — "API has
+     * not been used in project …", "User does not have sufficient permissions
+     * for this property" — en dát is precies wat je in de admin wil zien in
+     * plaats van "geen data". De statuscode blijft ervoor staan omdat 403 en
+     * 400 naar verschillende oplossingen wijzen (recht vs. verkeerd ID).
+     *
+     * @param  array<string,mixed>|null  $body
+     */
+    protected static function describeApiError(int $status, ?array $body): string
+    {
+        $message = $body['error']['message'] ?? $body['error_description'] ?? null;
+
+        if (! is_string($message) || trim($message) === '') {
+            $message = is_string($body['error'] ?? null) ? $body['error'] : 'Google gaf geen uitleg.';
+        }
+
+        return "Google antwoordde met {$status}: ".trim($message);
     }
 }
