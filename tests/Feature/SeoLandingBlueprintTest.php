@@ -74,22 +74,22 @@ function blueprintAiFields(array $overrides = []): array
         'closing_title' => 'Klaar om geen oproep meer te missen?',
         'closing_body' => 'We kijken vrijblijvend mee.',
         'closing_cta_label' => 'Plan je Bottleneck Scan',
-        'problem_recognition' => [
+        'problems' => [
             'heading' => 'Herken je dit?',
-            'problems' => [
+            'items' => [
                 ['title' => 'Je mist oproepen', 'icon' => 'phone-missed', 'description' => 'Je staat bij een klant.', 'tags' => ['Bereikbaarheid']],
                 ['title' => 'Voicemail werkt niet', 'description' => 'Bellers spreken zelden in.'],
             ],
         ],
-        'advantages' => [
+        'benefits' => [
             'heading' => 'Wat verandert er?',
             'items' => [['title' => 'Altijd bereikbaar', 'description' => 'Ook buiten de uren.']],
         ],
-        'process_steps' => [
+        'steps' => [
             'heading' => 'Onze aanpak',
-            'steps' => [['title' => 'We luisteren mee', 'description' => 'We brengen je oproepen in kaart.']],
+            'items' => [['title' => 'We luisteren mee', 'description' => 'We brengen je oproepen in kaart.']],
         ],
-        'cases_grid' => ['heading' => 'Dit leverde het op'],
+        'cases' => ['heading' => 'Dit leverde het op'],
         'cards' => [
             'heading' => 'Concrete mogelijkheden',
             'items' => [['title' => 'Afspraken inplannen', 'subtitle' => 'Rechtstreeks in je agenda', 'description' => 'De assistent boekt zelf.']],
@@ -176,7 +176,7 @@ it('drops a section the model left empty', function () {
     blueprintTemplate();
 
     $sections = (new LandingPageBlueprint)->build(
-        blueprintAiFields(['advantages' => ['heading' => 'Wat verandert er?', 'items' => []]]),
+        blueprintAiFields(['benefits' => ['heading' => 'Wat verandert er?', 'items' => []]]),
         blueprintFaq(),
     );
 
@@ -189,7 +189,7 @@ it('removes an anchor button when its target section is gone', function () {
     // Zonder stappen valt de werkwijze-sectie weg — en daarmee het anker
     // #aanpak waar de tweede hero-knop heen scrolt.
     $sections = collect((new LandingPageBlueprint)->build(
-        blueprintAiFields(['process_steps' => ['heading' => 'Onze aanpak', 'steps' => []]]),
+        blueprintAiFields(['steps' => ['heading' => 'Onze aanpak', 'items' => []]]),
         blueprintFaq(),
     ))->keyBy('section_type');
 
@@ -282,7 +282,63 @@ it('tells the model which sections the template expects', function () {
         $prompt = $request->data()['messages'][0]['content'];
 
         return str_contains($prompt, 'Probleemherkenning → Voordelen → Werkwijze')
-            && str_contains($prompt, '`problem_recognition`')
-            && str_contains($prompt, '2 knoptekst(en) voor de hero');
+            && str_contains($prompt, '`problems`')
+            && str_contains($prompt, '2 knoptekst(en)')
+            && str_contains($prompt, 'scrolt naar het blok "Werkwijze"');
     });
+});
+
+/**
+ * De aliassen zijn wat deze klasse overdraagbaar maakt naar andere projecten:
+ * hetzelfde blok heet daar anders (`prose`/`text`/`free_text` i.p.v.
+ * `rich_text`, `cta_section` i.p.v. `cta`). De blueprint herkent ze via de rol
+ * en schrijft de sectie weg onder de naam die dát project gebruikt.
+ */
+it('recognises section names from other projects through their role', function () {
+    $page = Page::create(['title' => 'Dienst', 'slug' => 'dienst', 'published' => true]);
+
+    foreach ([
+        ['hero', ['heading' => 'Kop', 'ctas' => [['label' => 'Doe iets', 'variant' => 'primary', 'link_type' => 'page', 'page_id' => 7]]]],
+        ['prose', ['heading' => 'Waarom']],          // elders: rich_text
+        ['tiles_grid', ['heading' => 'Aanbod']],     // elders: cards
+        ['faq', ['heading' => 'FAQ']],
+        ['cta_section', ['heading' => 'Slot', 'ctas' => [['label' => 'Slotknop', 'variant' => 'primary', 'link_type' => 'page', 'page_id' => 7]]]],  // elders: cta
+    ] as $position => [$type, $content]) {
+        $page->sections()->create(['section_type' => $type, 'position' => $position, 'content' => $content]);
+    }
+
+    Setting::set(LandingPageBlueprint::SETTING_KEY, 'dienst');
+
+    $sections = (new LandingPageBlueprint)->build(
+        blueprintAiFields(['why_title' => 'Waarom nu', 'why_html' => '<p>Daarom.</p>']),
+        blueprintFaq(),
+    );
+
+    // De sectienamen van dít project blijven behouden, niet de canonieke.
+    expect(array_column($sections, 'section_type'))->toBe(['hero', 'prose', 'tiles_grid', 'faq', 'cta_section']);
+
+    // En de inhoud belandt in de juiste sleutel van dat sectietype.
+    expect($sections[1]['content']['heading'])->toBe('Waarom nu')
+        ->and($sections[2]['content']['cards'])->toHaveCount(1)
+        ->and($sections[4]['content']['ctas'][0]['label'])->toBe('Plan je Bottleneck Scan');
+});
+
+it('skips a template section it cannot fill', function () {
+    $page = Page::create(['title' => 'Dienst', 'slug' => 'dienst', 'published' => true]);
+
+    foreach ([
+        ['hero', ['heading' => 'Kop', 'ctas' => [['label' => 'Doe iets', 'variant' => 'primary', 'href' => '/contact']]]],
+        // Een formulier en echte klantcitaten kan een model niet aanleveren.
+        ['form', ['heading' => 'Contacteer ons']],
+        ['testimonials', ['heading' => 'Wat klanten zeggen']],
+        ['faq', ['heading' => 'FAQ']],
+    ] as $position => [$type, $content]) {
+        $page->sections()->create(['section_type' => $type, 'position' => $position, 'content' => $content]);
+    }
+
+    Setting::set(LandingPageBlueprint::SETTING_KEY, 'dienst');
+
+    $sections = (new LandingPageBlueprint)->build(blueprintAiFields(), blueprintFaq());
+
+    expect(array_column($sections, 'section_type'))->toBe(['hero', 'faq']);
 });

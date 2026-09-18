@@ -560,45 +560,69 @@ PROMPT;
 
     /**
      * De `create_page`-instructies, opgebouwd uit de sjabloonpagina. Het model
-     * krijgt enkel de secties te zien die het écht moet vullen, in de volgorde
+     * krijgt enkel de blokken te zien die het écht moet vullen, in de volgorde
      * waarin ze op de pagina belanden — zo vraagt de prompt nooit om inhoud
      * voor een blok dat het sjabloon niet heeft.
+     *
+     * De prompt spreekt in **rollen** ("problems", "benefits"), nooit in de
+     * sectienamen van dit project. Zo blijft dezelfde prompt werken in een
+     * project waar het tekstblok `prose` heet in plaats van `rich_text`.
      */
     protected function landingPromptInstructions(): string
     {
         $skeleton = $this->blueprint()->skeleton();
+        $label = fn (string $role): string => LandingPageBlueprint::ROLE_LABELS[$role] ?? $role;
 
-        $flow = implode(' → ', array_map(
-            fn (array $s): string => LandingPageBlueprint::LABELS[$s['section_type']] ?? $s['section_type'],
-            $skeleton,
-        ));
+        $flow = implode(' → ', array_map(fn (array $s): string => $label($s['role']), $skeleton));
 
-        // Hoeveel knoplabels het model moet aanleveren, staat vast: zoveel als
-        // het sjabloon knoppen heeft. Zonder sjabloonknop valt de generator
-        // terug op die van de homepage — dan is het er precies één.
-        $buttons = [];
+        // Welke rol hoort bij welk anker-id, zodat we kunnen uitleggen waar een
+        // ankerknop heen scrolt. Zonder die uitleg schrijft het model er een
+        // tweede actie-CTA op ("Plan een gesprek") die vervolgens naar een blok
+        // verderop op de pagina springt.
+        $anchors = [];
         foreach ($skeleton as $s) {
-            $buttons[$s['section_type']] = max(1, count($s['ctas'] ?? []));
+            if (isset($s['section_id'])) {
+                $anchors[$s['section_id']] = $label($s['role']);
+            }
         }
+
+        $destinations = function (array $entry) use ($anchors): string {
+            $parts = [];
+            foreach ($entry['ctas'] ?? [] as $i => $button) {
+                $href = (string) ($button['href'] ?? '');
+                $parts[] = str_starts_with($href, '#')
+                    ? ($i + 1).') scrolt naar het blok "'.($anchors[ltrim($href, '#')] ?? ltrim($href, '#')).'" verderop op deze pagina — schrijf een label dat daarnaar verwijst, géén tweede actie-CTA'
+                    : ($i + 1).') de hoofdactie (contact of afspraak)';
+            }
+
+            return $parts ? ' Bestemmingen: '.implode('; ', $parts).'.' : '';
+        };
+
+        $byRole = [];
+        foreach ($skeleton as $s) {
+            $byRole[$s['role']] ??= $s;
+        }
+
+        $count = fn (string $role): int => max(1, count($byRole[$role]['ctas'] ?? []));
 
         $lines = [
             'hero' => '- `h1_title` + `hero_subtitle`: scherpe titel en een emotionele belofte van 1-2 zinnen.'
-                ."\n".'- `hero_cta_labels`: '.($buttons['hero'] ?? 1).' knoptekst(en) voor de hero, in volgorde. Kort en uitnodigend.',
-            'problem_recognition' => '- `problem_recognition`: "Herken je dit?" — 3-4 problemen die de bezoeker bij zichzelf herkent, in zijn woorden. Nog géén oplossingen.',
-            'advantages' => '- `advantages`: "Wat verandert er?" — 3-4 voordelen als uitkomst geformuleerd, niet als functie.',
-            'process_steps' => '- `process_steps`: onze aanpak in precies 3 stappen. Behapbaar, vertrekkend van hoe de klant vandaag werkt.',
-            'cases_grid' => '- `cases_grid`: enkel de kop boven de cases. De cases zelf komen uit de database — verzin geen klantnamen, cijfers of citaten.',
+                ."\n".'- `hero_cta_labels`: '.$count('hero').' knoptekst(en), in volgorde.'.$destinations($byRole['hero'] ?? []),
+            'problems' => '- `problems`: "Herken je dit?" — 3-4 problemen die de bezoeker bij zichzelf herkent, in zijn woorden. Nog géén oplossingen.',
+            'benefits' => '- `benefits`: "Wat verandert er?" — 3-4 voordelen als uitkomst geformuleerd, niet als functie.',
+            'steps' => '- `steps`: de aanpak in precies 3 stappen. Behapbaar, vertrekkend van hoe de klant vandaag werkt.',
+            'cases' => '- `cases`: enkel de kop boven de cases. De cases zelf komen uit de database — verzin geen klantnamen, cijfers of citaten.',
             'cards' => '- `cards`: 4-6 concrete mogelijkheden. Pas hier mogen functies en technologie aan bod komen, ná de voordelen.',
             'faq' => '- `faq`: 4-6 vraag-antwoord-paren, incl. de zoekvraag zelf.',
             'cta' => '- `closing_title` + `closing_body`: een afsluitende CTA met risico-omkering.'
                 ."\n".'- `closing_cta_label`: de knoptekst eronder — concreter en directer dan die in de hero.',
-            'rich_text' => '- `why_title` + `why_html`: de echte, emotionele reden om hier te starten (2-3 korte alinea\'s, eenvoudige HTML).',
+            'text' => '- `why_title` + `why_html`: de echte, emotionele reden om hier te starten (2-3 korte alinea\'s, eenvoudige HTML).',
         ];
 
         $instructions = [];
         foreach ($skeleton as $s) {
-            if (isset($lines[$s['section_type']])) {
-                $instructions[$s['section_type']] ??= $lines[$s['section_type']];
+            if (isset($lines[$s['role']])) {
+                $instructions[$s['role']] ??= $lines[$s['role']];
             }
         }
 
@@ -606,16 +630,17 @@ PROMPT;
             ."**{$flow}**\n\n"
             .implode("\n", $instructions)
             ."\n\nVul enkel deze velden — laat een blok weg als je er niets zinnigs voor hebt, dan valt die sectie netjes weg. "
-            .'De bestemming van élke knop ligt vast (die nemen we over van de sjabloonpagina); jij schrijft alleen de knoptekst, nooit een URL.';
+            .'De bestemming van élke knop ligt vast; jij schrijft alleen de knoptekst, nooit een URL.';
     }
 
     /**
-     * Inputvelden voor de rijke landingspagina-secties. Eén sleutel per
-     * sectietype, zodat schema en {@see LandingPageBlueprint} dezelfde namen
-     * gebruiken en niet uit elkaar kunnen lopen.
+     * Inputvelden voor de rijke landingspagina-secties. Eén sleutel per **rol**
+     * uit {@see LandingPageBlueprint}, zodat schema, prompt en builder dezelfde
+     * namen gebruiken en niet uit elkaar kunnen lopen — en zodat het schema
+     * niets hoeft te weten over hoe de secties in dít project heten.
      *
-     * Het model vult enkel de secties die in de prompt opgesomd staan — die
-     * lijst komt uit de sjabloonpagina, niet uit deze code.
+     * Elke lijst heet `items`; de blueprint vertaalt dat naar de sleutel die de
+     * sectie van dit project verwacht.
      *
      * @return array<string,mixed>
      */
@@ -628,10 +653,19 @@ PROMPT;
             'closing' => ['type' => 'string', 'description' => 'Afsluitende boodschap onder het blok, eenvoudige HTML (één alinea).'],
         ];
 
+        $lijst = fn (string $omschrijving, array $velden): array => [
+            'type' => 'array',
+            'description' => $omschrijving,
+            'items' => ['type' => 'object', 'properties' => $velden, 'required' => ['title']],
+        ];
+
+        $titel = ['type' => 'string', 'description' => 'Titel in één korte zin.'];
+        $tekst = ['type' => 'string', 'description' => 'Toelichting van 1-2 zinnen.'];
+
         return [
             'hero_cta_labels' => [
                 'type' => 'array',
-                'description' => 'create_page: knopteksten voor de hero, in dezelfde volgorde als de knoppen van het sjabloon. Kort en actief, max 64 tekens. De bestemming van de knoppen ligt vast — verzin geen URL\'s.',
+                'description' => 'create_page: knopteksten voor de hero, in dezelfde volgorde als de knoppen van het sjabloon. Kort en actief, max 64 tekens. De bestemming ligt vast — verzin geen URL\'s.',
                 'items' => ['type' => 'string'],
             ],
             'closing_cta_label' => [
@@ -639,7 +673,7 @@ PROMPT;
                 'description' => 'create_page: knoptekst van de afsluitende CTA. Concreter en directer dan die in de hero.',
             ],
 
-            'problem_recognition' => [
+            'problems' => [
                 'type' => 'object',
                 'description' => 'create_page: "Herken je dit?" — de bezoeker moet zichzelf herkennen vóór je oplossingen toont. Schrijf de problemen in zijn taal, niet in de jouwe.',
                 'properties' => $kop('het probleemblok') + [
@@ -655,67 +689,43 @@ PROMPT;
                             'required' => ['label'],
                         ],
                     ],
-                    'problems' => [
-                        'type' => 'array',
-                        'description' => '3-4 herkenbare problemen, elk met een concrete situatieschets.',
-                        'items' => [
-                            'type' => 'object',
-                            'properties' => [
-                                'title' => ['type' => 'string', 'description' => 'Het probleem in één zin.'],
-                                'icon' => ['type' => 'string', 'description' => 'Lucide-iconnaam, bv. timer, phone-missed, shuffle.'],
-                                'description' => ['type' => 'string', 'description' => 'Een concreet voorbeeld van 1-2 zinnen.'],
-                                'tags' => [
-                                    'type' => 'array',
-                                    'description' => 'Hoogstens twee stille indicatie-chips, bv. "Bereikbaarheid". Geen diensten-CTA\'s.',
-                                    'items' => ['type' => 'string'],
-                                ],
-                            ],
-                            'required' => ['title', 'description'],
+                    'items' => $lijst('3-4 herkenbare problemen, elk met een concrete situatieschets.', [
+                        'title' => ['type' => 'string', 'description' => 'Het probleem in één zin.'],
+                        'icon' => ['type' => 'string', 'description' => 'Lucide-iconnaam, bv. timer, phone-missed, shuffle.'],
+                        'description' => ['type' => 'string', 'description' => 'Een concreet voorbeeld van 1-2 zinnen.'],
+                        'tags' => [
+                            'type' => 'array',
+                            'description' => 'Hoogstens twee stille indicatie-chips, bv. "Bereikbaarheid". Geen diensten-CTA\'s.',
+                            'items' => ['type' => 'string'],
                         ],
-                    ],
+                    ]),
                 ],
             ],
 
-            'advantages' => [
+            'benefits' => [
                 'type' => 'object',
                 'description' => 'create_page: "Wat verandert er?" — de gewenste situatie. Schrijf uitkomsten, geen functies.',
                 'properties' => $kop('het voordelenblok') + [
-                    'items' => [
-                        'type' => 'array',
-                        'description' => '3-4 voordelen, telkens als resultaat voor de klant geformuleerd.',
-                        'items' => [
-                            'type' => 'object',
-                            'properties' => [
-                                'title' => ['type' => 'string', 'description' => 'Het voordeel in één korte zin.'],
-                                'icon' => ['type' => 'string', 'description' => 'Lucide-iconnaam, bv. zap, clock, list-checks.'],
-                                'description' => ['type' => 'string', 'description' => 'Wat het concreet betekent, 1-2 zinnen.'],
-                            ],
-                            'required' => ['title', 'description'],
-                        ],
-                    ],
+                    'items' => $lijst('3-4 voordelen, telkens als resultaat voor de klant geformuleerd.', [
+                        'title' => $titel,
+                        'icon' => ['type' => 'string', 'description' => 'Lucide-iconnaam, bv. zap, clock, list-checks.'],
+                        'description' => $tekst,
+                    ]),
                 ],
             ],
 
-            'process_steps' => [
+            'steps' => [
                 'type' => 'object',
-                'description' => 'create_page: onze aanpak in genummerde stappen. Toon dat het behapbaar is en vertrek van hoe de klant vandaag werkt.',
+                'description' => 'create_page: de aanpak in genummerde stappen. Toon dat het behapbaar is en vertrek van hoe de klant vandaag werkt.',
                 'properties' => $kop('het aanpakblok') + [
-                    'steps' => [
-                        'type' => 'array',
-                        'description' => 'Precies 3 stappen, in volgorde. De nummering gebeurt automatisch.',
-                        'items' => [
-                            'type' => 'object',
-                            'properties' => [
-                                'title' => ['type' => 'string', 'description' => 'Wat er in deze stap gebeurt.'],
-                                'description' => ['type' => 'string', 'description' => 'Toelichting van 1-2 zinnen.'],
-                            ],
-                            'required' => ['title', 'description'],
-                        ],
-                    ],
+                    'items' => $lijst('Precies 3 stappen, in volgorde. De nummering gebeurt automatisch.', [
+                        'title' => ['type' => 'string', 'description' => 'Wat er in deze stap gebeurt.'],
+                        'description' => $tekst,
+                    ]),
                 ],
             ],
 
-            'cases_grid' => [
+            'cases' => [
                 'type' => 'object',
                 'description' => 'create_page: de kop boven de cases. De cases zelf komen uit de database — lever dus GEEN klantnamen, cijfers of voorbeelden aan.',
                 'properties' => $kop('het casesblok'),
@@ -725,20 +735,12 @@ PROMPT;
                 'type' => 'object',
                 'description' => 'create_page: de concrete mogelijkheden — pas hier mogen functies en technologie aan bod komen, ná de voordelen.',
                 'properties' => $kop('het mogelijkhedenblok') + [
-                    'items' => [
-                        'type' => 'array',
-                        'description' => '4-6 concrete mogelijkheden.',
-                        'items' => [
-                            'type' => 'object',
-                            'properties' => [
-                                'title' => ['type' => 'string', 'description' => 'Naam van de mogelijkheid.'],
-                                'subtitle' => ['type' => 'string', 'description' => 'Het resultaat in enkele woorden.'],
-                                'icon' => ['type' => 'string', 'description' => 'Lucide-iconnaam, bv. mail, calendar-check, kanban.'],
-                                'description' => ['type' => 'string', 'description' => 'Wat het doet, 1-2 zinnen.'],
-                            ],
-                            'required' => ['title', 'description'],
-                        ],
-                    ],
+                    'items' => $lijst('4-6 concrete mogelijkheden.', [
+                        'title' => ['type' => 'string', 'description' => 'Naam van de mogelijkheid.'],
+                        'subtitle' => ['type' => 'string', 'description' => 'Het resultaat in enkele woorden.'],
+                        'icon' => ['type' => 'string', 'description' => 'Lucide-iconnaam, bv. mail, calendar-check, kanban.'],
+                        'description' => $tekst,
+                    ]),
                 ],
             ],
         ];

@@ -48,8 +48,8 @@
             $proposed = $item['proposed'] ?? [];
             $sections = $proposed['sections'] ?? [];
             $text = collect($sections)->firstWhere('section_type', 'rich_text');
-            $sectionLabels = \App\Services\Seo\LandingPageBlueprint::LABELS;
-            $structure = collect($sections)->pluck('section_type')->map(fn ($t) => $sectionLabels[$t] ?? $t)->all();
+            $structure = collect($sections)->pluck('section_type')
+                ->map(fn ($t) => \App\Services\Seo\LandingPageBlueprint::labelFor($t))->all();
             $faqSection = collect($sections)->firstWhere('section_type', 'faq');
             $faqItems = data_get($faqSection, 'content.items', data_get($proposed, 'content.items', []));
             $hero = collect($sections)->firstWhere('section_type', 'hero');

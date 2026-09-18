@@ -11,11 +11,10 @@ use App\Models\Setting;
  * pagina — het "sjabloon" dat je aanwijst op Groei → SEO-instellingen.
  *
  * De reden dat de opbouw uit een pagina komt en niet uit code: elk project
- * heeft andere sectietypes (`rich_text` hier, `text`/`prose`/`free_text`
- * elders) en een andere conversieflow. Door een echte pagina als sjabloon te
- * nemen, bepaalt de beheerder de opbouw in de admin en werkt dezelfde code in
- * elk project. Wijzig je de flow van je dienstenpagina's, dan volgen nieuwe
- * gegenereerde pagina's vanzelf.
+ * heeft een andere conversieflow én andere sectienamen. Door een echte pagina
+ * als sjabloon te nemen, bepaalt de beheerder de opbouw in de admin en werkt
+ * dezelfde code overal. Wijzig je de flow van je dienstenpagina's, dan volgen
+ * nieuwe gegenereerde pagina's vanzelf.
  *
  * Verdeling van verantwoordelijkheid — het sjabloon levert het **skelet**, de
  * AI levert de **inhoud**:
@@ -30,6 +29,22 @@ use App\Models\Setting;
  * telefonie. Neem je de bestemming níét mee, dan verlies je de
  * `link_type: page` + `page_id`-vorm en breekt de knop zodra iemand de slug
  * van de doelpagina hernoemt.
+ *
+ * ---
+ *
+ * AANPASSEN PER PROJECT — alles wat projectafhankelijk is staat in de twee
+ * tabellen hieronder, `ROLES` en `LIST_SHAPE`. Daarbuiten hoef je niets te
+ * wijzigen.
+ *
+ * `ROLES` koppelt een **rol** (wat een blok dóét in de conversieflow) aan de
+ * **sectietypes** die die rol in een project kan hebben. Dat is nodig omdat
+ * hetzelfde blok overal anders heet: een tekstblok is `rich_text`, `text`,
+ * `prose` of `free_text`, afhankelijk van het project. Herkent de blueprint
+ * een sectietype niet, dan slaat hij dat blok gewoon over in plaats van het
+ * leeg te genereren — voeg de naam dan toe aan de juiste rol.
+ *
+ * De AI kent enkel de rolnamen; de sectienaam van het project komt uit het
+ * sjabloon. Zo blijft de prompt hetzelfde over projecten heen.
  */
 class LandingPageBlueprint
 {
@@ -37,41 +52,59 @@ class LandingPageBlueprint
     public const SETTING_KEY = 'seo_landing_template_slug';
 
     /**
-     * Sectietypes waarvoor we AI-inhoud kunnen aanleveren. Een sjabloon mag
-     * gerust andere secties bevatten (een formulier, een gallerij): die slaan
-     * we over in plaats van ze leeg te genereren.
+     * Rol => sectietypes die die rol kan hebben. De eerste naam is de
+     * canonieke (die van de new-website-skill); de rest zijn namen die in
+     * bestaande projecten voorkomen.
+     *
+     * Rollen die hier NIET staan worden overgeslagen. Dat is bewust zo voor
+     * blokken die echte gegevens nodig hebben — testimonials/reviews bevatten
+     * citaten van echte klanten, en die mag een model niet verzinnen.
      */
-    public const FILLABLE = [
-        'hero',
-        'problem_recognition',
-        'advantages',
-        'process_steps',
-        'cases_grid',
-        'cards',
-        'faq',
-        'cta',
-        'rich_text',
+    protected const ROLES = [
+        'hero' => ['hero'],
+        'problems' => ['problem_recognition'],
+        'benefits' => ['advantages', 'benefits'],
+        'steps' => ['process_steps', 'steps'],
+        'cases' => ['cases_grid'],
+        'cards' => ['cards', 'tiles_grid', 'tiles'],
+        'faq' => ['faq'],
+        'cta' => ['cta', 'cta_section'],
+        'text' => ['rich_text', 'text', 'prose', 'free_text'],
     ];
 
     /**
-     * Terugval zonder sjabloonpagina: de generieke opbouw die in élk project
-     * bestaat. Zo blijft deze code werken in een verse installatie waar nog
-     * geen sjabloon is aangewezen.
+     * Rollen met een herhaalde lijst: onder welke sleutel de builder die lijst
+     * verwacht, en welke velden een item heeft. Het model levert de lijst
+     * altijd als `items`; hier vertalen we die naar de sleutel die de sectie
+     * van dít project gebruikt.
      */
-    protected const FALLBACK_SEQUENCE = ['hero', 'rich_text', 'faq', 'cta'];
+    protected const LIST_SHAPE = [
+        'problems' => ['key' => 'problems', 'fields' => ['title', 'icon', 'description', 'tags']],
+        'benefits' => ['key' => 'items', 'fields' => ['title', 'icon', 'description']],
+        'steps' => ['key' => 'steps', 'fields' => ['title', 'description']],
+        'cards' => ['key' => 'cards', 'fields' => ['title', 'subtitle', 'icon', 'description']],
+    ];
 
-    /** Leesbare labels voor het goedkeuringsscherm. */
-    public const LABELS = [
+    /** Leesbare rolnamen voor het goedkeuringsscherm en de prompt. */
+    public const ROLE_LABELS = [
         'hero' => 'Hero + CTA',
-        'problem_recognition' => 'Probleemherkenning',
-        'advantages' => 'Voordelen',
-        'process_steps' => 'Werkwijze',
-        'cases_grid' => 'Cases',
+        'problems' => 'Probleemherkenning',
+        'benefits' => 'Voordelen',
+        'steps' => 'Werkwijze',
+        'cases' => 'Cases',
         'cards' => 'Mogelijkheden',
         'faq' => 'FAQ',
         'cta' => 'Afsluitende CTA',
-        'rich_text' => 'Tekst',
+        'text' => 'Tekst',
     ];
+
+    /**
+     * Terugval zonder sjabloonpagina: de generieke opbouw. We nemen de
+     * canonieke naam per rol — bestaat die niet in dit project, dan levert de
+     * applier gewoon een sectie die de front-end niet rendert, en dat merk je
+     * meteen. Wijs dus een sjabloon aan.
+     */
+    protected const FALLBACK_ROLES = ['hero', 'text', 'faq', 'cta'];
 
     /** @var array<int,array<string,mixed>>|null */
     protected ?array $skeleton = null;
@@ -81,6 +114,26 @@ class LandingPageBlueprint
      *                                                             homepage, gebruikt wanneer het sjabloon zelf geen knop heeft.
      */
     public function __construct(protected ?array $fallbackCta = null) {}
+
+    /** De rol van een sectietype, of null als we er geen inhoud voor kunnen maken. */
+    public static function roleFor(string $sectionType): ?string
+    {
+        foreach (self::ROLES as $role => $types) {
+            if (in_array($sectionType, $types, true)) {
+                return $role;
+            }
+        }
+
+        return null;
+    }
+
+    /** Leesbaar label voor een sectietype (valt terug op het type zelf). */
+    public static function labelFor(string $sectionType): string
+    {
+        $role = self::roleFor($sectionType);
+
+        return $role ? self::ROLE_LABELS[$role] : $sectionType;
+    }
 
     /** De ingestelde sjabloonpagina, of null wanneer er geen (geldige) is. */
     public function templatePage(): ?Page
@@ -97,8 +150,8 @@ class LandingPageBlueprint
     }
 
     /**
-     * Het skelet: per sectie het type, de look-and-feel en de knopstructuur —
-     * zonder één woord tekst.
+     * Het skelet: per sectie het type, de rol, de look-and-feel en de
+     * knopstructuur — zonder één woord tekst.
      *
      * @return array<int,array<string,mixed>>
      */
@@ -111,17 +164,15 @@ class LandingPageBlueprint
         $page = $this->templatePage();
 
         if (! $page) {
-            return $this->skeleton = array_map(
-                fn (string $type): array => ['section_type' => $type],
-                self::FALLBACK_SEQUENCE,
-            );
+            return $this->skeleton = $this->fallbackSkeleton();
         }
 
         $skeleton = [];
 
         foreach ($page->sections()->orderBy('position')->get() as $section) {
             $type = (string) $section->section_type;
-            if (! in_array($type, self::FILLABLE, true)) {
+            $role = self::roleFor($type);
+            if ($role === null) {
                 continue;
             }
 
@@ -129,7 +180,7 @@ class LandingPageBlueprint
                 ? $section->content
                 : (array) json_decode((string) $section->content, true);
 
-            $entry = ['section_type' => $type];
+            $entry = ['section_type' => $type, 'role' => $role];
 
             foreach (['background', 'section_id'] as $key) {
                 if (filled($content[$key] ?? null)) {
@@ -137,7 +188,7 @@ class LandingPageBlueprint
                 }
             }
 
-            // Structuurknoppen — vorm, geen inhoud. Topic-gebonden filters
+            // Structuurknoppen — vorm, geen inhoud. Onderwerpgebonden filters
             // (filter_tags, filter_industry) nemen we bewust NIET over: die
             // zouden cases van het sjabloononderwerp tonen op een pagina die
             // over iets anders gaat.
@@ -154,23 +205,32 @@ class LandingPageBlueprint
             // De cases-grid gebruikt `cta` (enkelvoud) voor z'n overzichtslink.
             // Die is niet onderwerpgebonden ("Bekijk alle cases"), dus die
             // nemen we mét label over.
-            if ($type === 'cases_grid' && filled($content['cta'] ?? null)) {
+            if ($role === 'cases' && filled($content['cta'] ?? null)) {
                 $entry['cta'] = $content['cta'];
             }
 
             $skeleton[] = $entry;
         }
 
-        return $this->skeleton = $skeleton ?: array_map(
-            fn (string $type): array => ['section_type' => $type],
-            self::FALLBACK_SEQUENCE,
+        return $this->skeleton = $skeleton ?: $this->fallbackSkeleton();
+    }
+
+    /** @return array<int,array<string,mixed>> */
+    protected function fallbackSkeleton(): array
+    {
+        return array_map(
+            fn (string $role): array => [
+                'section_type' => self::ROLES[$role][0],
+                'role' => $role,
+            ],
+            self::FALLBACK_ROLES,
         );
     }
 
-    /** De sectievolgorde als platte lijst types (voor de prompt en de badges). */
-    public function sequence(): array
+    /** De rollen in volgorde (voor de prompt en de badges). */
+    public function roles(): array
     {
-        return array_column($this->skeleton(), 'section_type');
+        return array_column($this->skeleton(), 'role');
     }
 
     /**
@@ -187,9 +247,7 @@ class LandingPageBlueprint
         $sections = [];
 
         foreach ($this->skeleton() as $entry) {
-            $type = $entry['section_type'];
-
-            $content = $this->contentFor($type, $entry, $ai, $faq);
+            $content = $this->contentFor($entry, $ai, $faq);
             if ($content === null) {
                 continue;
             }
@@ -200,37 +258,35 @@ class LandingPageBlueprint
                 }
             }
 
-            $sections[] = ['section_type' => $type, 'content' => $content];
+            $sections[] = ['section_type' => $entry['section_type'], 'content' => $content];
         }
 
         return $this->dropDeadAnchors($sections);
     }
 
     /**
-     * Inhoud voor één sectietype, of null wanneer het model er niets voor
+     * Inhoud voor één sectie, of null wanneer het model er niets voor
      * aanleverde.
      *
      * @return array<string,mixed>|null
      */
-    protected function contentFor(string $type, array $entry, array $ai, array $faq): ?array
+    protected function contentFor(array $entry, array $ai, array $faq): ?array
     {
-        $block = is_array($ai[$type] ?? null) ? $ai[$type] : [];
+        $role = $entry['role'];
+        $block = is_array($ai[$role] ?? null) ? $ai[$role] : [];
 
-        return match ($type) {
+        return match ($role) {
             'hero' => $this->heroContent($entry, $ai),
-            'problem_recognition' => $this->listContent($entry, $ai, $block, 'problems', ['title', 'icon', 'description', 'tags']),
-            'advantages' => $this->listContent($entry, $ai, $block, 'items', ['title', 'icon', 'description']),
-            'process_steps' => $this->listContent($entry, $ai, $block, 'steps', ['title', 'description']),
-            'cards' => $this->cardsContent($entry, $block),
-            'cases_grid' => $this->casesContent($entry, $block),
+            'problems', 'benefits', 'steps', 'cards' => $this->listContent($role, $entry, $block),
+            'cases' => $this->casesContent($entry, $block),
             'faq' => $faq ? ['heading' => 'Veelgestelde vragen', 'items' => $faq] : null,
             'cta' => $this->ctaContent($entry, $ai),
-            'rich_text' => $this->richTextContent($ai),
+            'text' => $this->textContent($ai),
             default => null,
         };
     }
 
-    /** Hero — de belofte plus de primaire knop(pen) uit het sjabloon. */
+    /** Hero — de belofte plus de knop(pen) uit het sjabloon. */
     protected function heroContent(array $entry, array $ai): ?array
     {
         $heading = $this->text($ai['h1_title'] ?? $ai['title'] ?? '');
@@ -251,16 +307,23 @@ class LandingPageBlueprint
     }
 
     /**
-     * Gemeenschappelijke vorm van probleemherkenning, voordelen en werkwijze:
-     * kop + intro + een lijst items + afsluitende boodschap.
+     * Gemeenschappelijke vorm van probleemherkenning, voordelen, werkwijze en
+     * mogelijkheden: kop + intro + een lijst items + afsluitende boodschap.
+     * Het model levert de lijst altijd als `items`; de sleutel waaronder de
+     * sectie ze verwacht staat in LIST_SHAPE.
      */
-    protected function listContent(array $entry, array $ai, array $block, string $itemsKey, array $fields): ?array
+    protected function listContent(string $role, array $entry, array $block): ?array
     {
+        $shape = self::LIST_SHAPE[$role];
         $heading = $this->text($block['heading'] ?? '');
-        $items = $this->items($block[$itemsKey] ?? [], $fields);
+        $items = $this->items($block['items'] ?? [], $shape['fields']);
 
         if ($heading === '' || ! $items) {
             return null;
+        }
+
+        if ($role === 'cards') {
+            $items = array_map(fn (array $c): array => $c + ['media_type' => 'icon'], $items);
         }
 
         $content = array_filter([
@@ -268,50 +331,31 @@ class LandingPageBlueprint
             'heading' => $heading,
             'intro' => $this->text($block['intro'] ?? '') ?: null,
             'closing' => $this->text($block['closing'] ?? '') ?: null,
+            'columns' => $entry['columns'] ?? null,
+            'max_visible' => $entry['max_visible'] ?? null,
         ], fn ($v) => $v !== null);
 
-        $content[$itemsKey] = $items;
+        $content[$shape['key']] = $items;
 
         // De reis-strip boven de probleemkaarten is puur visueel; laat ze weg
         // wanneer het model ze niet aanleverde.
-        if ($itemsKey === 'problems' && $journey = $this->items($block['journey'] ?? [], ['label', 'icon'])) {
+        if ($role === 'problems' && $journey = $this->items($block['journey'] ?? [], ['label', 'icon'])) {
             $content['journey'] = $journey;
         }
 
         return $content;
     }
 
-    /** Concrete mogelijkheden — kaartgrid met icoon, ondertitel en tekst. */
-    protected function cardsContent(array $entry, array $block): ?array
-    {
-        $heading = $this->text($block['heading'] ?? '');
-        $cards = $this->items($block['items'] ?? [], ['title', 'subtitle', 'icon', 'description']);
-
-        if ($heading === '' || ! $cards) {
-            return null;
-        }
-
-        $cards = array_map(fn (array $c): array => $c + ['media_type' => 'icon'], $cards);
-
-        return array_filter([
-            'eyebrow' => $this->text($block['eyebrow'] ?? '') ?: null,
-            'heading' => $heading,
-            'intro' => $this->text($block['intro'] ?? '') ?: null,
-            'columns' => $entry['columns'] ?? null,
-            'max_visible' => $entry['max_visible'] ?? null,
-            'cards' => $cards,
-        ], fn ($v) => $v !== null);
-    }
-
     /**
      * Cases — de items komen live uit de database, dus het model levert enkel
      * de kop. Zonder gepubliceerde cases laten we het blok weg in plaats van
-     * een lege grid te tonen.
+     * een lege grid te tonen. Heeft dit project geen cases-model, dan valt de
+     * sectie eveneens weg.
      */
     protected function casesContent(array $entry, array $block): ?array
     {
         $heading = $this->text($block['heading'] ?? '');
-        if ($heading === '' || ! CaseStudy::where('published', true)->exists()) {
+        if ($heading === '' || ! $this->hasPublishedCases()) {
             return null;
         }
 
@@ -322,6 +366,12 @@ class LandingPageBlueprint
             'limit' => $entry['limit'] ?? null,
             'cta' => $entry['cta'] ?? null,
         ], fn ($v) => $v !== null);
+    }
+
+    /** Niet elk project heeft een cases-model; dan is er niets te tonen. */
+    protected function hasPublishedCases(): bool
+    {
+        return class_exists(CaseStudy::class) && CaseStudy::where('published', true)->exists();
     }
 
     /** Afsluitende CTA met risico-omkering. */
@@ -349,7 +399,7 @@ class LandingPageBlueprint
     }
 
     /** Generieke tekstsectie — de terugval wanneer er geen sjabloon is. */
-    protected function richTextContent(array $ai): ?array
+    protected function textContent(array $ai): ?array
     {
         $heading = $this->text($ai['why_title'] ?? '');
         $body = $this->text($ai['why_html'] ?? $ai['intro_html'] ?? '');
