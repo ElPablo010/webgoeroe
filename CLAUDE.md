@@ -31,6 +31,32 @@ backend-fundering; publieke styling volgt via de `design-website`-skill.
 
 ---
 
+## Welk AI-model waarvoor
+
+Het model staat in [`config/services.php`](config/services.php) onder
+`services.anthropic.models`, **nooit hardcoded in een service**. Eén sleutel per
+soort klus, niet per klasse:
+
+| Sleutel | Waarvoor | Nu |
+|---------|----------|-----|
+| `reasoning` | SEO-advies, verbeteracties, landingspagina's uitschrijven | `claude-sonnet-5` |
+
+Te overschrijven met `ANTHROPIC_MODEL_REASONING` in `.env`, zodat je op één
+project kunt afwijken zonder code te wijzigen.
+
+**Waarom niet in de klasse:** hardcode je het model waar je het gebruikt, dan
+draaien er na drie features drie verschillende modellen zonder dat iemand dat
+besloot — het model dat er bij het schrijven toevallig stond, blijft jaren
+staan. Dat gebeurde in de andere projecten: de vertaallaag daar defaultte naar
+het duurste model dat er is, voor het omzetten van korte UI-teksten.
+
+Een project mét vertaallaag zet er een tweede sleutel bij (`bulk`) voor het
+sleurwerk — honderden korte strings, waar niets te bedenken valt en een klein
+model volstaat. Deze site is eentalig, dus die sleutel staat er bewust niet:
+geen dode config.
+
+---
+
 ## Lokale development
 
 ```bash

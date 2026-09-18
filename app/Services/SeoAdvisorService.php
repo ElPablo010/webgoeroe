@@ -24,7 +24,11 @@ use Illuminate\Support\Str;
  */
 class SeoAdvisorService
 {
-    protected string $model = 'claude-sonnet-5';
+    /**
+     * Het model voor het denkwerk, uit `config('services.anthropic.models')`.
+     * Bewust niet hier hardcoded: zie de toelichting in config/services.php.
+     */
+    protected string $model;
 
     /** Hoelang een afgehandeld voorstel een identiek nieuw voorstel blokkeert. */
     protected const DEDUPE_DAYS = 90;
@@ -70,7 +74,10 @@ class SeoAdvisorService
     /** De reden waarom de AI-seeds mislukten, voor emptySuggestionReason(). */
     protected ?string $aiError = null;
 
-    public function __construct(protected DataForSeoService $api) {}
+    public function __construct(protected DataForSeoService $api)
+    {
+        $this->model = config('services.anthropic.models.reasoning');
+    }
 
     public function lastError(): ?string
     {
