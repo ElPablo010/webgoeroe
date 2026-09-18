@@ -266,9 +266,41 @@ OAuth-callback keert ook daarheen terug.
   Setting `seo_keyword_suggestions` en verschijnen als checkbox-blok
   (`SeoKeywordSuggestions`-widget) boven de tabel. Aangevinkt = opgevolgd, nooit
   automatisch: elke keyword kost wekelijks een SERP-meting.
+  - **De stand van dat onderzoek staat in `settings`**, niet in een
+    Livewire-property: [`App\Support\JobStatus`](app/Support/JobStatus.php) onder
+    de sleutel `seo_keyword_suggestions_status` (`queued` → `running` → `done`
+    of `failed`). Bewust persistent — je start het onderzoek, gaat weg en komt
+    een kwartier later terug; dán moet het scherm nog kunnen zeggen dat het
+    loopt. Het blok ververst zichzelf met `wire:poll.10s` zolang de taak bezig is.
+  - **`JobStatus` kantelt zelf naar "vastgelopen"** na 3 minuten in `queued`
+    (of 15 in `running`). Dat is geen kosmetiek maar de enige manier om een
+    niet-draaiende queue-worker te zíén: een job die nooit opgepikt wordt faalt
+    ook nooit, dus zonder die grens blijft de melding eeuwig "bezig" zeggen. Het
+    blok wijst dan meteen naar de cron/`queue:work` als oorzaak.
+  - **Niets gevonden is een fout, geen stilte.** `suggestKeywords()` zet
+    `lastError()` (zelfde patroon als `GoogleApiClient`) met de échte reden —
+    ontbrekende Anthropic-key, een Anthropic-status, of DataForSEO's eigen
+    `status_message` via de nieuwe `DataForSeoService::lastError()`. Vroeger
+    schreef een mislukte run gewoon een lege lijst weg, waarna het widget zich
+    verborg en je naar een leeg scherm keek zonder enige aanwijzing.
+  - **`php artisan seo:suggest-keywords`** doet hetzelfde onderzoek synchroon,
+    drukt de reden af en geeft exitcode 1. Daarmee sluit je op de server in één
+    minuut uit of de knop faalt (credentials/saldo) of de wachtrij (worker).
 - **Acties lopen over de queue** (`GenerateSeoActionsJob`), niet meer synchroon
   in de knop — de scheduler-worker (`queue:work --stop-when-empty`, elke minuut)
-  moet dus draaien, ook op Combell.
+  moet dus draaien, ook op Combell. Loopt die cron niet, dan blijven die jobs
+  zonder één foutmelding in de `jobs`-tabel staan. Het Acties-scherm gebruikt
+  daarom dezelfde `JobStatus` (sleutel `seo_actions_status`) en dezelfde banner
+  als Keywords: [`<x-admin.job-status-banner>`](resources/views/components/admin/job-status-banner.blade.php).
+  Voeg je nog zo'n knop toe, hergebruik dan die twee — niet opnieuw een eigen
+  melding schrijven.
+- **⚠️ Lees een Anthropic-antwoord nooit als `content.0.text`.** Het model heeft
+  adaptive thinking aan, dus blok 0 is een *thinking*-blok met lege tekst.
+  Gebruik `SeoAdvisorService::firstTextBlock()` (of `firstWhere('type', 'tool_use')`
+  bij tool-use). Dit heeft het keyword-onderzoek maandenlang stilzwijgend
+  gesloopt: nul seeds → DataForSEO kreeg enkel het kale domein → nul voorstellen
+  → een leeg scherm zonder één foutmelding. Vastgelegd in
+  `tests/Feature/SeoKeywordSuggestTest.php`.
 - Datums in deze schermen altijd `dd/mm/jjjj`.
 
 Vastgelegd in `tests/Feature/LeadAttributionTest.php`,

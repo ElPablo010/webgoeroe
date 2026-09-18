@@ -1,11 +1,19 @@
 <?php
 
+use App\Filament\Pages\SeoActions;
+use App\Jobs\GenerateSeoActionsJob;
 use App\Models\Page;
 use App\Models\Setting;
+use App\Models\User;
 use App\Services\SeoAdvisorService;
+use App\Support\JobStatus;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
+use Livewire\Livewire;
+
+use function Pest\Laravel\actingAs;
 
 /**
  * De SEO-suggestietool stelde FAQ-vragen voor die al (in andere woorden) op de
@@ -235,4 +243,40 @@ it('feeds the prompt the existing FAQ questions and recency markers', function (
             && preg_match('/webdesign.*NIEUW sinds/', $prompt)
             && ! preg_match('/hosting.*(NIEUW|RECENT)/', $prompt);
     });
+});
+
+/*
+ * De voortgangsmelding op het Acties-scherm. Zelfde reden als bij het
+ * keyword-onderzoek: draait de queue-worker niet, dan blijft de job zonder
+ * één foutmelding in de tabel staan en ziet een leeg scherm er identiek uit
+ * als "er valt niets te beoordelen".
+ */
+it('noteert de stand van de analyse en toont ze op het scherm', function () {
+    Queue::fake();
+    actingAs(User::factory()->create());
+
+    Livewire::test(SeoActions::class)
+        ->call('generateNow')
+        ->assertNotified();
+
+    Queue::assertPushed(GenerateSeoActionsJob::class);
+
+    expect(JobStatus::for(GenerateSeoActionsJob::STATUS_KEY)->state())->toBe(JobStatus::QUEUED);
+
+    Livewire::test(SeoActions::class)
+        ->assertSee('De analyse staat in de wachtrij')
+        ->assertSeeHtml('wire:poll.15s');
+});
+
+it('waarschuwt op het Acties-scherm dat de wachtrij niet draait', function () {
+    actingAs(User::factory()->create());
+
+    $this->travelTo(now()->subMinutes(20));
+    JobStatus::for(GenerateSeoActionsJob::STATUS_KEY)->queued();
+    $this->travelBack();
+
+    Livewire::test(SeoActions::class)
+        ->assertSee('blijven hangen')
+        ->assertSee('wachtrij-worker niet draait')
+        ->assertDontSeeHtml('wire:poll');
 });

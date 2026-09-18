@@ -54,8 +54,24 @@ class SeoAdvisorService
     /** Gecachete ankers uit de homepage (herbruikbare CTA-link + huisstijl-toon). */
     protected ?array $homepageBlueprint = null;
 
+    /**
+     * Waaróm de laatste opvraging niets opleverde — zelfde reden als in
+     * GoogleApiClient: op gedeelde hosting sla je `storage/logs/laravel.log`
+     * niet even open, dus een knop die niets teruggeeft moet de reden zelf
+     * kunnen doorgeven aan het scherm dat 'm afvuurde.
+     */
+    protected ?string $lastError = null;
+
+    /** De reden waarom de AI-seeds mislukten, voor emptySuggestionReason(). */
+    protected ?string $aiError = null;
+
     public function __construct(protected DataForSeoService $api)
     {
+    }
+
+    public function lastError(): ?string
+    {
+        return $this->lastError;
     }
 
     /**
@@ -244,8 +260,12 @@ PROMPT;
      */
     public function generateActions(array $context): array
     {
+        $this->lastError = null;
+
         $apiKey = Setting::get('anthropic_api_key') ?: config('services.anthropic.api_key');
         if (empty($apiKey)) {
+            $this->lastError = 'Er staat geen Anthropic-key bij Groei → SEO-instellingen.';
+
             return [];
         }
 
@@ -305,6 +325,8 @@ PROMPT;
 
             if (! $response->successful()) {
                 Log::warning('SEO-acties mislukt', ['status' => $response->status(), 'body' => $response->body()]);
+                $this->lastError = 'De Anthropic API antwoordde met status ' . $response->status() . ': '
+                    . ($response->json('error.message') ?: Str::limit($response->body(), 200));
 
                 return [];
             }
@@ -335,9 +357,15 @@ PROMPT;
                 );
             }
 
+            if (! $usable) {
+                $this->lastError = 'Het model gaf geen bruikbare acties terug (stop_reason: '
+                    . ($response->json('stop_reason') ?: 'onbekend') . ', ' . count($actions) . ' voorgesteld).';
+            }
+
             return $usable;
         } catch (\Throwable $e) {
             Log::error('SEO-acties fout', ['error' => $e->getMessage()]);
+            $this->lastError = 'De AI-oproep liep vast: ' . $e->getMessage();
 
             return [];
         }
@@ -891,6 +919,8 @@ PROMPT;
      */
     public function suggestKeywords(): array
     {
+        $this->lastError = null;
+
         $seeds = $this->aiSeedKeywords();
 
         $candidates = collect();
@@ -929,6 +959,10 @@ PROMPT;
             ->values()
             ->all();
 
+        if ($list === []) {
+            $this->lastError = $this->emptySuggestionReason($seeds, $candidates->count());
+        }
+
         Setting::set(self::KEYWORD_SUGGESTIONS_SETTING, json_encode([
             'generated_at' => now()->toDateTimeString(),
             'items' => $list,
@@ -938,13 +972,43 @@ PROMPT;
     }
 
     /**
+     * Leg uit waarom het onderzoek met lege handen thuiskwam. Alle drie de
+     * gevallen zijn instelfouten die de gebruiker zelf kan oplossen; ze zien
+     * er op het scherm anders identiek uit ("geen voorstellen").
+     */
+    protected function emptySuggestionReason(array $seeds, int $candidateCount): string
+    {
+        // Eerst de seeds. Zonder AI-zoektermen krijgt DataForSEO enkel het kale
+        // domein voorgeschoteld en komt die per definitie met lege handen
+        // terug — dan is "DataForSEO gaf niets" een symptoom, geen oorzaak, en
+        // stuur je de gebruiker naar het verkeerde instellingenveld.
+        if ($seeds === []) {
+            return 'De AI leverde geen enkele zoekterm op om mee te starten. '
+                . ($this->aiError ?? 'Controleer de Anthropic-key bij Groei → SEO-instellingen.')
+                . (! $this->api->isConfigured() ? ' DataForSEO is bovendien niet ingesteld.' : '');
+        }
+
+        if ($candidateCount === 0) {
+            return $this->api->isConfigured()
+                ? 'DataForSEO gaf geen enkele zoeksuggestie terug. ' . ($this->api->lastError() ?? 'Controleer je DataForSEO-saldo en -inloggegevens bij Groei → SEO-instellingen.')
+                : 'DataForSEO is niet ingesteld, dus er kwamen geen volumes of verwante zoektermen bij.';
+        }
+
+        return 'Alle gevonden zoektermen worden al opgevolgd — er blijft niets nieuws over om voor te stellen.';
+    }
+
+    /**
      * AI-seeds in klanttaal. Leeg bij ontbrekende key of fout — het
      * onderzoek valt dan terug op DataForSEO-suggesties rond het domein.
      */
     protected function aiSeedKeywords(): array
     {
+        $this->aiError = null;
+
         $apiKey = Setting::get('anthropic_api_key') ?: config('services.anthropic.api_key');
         if (empty($apiKey)) {
+            $this->aiError = 'Er staat geen Anthropic-key bij Groei → SEO-instellingen.';
+
             return [];
         }
 
@@ -981,13 +1045,37 @@ PROMPT;
 
             if (! $response->successful()) {
                 Log::warning('Keyword-seeds mislukt', ['status' => $response->status(), 'body' => $response->body()]);
+                $this->aiError = 'De Anthropic API antwoordde met status ' . $response->status() . ': '
+                    . ($response->json('error.message') ?: Str::limit($response->body(), 200));
 
                 return [];
             }
 
-            $text = trim((string) $response->json('content.0.text', ''));
+            // Via firstTextBlock(), niet `content.0.text`: het model heeft
+            // adaptive thinking aan staan, dus het eerste blok is een
+            // thinking-blok met lege tekst. Dat leverde stilzwijgend nul seeds
+            // op, waarna DataForSEO enkel het kale domein als zoekterm kreeg
+            // en het hele onderzoek zonder één foutmelding leeg terugkwam.
+            $text = $this->firstTextBlock($response->json('content', []));
+
+            if ($text === null) {
+                Log::warning('Keyword-seeds: geen tekstblok in het antwoord', [
+                    'stop_reason' => $response->json('stop_reason'),
+                    'types' => array_map(fn ($b) => $b['type'] ?? '?', $response->json('content', [])),
+                ]);
+                $this->aiError = 'De AI gaf geen bruikbaar antwoord terug (stop_reason: '
+                    . ($response->json('stop_reason') ?: 'onbekend') . ').';
+
+                return [];
+            }
+
             $text = preg_replace('/^```(?:json)?|```$/m', '', $text);
             $decoded = json_decode(trim($text), true);
+
+            if (! is_array($decoded)) {
+                Log::warning('Keyword-seeds: antwoord is geen JSON-lijst', ['text' => Str::limit($text, 300)]);
+                $this->aiError = 'De AI antwoordde niet met een JSON-lijst zoektermen.';
+            }
 
             return collect(is_array($decoded) ? $decoded : [])
                 ->filter(fn ($kw) => is_string($kw) && trim($kw) !== '')
@@ -997,6 +1085,7 @@ PROMPT;
                 ->all();
         } catch (\Throwable $e) {
             Log::error('Keyword-seeds fout', ['error' => $e->getMessage()]);
+            $this->aiError = 'De AI-oproep liep vast: ' . $e->getMessage();
 
             return [];
         }

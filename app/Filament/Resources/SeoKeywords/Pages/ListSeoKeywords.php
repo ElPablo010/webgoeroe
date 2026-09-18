@@ -8,6 +8,7 @@ use App\Jobs\SuggestKeywordsJob;
 use App\Models\Setting;
 use App\Models\SeoKeyword;
 use App\Services\DataForSeoService;
+use App\Support\JobStatus;
 use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Forms\Components\Textarea;
@@ -28,8 +29,9 @@ class ListSeoKeywords extends ListRecords
     }
 
     /**
-     * Het voorstellenblok (checkboxes) boven de tabel — enkel zichtbaar als er
-     * voorstellen bewaard zijn (zie SeoKeywordSuggestions::canView).
+     * Het voorstellenblok (checkboxes) boven de tabel — zichtbaar zodra er
+     * voorstellen bewaard zijn óf er een onderzoek loopt of misliep (zie
+     * SeoKeywordSuggestions::canView).
      *
      * @return array<class-string>
      */
@@ -128,25 +130,46 @@ class ListSeoKeywords extends ListRecords
      * Zet het keyword-onderzoek op de queue. AI-call + twee DataForSEO-calls
      * zijn te traag voor een web-request op shared hosting. Rate-limited: één
      * run per tien minuten volstaat, elke run kost API-credits.
+     *
+     * De stand gaat mee in een JobStatus, zodat het blok hierboven kan tonen
+     * dát het loopt — ook als je het scherm intussen verlaat.
      */
     protected function suggestKeywords(): void
     {
-        if (RateLimiter::tooManyAttempts('seo-suggest-keywords', 1)) {
+        $status = JobStatus::for(SuggestKeywordsJob::STATUS_KEY);
+
+        if ($status->isBusy()) {
             Notification::make()
                 ->title('Er loopt al een keyword-onderzoek')
-                ->body('Wacht enkele minuten; de voorstellen verschijnen vanzelf bovenaan dit scherm.')
+                ->body('De stand staat bovenaan dit scherm en ververst vanzelf.')
                 ->warning()
                 ->send();
 
             return;
         }
-        RateLimiter::hit('seo-suggest-keywords', 600);
+
+        // Tweede slot: ook als de vorige run al klaar is, kost elke nieuwe run
+        // API-credits. Eén per tien minuten volstaat ruimschoots.
+        if (RateLimiter::tooManyAttempts(SuggestKeywordsJob::RATE_LIMIT_KEY, 1)) {
+            $minutes = (int) ceil(RateLimiter::availableIn(SuggestKeywordsJob::RATE_LIMIT_KEY) / 60);
+
+            Notification::make()
+                ->title('Net al een onderzoek gedaan')
+                ->body("Elke run kost API-credits. Probeer over {$minutes} minuten opnieuw.")
+                ->warning()
+                ->send();
+
+            return;
+        }
+        RateLimiter::hit(SuggestKeywordsJob::RATE_LIMIT_KEY, 600);
+
+        $status->queued();
 
         SuggestKeywordsJob::dispatch();
 
         Notification::make()
             ->title('Keyword-onderzoek gestart')
-            ->body('De voorstellen verschijnen binnen enkele minuten bovenaan dit scherm (herlaad de pagina).')
+            ->body('De stand verschijnt bovenaan dit scherm en ververst vanzelf — je mag gerust weggaan en later terugkomen.')
             ->success()
             ->send();
     }

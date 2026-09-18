@@ -27,6 +27,14 @@ class DataForSeoService
     /** Som van de kost (USD) van alle calls in deze instance-levensduur. */
     public float $spent = 0.0;
 
+    /**
+     * De reden waarom de laatste call niets opleverde. De methodes hierboven
+     * geven bij een fout gewoon een lege array terug — prima voor de code,
+     * maar een knop in de admin kan dan niet zeggen wat er misging, en op
+     * gedeelde hosting leest niemand `storage/logs/laravel.log`.
+     */
+    protected ?string $lastError = null;
+
     public function __construct()
     {
         $this->login = Setting::get('dataforseo_login');
@@ -41,6 +49,11 @@ class DataForSeoService
     public function isConfigured(): bool
     {
         return !empty($this->login) && !empty($this->password);
+    }
+
+    public function lastError(): ?string
+    {
+        return $this->lastError;
     }
 
     /* ---------------------------------------------------------------------
@@ -487,8 +500,12 @@ class DataForSeoService
     protected function request(string $method, string $endpoint, array $payload = []): array
     {
         if (!$this->isConfigured()) {
+            $this->lastError = 'DataForSEO niet geconfigureerd.';
+
             return ['status_code' => 40100, 'status_message' => 'DataForSEO niet geconfigureerd.'];
         }
+
+        $this->lastError = null;
 
         try {
             $http = Http::withBasicAuth($this->login, $this->password)
@@ -510,6 +527,8 @@ class DataForSeoService
                     'status' => $json['status_code'] ?? $response->status(),
                     'message' => $json['status_message'] ?? null,
                 ]);
+                $this->lastError = 'DataForSEO gaf fout ' . ($json['status_code'] ?? $response->status())
+                    . ($json['status_message'] ?? null ? ': ' . $json['status_message'] : '') . '.';
             } elseif ($cost > 0) {
                 Log::info('DataForSEO call', ['endpoint' => $endpoint, 'cost' => $cost]);
             }
@@ -517,6 +536,7 @@ class DataForSeoService
             return $json;
         } catch (\Throwable $e) {
             Log::error('DataForSEO request mislukt', ['endpoint' => $endpoint, 'error' => $e->getMessage()]);
+            $this->lastError = 'De DataForSEO-oproep liep vast: ' . $e->getMessage();
 
             return ['status_code' => 50000, 'status_message' => $e->getMessage()];
         }

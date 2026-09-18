@@ -9,6 +9,19 @@
         $filters = ['all' => 'Alle', 'pending' => 'Te beoordelen', 'published' => 'Goedgekeurd', 'dismissed' => 'Genegeerd'];
     @endphp
 
+    {{-- Loopt de analyse nog, of is ze vastgelopen? Staat in `settings`, dus ook
+         zichtbaar wanneer je intussen weg was en terugkomt. --}}
+    <div @if ($this->pollInterval()) wire:poll.{{ $this->pollInterval() }} @endif>
+        <x-admin.job-status-banner
+            :status="$this->jobStatus()"
+            busy-title="De analyse loopt…"
+            queued-title="De analyse staat in de wachtrij…"
+            busy-body="Het model schrijft volledige landingspagina's uit; reken op een minuut of twee. Je mag dit scherm gerust verlaten — de stand staat er bij terugkomst nog."
+            failed-title="De analyse leverde niets nieuws op"
+            dismiss="dismissJobStatus"
+        />
+    </div>
+
     {{-- Waarom er niets te beoordelen staat — anders lijkt een lege lijst op een storing --}}
     @if ($notice = $this->runNotice())
         <div style="border:1px solid rgb(252 211 77);background:rgb(255 251 235);color:rgb(120 53 15);border-radius:.75rem;padding:.75rem 1rem;font-size:.875rem;">

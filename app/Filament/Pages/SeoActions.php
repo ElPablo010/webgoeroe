@@ -8,6 +8,7 @@ use App\Models\SeoKeyword;
 use App\Models\Setting;
 use App\Services\DataForSeoService;
 use App\Services\SeoActionApplier;
+use App\Support\JobStatus;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
@@ -260,6 +261,23 @@ class SeoActions extends Page
         }
     }
 
+    /** De stand van de lopende (of laatste) analyse — voedt de banner bovenaan. */
+    public function jobStatus(): JobStatus
+    {
+        return JobStatus::for(GenerateSeoActionsJob::STATUS_KEY);
+    }
+
+    /** Terwijl de analyse loopt ververst de pagina zichzelf. */
+    public function pollInterval(): ?string
+    {
+        return $this->jobStatus()->isBusy() ? '15s' : null;
+    }
+
+    public function dismissJobStatus(): void
+    {
+        $this->jobStatus()->clear();
+    }
+
     public function generateNow(): void
     {
         if (! app(DataForSeoService::class)->isConfigured()) {
@@ -268,24 +286,39 @@ class SeoActions extends Page
             return;
         }
 
+        $status = $this->jobStatus();
+
+        if ($status->isBusy()) {
+            Notification::make()
+                ->title('De analyse loopt al')
+                ->body('De stand staat bovenaan dit scherm en ververst vanzelf.')
+                ->warning()
+                ->send();
+
+            return;
+        }
+
         // Elke aanroep is een AI-call — bescherm tegen dubbelklikken.
-        if (RateLimiter::tooManyAttempts('seo-generate-actions', 1)) {
-            $seconds = RateLimiter::availableIn('seo-generate-actions');
+        if (RateLimiter::tooManyAttempts(GenerateSeoActionsJob::RATE_LIMIT_KEY, 1)) {
+            $seconds = RateLimiter::availableIn(GenerateSeoActionsJob::RATE_LIMIT_KEY);
             Notification::make()->title("Even geduld — probeer opnieuw over {$seconds}s.")->warning()->send();
 
             return;
         }
-        RateLimiter::hit('seo-generate-actions', 120);
+        RateLimiter::hit(GenerateSeoActionsJob::RATE_LIMIT_KEY, 120);
+
+        $status->queued();
 
         // Naar de queue: het model schrijft volledige landingspagina's uit en
         // doet daar ruim een minuut over. Synchroon loopt dat op shared hosting
         // in een time-out, zonder dat er iets wordt opgeslagen. Vereist wel een
-        // draaiende `queue:work`.
+        // draaiende `queue:work` — draait die niet, dan zegt de banner dat na
+        // een paar minuten zelf.
         GenerateSeoActionsJob::dispatch();
 
         Notification::make()
             ->title('De analyse loopt')
-            ->body('De voorstellen verschijnen hier na een minuut of twee — ververs de pagina.')
+            ->body('De stand verschijnt bovenaan dit scherm en ververst vanzelf — je mag gerust weggaan en later terugkomen.')
             ->success()
             ->send();
     }

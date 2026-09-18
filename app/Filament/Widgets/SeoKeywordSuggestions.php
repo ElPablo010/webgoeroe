@@ -2,10 +2,12 @@
 
 namespace App\Filament\Widgets;
 
+use App\Jobs\SuggestKeywordsJob;
 use App\Models\Setting;
 use App\Models\SeoKeyword;
 use App\Services\DataForSeoService;
 use App\Services\SeoAdvisorService;
+use App\Support\JobStatus;
 use Filament\Notifications\Notification;
 use Filament\Widgets\Widget;
 use Illuminate\Support\Carbon;
@@ -15,6 +17,11 @@ use Illuminate\Support\Carbon;
  * checkboxes. Aangevinkte keywords gaan de opvolging in en verdwijnen uit de
  * voorstellen. Nooit automatisch toevoegen: elke opgevolgde keyword kost
  * wekelijks een SERP-meting. Enkel bovenaan het Keywords-scherm.
+ *
+ * Draagt óók de voortgang van het onderzoek zelf. Zonder die melding is een
+ * lopend onderzoek niet te onderscheiden van een mislukt onderzoek: allebei
+ * tonen ze een leeg scherm, en het verschil merk je pas als je een kwartier
+ * later nog steeds niets ziet.
  */
 class SeoKeywordSuggestions extends Widget
 {
@@ -29,7 +36,29 @@ class SeoKeywordSuggestions extends Widget
 
     public static function canView(): bool
     {
-        return static::stored()['items'] !== [];
+        return static::stored()['items'] !== []
+            || JobStatus::for(SuggestKeywordsJob::STATUS_KEY)->state() !== null;
+    }
+
+    /** De stand van het lopende (of laatste) onderzoek. */
+    public function status(): JobStatus
+    {
+        return JobStatus::for(SuggestKeywordsJob::STATUS_KEY);
+    }
+
+    /**
+     * Terwijl het onderzoek loopt ververst dit blok zichzelf, zodat de
+     * voorstellen verschijnen zonder dat je de pagina moet herladen.
+     */
+    public function pollInterval(): ?string
+    {
+        return $this->status()->isBusy() ? '10s' : null;
+    }
+
+    /** Melding weggeklikt: de stand mag weg, de voorstellen blijven staan. */
+    public function dismissStatus(): void
+    {
+        $this->status()->clear();
     }
 
     /**
@@ -109,6 +138,7 @@ class SeoKeywordSuggestions extends Widget
     public function discardAll(): void
     {
         Setting::set(SeoAdvisorService::KEYWORD_SUGGESTIONS_SETTING, null);
+        $this->status()->clear();
         $this->selected = [];
 
         Notification::make()->title('Voorstellen gewist')->success()->send();
