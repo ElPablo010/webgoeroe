@@ -7,6 +7,7 @@ use App\Models\Page as ContentPage;
 use App\Models\Setting;
 use App\Services\GoogleAnalyticsService;
 use App\Services\GoogleSearchConsoleService;
+use App\Services\Seo\ActionBacklog;
 use App\Services\Seo\LandingPageBlueprint;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -73,6 +74,8 @@ class SeoSettings extends Page
         'seo_location_code',
         'seo_language_code',
         'seo_report_email',
+        ActionBacklog::LIMIT_KEY,
+        ActionBacklog::EXPIRE_KEY,
         LandingPageBlueprint::SETTING_KEY,
     ];
 
@@ -99,6 +102,8 @@ class SeoSettings extends Page
         }
         $data['seo_location_code'] = $data['seo_location_code'] ?: 2056;
         $data['seo_language_code'] = $data['seo_language_code'] ?: 'nl';
+        $data[ActionBacklog::LIMIT_KEY] = $data[ActionBacklog::LIMIT_KEY] ?: ActionBacklog::DEFAULT_LIMIT;
+        $data[ActionBacklog::EXPIRE_KEY] = $data[ActionBacklog::EXPIRE_KEY] ?: ActionBacklog::DEFAULT_EXPIRE_DAYS;
         $data['seo_geo_prompts'] = implode("\n", (array) Setting::get('seo_geo_prompts', []));
 
         $this->form->fill($data);
@@ -235,6 +240,23 @@ class SeoSettings extends Page
                     ->description('De AI-key en de "feiten voor AI" staan op de algemene instellingenpagina — hier enkel waar de SEO-briefing heen gaat.')
                     ->schema([
                         TextInput::make('seo_report_email')->label('Rapport-ontvanger')->email()->helperText('Waar de wekelijkse briefing heen gaat. Leeg = MAIL_FROM_ADDRESS.'),
+                    ]),
+
+                Section::make('Verbeteracties')
+                    ->description('Staat er nog één voorstel open, dan genereert de wekelijkse analyse niets. Pas met een lege lijst komen er nieuwe bij — zo groeit de lijst nooit sneller aan dan je hem afwerkt.')
+                    ->schema([
+                        TextInput::make(ActionBacklog::LIMIT_KEY)
+                            ->label('Nieuwe acties per keer')
+                            ->numeric()
+                            ->minValue(1)
+                            ->maxValue(50)
+                            ->helperText('Hoeveel voorstellen je krijgt zodra de lijst leeg is. Standaard 5.'),
+                        TextInput::make(ActionBacklog::EXPIRE_KEY)
+                            ->label('Voorstellen vervallen na (dagen)')
+                            ->numeric()
+                            ->minValue(1)
+                            ->maxValue(365)
+                            ->helperText('Onbeoordeelde voorstellen verdwijnen vanzelf. Nodig, want anders blokkeert één blijver alle nieuwe voorstellen — en een oud voorstel klopt toch niet meer met de huidige posities. Standaard 60.'),
                     ]),
 
                 Section::make('GEO / AI-zichtbaarheid')

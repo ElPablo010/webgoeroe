@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Services\Seo\ActionBacklog;
 use App\Services\SeoAdvisorService;
 use App\Support\JobStatus;
 use Illuminate\Bus\Queueable;
@@ -38,18 +39,40 @@ class GenerateSeoActionsJob implements ShouldQueue
 
     public $timeout = 600;
 
-    public function handle(SeoAdvisorService $advisor): void
+    /**
+     * @param  bool  $force  Genereer ook als de lijst vol staat — de beheerder
+     *                       klikte de waarschuwing bewust weg. De grens op het
+     *                       aantal nieuwe acties blijft wél gelden, anders
+     *                       levert één klik alsnog een overvolle lijst op.
+     */
+    public function __construct(public bool $force = false) {}
+
+    public function handle(SeoAdvisorService $advisor, ActionBacklog $backlog): void
     {
         $status = JobStatus::for(self::STATUS_KEY);
         $status->running();
 
-        $actions = $advisor->generateActions($advisor->buildContext());
-        $stored = $advisor->storeActions($actions);
+        // Eerst opruimen: achterhaalde voorstellen maken ruimte vrij, dus dit
+        // moet vóór de ruimte-berekening gebeuren.
+        $expired = $backlog->expireStale();
 
-        Log::info('SEO-acties gegenereerd via de knop', $stored);
+        if (! $this->force && $backlog->isBlocked()) {
+            // Nog vóór de AI-call, zodat een geblokkeerde run niets kost.
+            $status->failed($this->fullMessage($backlog));
+            RateLimiter::clear(self::RATE_LIMIT_KEY);
+
+            return;
+        }
+
+        $room = $this->force ? $backlog->limit() : $backlog->room();
+
+        $actions = $advisor->generateActions($advisor->buildContext());
+        $stored = $advisor->storeActions($actions, null, $room);
+
+        Log::info('SEO-acties gegenereerd via de knop', $stored + ['expired' => $expired, 'room' => $room]);
 
         if (($stored['created'] ?? 0) > 0) {
-            $status->done($stored['created'] . ' nieuwe acties.');
+            $status->done($stored['created'].' nieuwe acties.');
 
             return;
         }
@@ -58,7 +81,7 @@ class GenerateSeoActionsJob implements ShouldQueue
         // anders lijkt een leeg scherm op een mislukte run. runNotice() legt
         // het geval "alles stond er al" verder uit.
         $status->failed(($stored['proposed'] ?? 0) > 0
-            ? 'De analyse stelde ' . $stored['proposed'] . ' acties voor, maar die stonden hier al eerder.'
+            ? 'De analyse stelde '.$stored['proposed'].' acties voor, maar die stonden hier al eerder.'
             : ($advisor->lastError() ?? 'De analyse leverde geen enkel voorstel op.'));
 
         RateLimiter::clear(self::RATE_LIMIT_KEY);
@@ -67,8 +90,16 @@ class GenerateSeoActionsJob implements ShouldQueue
     public function failed(?Throwable $e): void
     {
         JobStatus::for(self::STATUS_KEY)
-            ->failed('De analyse liep vast: ' . ($e?->getMessage() ?: 'onbekende fout') . '.');
+            ->failed('De analyse liep vast: '.($e?->getMessage() ?: 'onbekende fout').'.');
 
         RateLimiter::clear(self::RATE_LIMIT_KEY);
+    }
+
+    protected function fullMessage(ActionBacklog $backlog): string
+    {
+        $open = $backlog->openCount();
+
+        return "Er staan nog {$open} acties open. Handel ze eerst af — goedkeuren of "
+            ."negeren — dan staan er {$backlog->limit()} nieuwe klaar.";
     }
 }

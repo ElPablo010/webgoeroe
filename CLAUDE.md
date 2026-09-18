@@ -320,6 +320,40 @@ OAuth-callback keert ook daarheen terug.
   als Keywords: [`<x-admin.job-status-banner>`](resources/views/components/admin/job-status-banner.blade.php).
   Voeg je nog zo'n knop toe, hergebruik dan die twee — niet opnieuw een eigen
   melding schrijven.
+- **Staat er nog één actie open, dan genereert de wekelijkse run niets.**
+  [`ActionBacklog`](app/Services/Seo/ActionBacklog.php) bewaakt dat. Is de
+  lijst leeg, dan komen er hoogstens `seo_actions_max_open` (standaard 5)
+  nieuwe bij; `storeActions()` sorteert eerst op prioriteit, zodat wat
+  sneuvelt het minst belangrijke voorstel is en niet toevallig het laatste.
+  Twee regels dus: **leeg = vijf nieuwe, niet leeg = niets.** Bewust geen
+  aanvullen-tot-vijf: dan komt de lijst nooit op nul en ben je nooit klaar.
+  - **Waarom dit er is:** het probleem was niet dat voorstellen op elkaar
+    leken, maar dat ze bleven aangroeien. Liep je een paar weken achter, dan
+    keek je naar twintig kaarten met twee keer dezelfde FAQ voor dezelfde
+    pagina ertussen — want de fingerprint keek alleen naar de *inhoud* van een
+    voorstel, en een andere formulering telde als nieuw. Met een korte lijst
+    verdwijnt die overlap vanzelf: een tweede voorstel voor dezelfde pagina kan
+    alleen ontstaan zolang het eerste nog openstaat. Vandaar géén slimmere
+    dedup — wél een kortere lijst.
+  - **De blokkade zit vóór de AI-call.** Een overgeslagen week kost dus niets,
+    waar hij vroeger een volledige generatie betaalde (het model schrijft
+    landingspagina's uit) om de uitkomst daarna als duplicaat weg te gooien.
+  - **Onbeoordeelde voorstellen vervallen** na `seo_actions_expire_days`
+    (standaard 60) naar status `expired`. Dat is geen opruimkosmetiek maar de
+    reden dat de regel veilig is: zonder verval legt één blijver de module
+    voorgoed stil. En een actie van twee maanden oud is gebouwd op posities
+    die intussen verschoven zijn, dus die wil je sowieso niet meer uitvoeren.
+    Terugzetten kan; `reopened_at` herstart dan de vervalklok, anders zou het
+    voorstel bij de eerstvolgende run meteen opnieuw vervallen.
+  - **De weekmail blijft altijd gaan** — alleen het voorstellen-blok vervalt.
+    In een geblokkeerde week somt hij de openstaande items op met hun ouderdom
+    en de datum waarop de oudste vanzelf verdwijnt. Een kaal "niets nieuws"
+    lees je na de derde week niet meer.
+  - **De knop "Genereer acties nu" blokkeert niet**, hij bevestigt: dat is de
+    handmatige noodrem en die moet bruikbaar blijven. Forceren negeert de
+    blokkade, niet het maximum aantal nieuwe acties.
+  - Bulkknop "Negeer oude voorstellen" (ouder dan `SeoActions::STALE_DAYS`,
+    30 dagen) om de lijst in één klik vlot te trekken.
 - **⚠️ Lees een Anthropic-antwoord nooit als `content.0.text`.** Het model heeft
   adaptive thinking aan, dus blok 0 is een *thinking*-blok met lege tekst.
   Gebruik `SeoAdvisorService::firstTextBlock()` (of `firstWhere('type', 'tool_use')`
@@ -369,7 +403,9 @@ OAuth-callback keert ook daarheen terug.
 Vastgelegd in `tests/Feature/LeadAttributionTest.php`,
 `tests/Feature/SeoLeadsPageTest.php`, `tests/Feature/SearchConsoleTest.php`,
 `tests/Feature/SeoKeywordSuggestTest.php`,
-`tests/Feature/SeoLandingBlueprintTest.php` (de sjabloon-gestuurde landingspagina), `tests/Feature/GoogleApiClientTest.php`
+`tests/Feature/SeoLandingBlueprintTest.php` (de sjabloon-gestuurde landingspagina),
+`tests/Feature/SeoActionBacklogTest.php` (de grens op openstaande acties, het
+vervallen en de geblokkeerde weekmail), `tests/Feature/GoogleApiClientTest.php`
 (de gedeelde inloglaag, op een verzonnen subklasse zodat ze echt losstaat van
 één API), `tests/Feature/AnalyticsCollectorTest.php` (de GA4-sync en het tweede
 tabblad) en `tests/Feature/AnalyticsSnippetTest.php` (geen meet-ID = geen

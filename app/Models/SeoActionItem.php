@@ -33,6 +33,7 @@ class SeoActionItem extends Model
         'result_url',
         'applied_at',
         'dismissed_at',
+        'reopened_at',
     ];
 
     protected $casts = [
@@ -40,6 +41,7 @@ class SeoActionItem extends Model
         'metric' => 'array',
         'applied_at' => 'datetime',
         'dismissed_at' => 'datetime',
+        'reopened_at' => 'datetime',
     ];
 
     public function report(): BelongsTo

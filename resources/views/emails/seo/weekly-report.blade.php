@@ -42,6 +42,32 @@ Er is nog geen data verzameld deze week.
 {!! \Illuminate\Support\Str::markdown($advice) !!}
 @endif
 
+@if(!empty($backlog))
+---
+
+## Verbeteracties
+
+@if($backlog['blocked'])
+**Deze week geen nieuwe voorstellen** — er {{ $backlog['open'] === 1 ? 'staat er nog 1 open' : 'staan er nog '.$backlog['open'].' open' }}. Werk je lijst af, dan staan er bij de volgende analyse {{ $backlog['limit'] }} nieuwe klaar.
+
+@foreach($backlog['items'] as $item)
+- {{ $item['title'] }} — {{ $item['days'] === 0 ? 'vandaag' : $item['days'].' '.($item['days'] === 1 ? 'dag' : 'dagen').' oud' }}
+@endforeach
+
+@if($backlog['next_expiry'])
+Kom je er niet aan toe? Dan vervalt het oudste voorstel vanzelf op {{ $backlog['next_expiry']->format('d/m/Y') }} — je hoeft niets op te ruimen.
+@endif
+@elseif($backlog['created'] > 0)
+Er {{ $backlog['created'] === 1 ? 'staat 1 nieuw voorstel' : 'staan '.$backlog['created'].' nieuwe voorstellen' }} klaar ter beoordeling.
+@else
+Geen nieuwe voorstellen deze week — de cijfers gaven geen aanleiding tot een concrete actie.
+@endif
+
+@if($backlog['expired'] > 0)
+{{ $backlog['expired'] }} {{ $backlog['expired'] === 1 ? 'ouder voorstel is' : 'oudere voorstellen zijn' }} vervallen: te lang blijven liggen om nog op de huidige cijfers te kloppen.
+@endif
+@endif
+
 <x-mail::button :url="$dashboardUrl">
 Open het SEO-dashboard
 </x-mail::button>

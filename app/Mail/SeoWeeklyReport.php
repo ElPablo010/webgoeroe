@@ -12,10 +12,15 @@ class SeoWeeklyReport extends Mailable
 {
     use Queueable, SerializesModels;
 
+    /**
+     * @param  array<string,mixed>  $backlog  Stand van de actielijst — zie
+     *                                        SeoWeeklyReportCommand::backlogSummary().
+     */
     public function __construct(
         public array $context,
         public ?string $advice,
         public string $dashboardUrl,
+        public array $backlog = [],
     ) {
     }
 

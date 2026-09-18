@@ -6,6 +6,7 @@ use App\Mail\SeoWeeklyReport;
 use App\Models\SeoReport;
 use App\Models\Setting;
 use App\Services\DataForSeoService;
+use App\Services\Seo\ActionBacklog;
 use App\Services\SeoAdvisorService;
 use App\Services\SeoCollector;
 use Illuminate\Console\Command;
@@ -18,7 +19,7 @@ class SeoWeeklyReportCommand extends Command
 
     protected $description = 'Verzamelt SEO-data, genereert AI-advies en mailt de wekelijkse stand van zaken';
 
-    public function handle(DataForSeoService $api, SeoCollector $collector, SeoAdvisorService $advisor): int
+    public function handle(DataForSeoService $api, SeoCollector $collector, SeoAdvisorService $advisor, ActionBacklog $backlog): int
     {
         if (!$api->isConfigured()) {
             $this->warn('DataForSEO is niet geconfigureerd — overgeslagen.');
@@ -56,11 +57,28 @@ class SeoWeeklyReportCommand extends Command
         ]);
 
         // 4b. Gestructureerde verbeteracties voor het goedkeuringsdashboard.
-        //     Dedup op fingerprint binnen een venster — zie storeActions().
-        $stored = $advisor->storeActions($advisor->generateActions($context), $report->id);
-        $this->info("{$stored['created']} nieuwe verbeteracties aangemaakt ({$stored['proposed']} voorgesteld).");
-        if ($stored['duplicates'] > 0) {
-            $this->warn("{$stored['duplicates']} voorstellen overgeslagen: die stonden er al.");
+        //     Staat de lijst nog vol, dan slaan we dit deel over — de briefing
+        //     hierboven gaat wél gewoon door. Die blijft waardevol in een week
+        //     zonder nieuwe voorstellen, en hem meesmoren zou het stil maken
+        //     precies wanneer er iets uit te leggen valt.
+        $expired = $backlog->expireStale();
+        if ($expired > 0) {
+            $this->info("{$expired} achterhaalde voorstellen vervallen.");
+        }
+
+        $stored = null;
+        if ($backlog->isBlocked()) {
+            $this->warn("Geen nieuwe verbeteracties: er staan er nog {$backlog->openCount()} open (grens: {$backlog->limit()}).");
+        } else {
+            // Dedup op fingerprint binnen een venster — zie storeActions().
+            $stored = $advisor->storeActions($advisor->generateActions($context), $report->id, $backlog->room());
+            $this->info("{$stored['created']} nieuwe verbeteracties aangemaakt ({$stored['proposed']} voorgesteld).");
+            if ($stored['duplicates'] > 0) {
+                $this->warn("{$stored['duplicates']} voorstellen overgeslagen: die stonden er al.");
+            }
+            if ($stored['skipped'] > 0) {
+                $this->warn("{$stored['skipped']} voorstellen vielen weg: de lijst zat aan haar grens.");
+            }
         }
 
         // 5. Mail de stand van zaken.
@@ -71,6 +89,7 @@ class SeoWeeklyReportCommand extends Command
                     context: $context,
                     advice: $advice,
                     dashboardUrl: url('/admin/seo-actions'),
+                    backlog: $this->backlogSummary($backlog, $stored, $expired),
                 ));
                 $report->update(['emailed' => true]);
                 $this->info("Rapport gemaild naar {$recipient}.");
@@ -80,5 +99,35 @@ class SeoWeeklyReportCommand extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Wat de mail over de actielijst moet vertellen. Bij een geblokkeerde week
+     * is een kaal aantal te weinig: dan lees je zeven weken lang "niets
+     * nieuws" en haak je af. Daarom gaan de openstaande items zelf mee, met
+     * hun ouderdom en de datum waarop de oudste vervalt — dat maakt van de
+     * melding een beslissing in plaats van een mededeling.
+     *
+     * @param  array{proposed:int,created:int,duplicates:int,skipped:int}|null  $stored
+     * @return array<string,mixed>
+     */
+    protected function backlogSummary(ActionBacklog $backlog, ?array $stored, int $expired): array
+    {
+        $blocked = $stored === null;
+
+        return [
+            'blocked' => $blocked,
+            'created' => $stored['created'] ?? 0,
+            'expired' => $expired,
+            'open' => $backlog->openCount(),
+            'limit' => $backlog->limit(),
+            'next_expiry' => $blocked ? $backlog->nextExpiryAt() : null,
+            'items' => $blocked
+                ? $backlog->openItems()->map(fn ($i) => [
+                    'title' => $i->title,
+                    'days' => (int) $i->created_at->startOfDay()->diffInDays(Carbon::today()),
+                ])->all()
+                : [],
+        ];
     }
 }

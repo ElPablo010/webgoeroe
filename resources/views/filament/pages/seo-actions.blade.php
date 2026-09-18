@@ -5,8 +5,8 @@
         $domain = app(\App\Services\DataForSeoService::class)->target;
         $typeLabels = ['create_page' => 'Nieuwe pagina', 'add_section' => 'FAQ toevoegen', 'optimize_meta' => 'Meta optimaliseren'];
         $prioLabels = ['high' => 'Hoge impact', 'medium' => 'Middelmatige impact', 'low' => 'Lage impact'];
-        $statusBadge = ['pending' => ['Te beoordelen', 'warning'], 'published' => ['Gepubliceerd', 'success'], 'dismissed' => ['Genegeerd', 'gray']];
-        $filters = ['all' => 'Alle', 'pending' => 'Te beoordelen', 'published' => 'Goedgekeurd', 'dismissed' => 'Genegeerd'];
+        $statusBadge = ['pending' => ['Te beoordelen', 'warning'], 'published' => ['Gepubliceerd', 'success'], 'dismissed' => ['Genegeerd', 'gray'], 'expired' => ['Vervallen', 'gray']];
+        $filters = ['all' => 'Alle', 'pending' => 'Te beoordelen', 'published' => 'Goedgekeurd', 'dismissed' => 'Genegeerd', 'expired' => 'Vervallen'];
     @endphp
 
     {{-- Loopt de analyse nog, of is ze vastgelopen? Staat in `settings`, dus ook
@@ -21,6 +21,14 @@
             dismiss="dismissJobStatus"
         />
     </div>
+
+    {{-- Waarom er niets bijkomt: de lijst staat vol. Zonder deze regel lijkt dat
+         op een stilgevallen module in plaats van op de bedoelde rem. --}}
+    @if ($backlogNotice = $this->backlogNotice())
+        <div style="border:1px solid rgb(191 219 254);background:rgb(239 246 255);color:rgb(30 58 138);border-radius:.75rem;padding:.75rem 1rem;font-size:.875rem;">
+            {{ $backlogNotice }}
+        </div>
+    @endif
 
     {{-- Waarom er niets te beoordelen staat — anders lijkt een lege lijst op een storing --}}
     @if ($notice = $this->runNotice())
@@ -193,7 +201,9 @@
                             </div>
                         @endif
                     @else
-                        <span style="font-size:.85rem;opacity:.7;">Genegeerd</span>
+                        <span style="font-size:.85rem;opacity:.7;">
+                            {{ $item['status'] === 'expired' ? 'Vervallen — te lang blijven liggen om nog op de huidige cijfers te kloppen' : 'Genegeerd' }}
+                        </span>
                         <x-filament::button wire:click="restore({{ $item['id'] }})" color="gray" size="sm">Terugzetten</x-filament::button>
                     @endif
                 </div>

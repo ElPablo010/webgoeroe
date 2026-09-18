@@ -7,6 +7,7 @@ use App\Models\SeoActionItem;
 use App\Models\SeoKeyword;
 use App\Models\Setting;
 use App\Services\DataForSeoService;
+use App\Services\Seo\ActionBacklog;
 use App\Services\SeoActionApplier;
 use App\Support\JobStatus;
 use BackedEnum;
@@ -40,6 +41,9 @@ class SeoActions extends Page
     protected static ?int $navigationSort = 20;
 
     protected string $view = 'filament.pages.seo-actions';
+
+    /** Vanaf wanneer een openstaand voorstel "oud" heet — voedt de bulkknop. */
+    public const STALE_DAYS = 30;
 
     public string $filter = 'all';
 
@@ -75,13 +79,86 @@ class SeoActions extends Page
     protected function getHeaderActions(): array
     {
         return [
+            // Bewust géén harde blokkade zolang er werk ligt: dit is de
+            // handmatige noodrem, en die dichttimmeren is irritant op het
+            // moment dat je juist controle wilt. Een bevestiging haalt hetzelfde
+            // doel — je ziet wat je aanricht — zonder je de weg te versperren.
             Action::make('generate')
                 ->label('Genereer acties nu')
                 ->icon(Heroicon::OutlinedSparkles)
                 ->color('primary')
                 ->disabled(fn () => ! app(DataForSeoService::class)->isConfigured())
-                ->action('generateNow'),
+                ->requiresConfirmation(fn () => $this->backlog()->isBlocked())
+                ->modalHeading('Er ligt nog werk')
+                ->modalDescription(fn () => 'Er staan nog '.$this->backlog()->openCount()
+                    .' acties open. Nieuwe voorstellen maken het lijstje alleen langer — '
+                    .'handel ze eerst af, of genereer toch.')
+                ->modalSubmitActionLabel('Toch genereren')
+                ->action(fn () => $this->generateNow()),
+
+            Action::make('dismissOld')
+                ->label('Negeer oude voorstellen')
+                ->icon(Heroicon::OutlinedArchiveBox)
+                ->color('gray')
+                ->visible(fn () => $this->staleCount() > 0)
+                ->requiresConfirmation()
+                ->modalHeading('Oude voorstellen negeren')
+                ->modalDescription(fn () => $this->staleCount().' voorstellen zijn ouder dan '
+                    .self::STALE_DAYS.' dagen. Die zijn gebouwd op posities die intussen verschoven '
+                    .'zijn — negeren maakt ruimte voor verse voorstellen.')
+                ->modalSubmitActionLabel('Negeren')
+                ->action(fn () => $this->dismissOld()),
         ];
+    }
+
+    /** De bewaker van de openstaande lijst. */
+    public function backlog(): ActionBacklog
+    {
+        return app(ActionBacklog::class);
+    }
+
+    /** Hoeveel openstaande voorstellen al te oud zijn om nog te kloppen. */
+    public function staleCount(): int
+    {
+        return SeoActionItem::pending()
+            ->where('created_at', '<', Carbon::now()->subDays(self::STALE_DAYS))
+            ->count();
+    }
+
+    /**
+     * Legt uit waarom er géén nieuwe voorstellen bijkomen. Zonder deze regel
+     * lijkt een lijst die niet aangroeit op een stilgevallen module, terwijl
+     * het juist de bedoeling is: eerst afwerken, dan pas nieuwe.
+     */
+    public function backlogNotice(): ?string
+    {
+        $backlog = $this->backlog();
+
+        if (! $backlog->isBlocked()) {
+            return null;
+        }
+
+        $open = $backlog->openCount();
+        $expiry = $backlog->nextExpiryAt();
+
+        return 'Er komen geen nieuwe voorstellen bij zolang '.($open === 1
+            ? 'dit voorstel openstaat'
+            : 'deze '.$open.' voorstellen openstaan')
+            .'. Keur ze goed of negeer ze, dan staan er bij de volgende wekelijkse analyse '
+            .$backlog->limit().' nieuwe klaar.'
+            .($expiry ? ' Het oudste vervalt automatisch op '.$expiry->format('d/m/Y').'.' : '');
+    }
+
+    public function dismissOld(): void
+    {
+        $count = SeoActionItem::pending()
+            ->where('created_at', '<', Carbon::now()->subDays(self::STALE_DAYS))
+            ->update(['status' => 'dismissed', 'dismissed_at' => now()]);
+
+        Notification::make()
+            ->title($count.' '.($count === 1 ? 'voorstel genegeerd' : 'voorstellen genegeerd'))
+            ->success()
+            ->send();
     }
 
     /* ---------------------------------------------------------------- */
@@ -91,7 +168,7 @@ class SeoActions extends Page
      */
     public function items(): array
     {
-        $order = ['pending' => 0, 'published' => 1, 'dismissed' => 2];
+        $order = ['pending' => 0, 'published' => 1, 'dismissed' => 2, ActionBacklog::STATUS_EXPIRED => 3];
 
         return SeoActionItem::with('page:id,slug,title,is_homepage')
             ->latest()
@@ -159,6 +236,7 @@ class SeoActions extends Page
             'pending' => $all->where('status', 'pending')->count(),
             'published' => $all->where('status', 'published')->count(),
             'dismissed' => $all->where('status', 'dismissed')->count(),
+            ActionBacklog::STATUS_EXPIRED => $all->where('status', ActionBacklog::STATUS_EXPIRED)->count(),
         ];
     }
 
@@ -257,9 +335,18 @@ class SeoActions extends Page
     public function restore(int $id): void
     {
         $item = SeoActionItem::findOrFail($id);
-        if ($item->status === 'dismissed') {
-            $item->update(['status' => 'pending', 'dismissed_at' => null]);
+        if (! in_array($item->status, ['dismissed', ActionBacklog::STATUS_EXPIRED], true)) {
+            return;
         }
+
+        // `reopened_at` herstart de vervalklok: zonder dat zou een teruggezet
+        // voorstel bij de eerstvolgende run meteen opnieuw vervallen, want z'n
+        // created_at ligt al ver achter ons.
+        $item->update([
+            'status' => 'pending',
+            'dismissed_at' => null,
+            'reopened_at' => now(),
+        ]);
     }
 
     /** De stand van de lopende (of laatste) analyse — voedt de banner bovenaan. */
@@ -308,6 +395,11 @@ class SeoActions extends Page
         }
         RateLimiter::hit(GenerateSeoActionsJob::RATE_LIMIT_KEY, 120);
 
+        // Vol? Dan kwam de klik langs de bevestiging hierboven — dat is een
+        // bewuste keuze, dus laten we hem door. Het aantal nieuwe acties blijft
+        // wel begrensd; forceren mag de lijst verlengen, niet laten ontploffen.
+        $force = $this->backlog()->isBlocked();
+
         $status->queued();
 
         // Naar de queue: het model schrijft volledige landingspagina's uit en
@@ -315,7 +407,7 @@ class SeoActions extends Page
         // in een time-out, zonder dat er iets wordt opgeslagen. Vereist wel een
         // draaiende `queue:work` — draait die niet, dan zegt de banner dat na
         // een paar minuten zelf.
-        GenerateSeoActionsJob::dispatch();
+        GenerateSeoActionsJob::dispatch(force: $force);
 
         Notification::make()
             ->title('De analyse loopt')

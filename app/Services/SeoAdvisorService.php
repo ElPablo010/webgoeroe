@@ -399,15 +399,29 @@ PROMPT;
      * De uitkomst gaat naar `seo_actions_last_run`, zodat het dashboard
      * "niets nieuws" kan onderscheiden van "niets gegenereerd".
      *
+     * `$limit` is de ruimte die ActionBacklog nog overlaat. Wat er niet meer
+     * bij past valt weg in plaats van door te schuiven: een voorstel bewaren
+     * tot volgende week heeft geen zin, want dan is het gebouwd op cijfers van
+     * een week oud. Daarom eerst sorteren op prioriteit — wat sneuvelt moet
+     * het minst belangrijke zijn, niet toevallig het laatste dat het model
+     * opsomde.
+     *
      * @param  array<int,array<string,mixed>>  $actions
-     * @return array{proposed:int,created:int,duplicates:int}
+     * @return array{proposed:int,created:int,duplicates:int,skipped:int}
      */
-    public function storeActions(array $actions, ?int $reportId = null): array
+    public function storeActions(array $actions, ?int $reportId = null, ?int $limit = null): array
     {
         $created = 0;
+        $duplicates = 0;
 
-        foreach ($actions as $action) {
+        foreach ($this->byPriority($actions) as $action) {
+            if ($limit !== null && $created >= $limit) {
+                break;
+            }
+
             if ($this->isDuplicateAction($action['fingerprint'])) {
+                $duplicates++;
+
                 continue;
             }
 
@@ -420,7 +434,9 @@ PROMPT;
         $summary = [
             'proposed' => count($actions),
             'created' => $created,
-            'duplicates' => count($actions) - $created,
+            'duplicates' => $duplicates,
+            // Goede voorstellen die enkel niet meer pasten binnen de grens.
+            'skipped' => count($actions) - $created - $duplicates,
         ];
 
         Setting::set('seo_actions_last_run', json_encode($summary + ['at' => Carbon::now()->toIso8601String()]));
@@ -430,6 +446,23 @@ PROMPT;
         }
 
         return $summary;
+    }
+
+    /**
+     * Hoogste prioriteit eerst, en binnen dezelfde prioriteit de volgorde van
+     * het model zelf (dat zet z'n sterkste voorstel doorgaans vooraan).
+     *
+     * @param  array<int,array<string,mixed>>  $actions
+     * @return array<int,array<string,mixed>>
+     */
+    protected function byPriority(array $actions): array
+    {
+        $weight = ['high' => 0, 'medium' => 1, 'low' => 2];
+
+        return collect($actions)
+            ->sortBy(fn ($a) => $weight[$a['priority'] ?? 'medium'] ?? 1)
+            ->values()
+            ->all();
     }
 
     /** Staat dit voorstel al open, of is het net afgehandeld? */
