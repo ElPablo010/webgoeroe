@@ -301,11 +301,49 @@ OAuth-callback keert ook daarheen terug.
   gesloopt: nul seeds → DataForSEO kreeg enkel het kale domein → nul voorstellen
   → een leeg scherm zonder één foutmelding. Vastgelegd in
   `tests/Feature/SeoKeywordSuggestTest.php`.
+- **Een gegenereerde landingspagina volgt een sjabloonpagina**, niet een lijst
+  in code. Je wijst er één aan op Groei → SEO-instellingen → Landingspagina-sjabloon
+  (Setting `seo_landing_template_slug`, standaard `sales-automation`);
+  [`LandingPageBlueprint`](app/Services/Seo/LandingPageBlueprint.php) leest die
+  pagina en bouwt de nieuwe pagina op haar beeld.
+  - **Strikte scheiding skelet/inhoud.** Het sjabloon levert *vorm*: welke
+    secties, in welke volgorde, met welke `background`, welke `section_id`, en
+    per sectie hoeveel knoppen met welke `variant` en welke **bestemming**.
+    Het model levert *alle tekst* — inclusief de knoplabels. Dat laatste is de
+    hele reden voor deze splitsing: vroeger werd de knoptekst letterlijk van de
+    homepage gekopieerd, waardoor twee keer dezelfde zin op de pagina stond,
+    over een onderwerp waar ze niet bij hoorde.
+  - **De knopbestemming blijft een paginakoppeling** (`link_type: page` +
+    `page_id`), niet een uitgerekend pad. Zelfde reden als bij [`SiteCta`](app/Support/SiteCta.php):
+    hernoem je de slug van de bottleneck-scan, dan volgen alle gegenereerde
+    knoppen mee. De oude generator platste dit tot een kale `href` en leverde
+    dus bróósere pagina's op dan wat je met de hand bouwt.
+  - **Onderwerpgebonden velden reizen bewust niet mee**: `filter_tags` en
+    `filter_industry` van de cases-grid blijven achter, anders toont een pagina
+    over telefonie de cases van het sjabloononderwerp.
+  - **Lege secties vallen weg.** Levert het model niets voor een blok, dan komt
+    dat blok er niet — een kortere kloppende pagina verslaat een volledige met
+    lege blokken. Ankerknoppen (`#aanpak`) verdwijnen automatisch mee met de
+    sectie waar ze heen scrollen, anders scrollen ze nergens heen.
+  - **Zonder sjabloon** valt de opbouw terug op de generieke hero → `rich_text`
+    → faq → cta. Die terugval is er voor een verse installatie en voor andere
+    projecten: de sectietypes van dit project (`problem_recognition`,
+    `advantages`, `process_steps`, `cases_grid`) bestaan daar niet.
+  - **Nieuw sectietype in de blueprint?** Twee plekken: `FILLABLE` + een arm in
+    `contentFor()` in de blueprint, en een veldbeschrijving in
+    `landingSchemaProperties()` + een regel in `landingPromptInstructions()` in
+    [`SeoAdvisorService`](app/Services/SeoAdvisorService.php). De prompt somt
+    enkel de secties op die het sjabloon écht heeft.
+  - Let op bij het **bewerkformulier** op het Acties-scherm: de velden "Titel" en
+    "Introtekst" hangen aan het `rich_text`-blok. Een sjabloonpagina heeft dat
+    niet, dus die velden verbergen zich dan (`editForm['has_text']`) — anders
+    zou wat je intikt als los tekstblok áchter de afsluitende CTA belanden.
 - Datums in deze schermen altijd `dd/mm/jjjj`.
 
 Vastgelegd in `tests/Feature/LeadAttributionTest.php`,
 `tests/Feature/SeoLeadsPageTest.php`, `tests/Feature/SearchConsoleTest.php`,
-`tests/Feature/SeoKeywordSuggestTest.php`, `tests/Feature/GoogleApiClientTest.php`
+`tests/Feature/SeoKeywordSuggestTest.php`,
+`tests/Feature/SeoLandingBlueprintTest.php` (de sjabloon-gestuurde landingspagina), `tests/Feature/GoogleApiClientTest.php`
 (de gedeelde inloglaag, op een verzonnen subklasse zodat ze echt losstaat van
 één API), `tests/Feature/AnalyticsCollectorTest.php` (de GA4-sync en het tweede
 tabblad) en `tests/Feature/AnalyticsSnippetTest.php` (geen meet-ID = geen

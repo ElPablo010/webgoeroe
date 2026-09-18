@@ -3,9 +3,11 @@
 namespace App\Filament\Pages;
 
 use App\Http\Controllers\SearchConsoleOAuthController;
+use App\Models\Page as ContentPage;
 use App\Models\Setting;
 use App\Services\GoogleAnalyticsService;
 use App\Services\GoogleSearchConsoleService;
+use App\Services\Seo\LandingPageBlueprint;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Placeholder;
@@ -71,6 +73,7 @@ class SeoSettings extends Page
         'seo_location_code',
         'seo_language_code',
         'seo_report_email',
+        LandingPageBlueprint::SETTING_KEY,
     ];
 
     /**
@@ -210,6 +213,23 @@ class SeoSettings extends Page
                         TextInput::make('seo_language_code')->label('Taalcode')->maxLength(8)->helperText('bv. nl'),
                     ])
                     ->columns(2),
+
+                Section::make('Landingspagina-sjabloon')
+                    ->description('Bepaalt hoe een goedgekeurde "nieuwe pagina"-actie eruitziet. De opbouw van de gekozen pagina wordt gekopieerd — welke secties, in welke volgorde, met welke achtergronden en knoppen. De teksten schrijft de AI zelf, ook de knopteksten; de bestemming van elke knop komt uit het sjabloon.')
+                    ->schema([
+                        Select::make(LandingPageBlueprint::SETTING_KEY)
+                            ->label('Sjabloonpagina')
+                            ->options(fn (): array => ContentPage::query()
+                                ->where('published', true)
+                                ->where('is_homepage', false)
+                                ->orderBy('title')
+                                ->pluck('title', 'slug')
+                                ->all()
+                            )
+                            ->searchable()
+                            ->placeholder('Geen — gebruik de generieke opbouw')
+                            ->helperText('Leeg = de generieke opbouw hero → tekst → FAQ → afsluitende CTA. Kies bij voorkeur een dienstenpagina die de volledige conversieflow doorloopt.'),
+                    ]),
 
                 Section::make('Wekelijkse briefing')
                     ->description('De AI-key en de "feiten voor AI" staan op de algemene instellingenpagina — hier enkel waar de SEO-briefing heen gaat.')

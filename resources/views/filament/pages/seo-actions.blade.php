@@ -48,11 +48,13 @@
             $proposed = $item['proposed'] ?? [];
             $sections = $proposed['sections'] ?? [];
             $text = collect($sections)->firstWhere('section_type', 'rich_text');
-            $sectionLabels = ['hero' => 'Hero + CTA', 'rich_text' => 'Tekst', 'faq' => 'FAQ', 'cta' => 'Afsluitende CTA'];
+            $sectionLabels = \App\Services\Seo\LandingPageBlueprint::LABELS;
             $structure = collect($sections)->pluck('section_type')->map(fn ($t) => $sectionLabels[$t] ?? $t)->all();
             $faqSection = collect($sections)->firstWhere('section_type', 'faq');
             $faqItems = data_get($faqSection, 'content.items', data_get($proposed, 'content.items', []));
-            $metaTitle = $proposed['meta_title'] ?? (data_get($text, 'content.heading') ?: $item['title']);
+            $hero = collect($sections)->firstWhere('section_type', 'hero');
+            $metaTitle = $proposed['meta_title']
+                ?? (data_get($hero, 'content.heading') ?: data_get($text, 'content.heading') ?: $item['title']);
             $metaDesc = $proposed['meta_description'] ?? null;
             $slug = $item['action_type'] === 'create_page'
                 ? ($proposed['slug'] ?? '')
@@ -93,7 +95,7 @@
                         </label>
                     @endif
 
-                    @if ($item['action_type'] === 'create_page')
+                    @if ($item['action_type'] === 'create_page' && ($editForm['has_text'] ?? false))
                         <label style="font-size:.8rem;font-weight:600;">Titel (H1)
                             <input type="text" wire:model="editForm.heading" style="width:100%;padding:.5rem;border:1px solid rgba(128,128,128,.4);border-radius:.5rem;background:transparent;color:inherit;" />
                         </label>

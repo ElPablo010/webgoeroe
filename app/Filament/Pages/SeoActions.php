@@ -65,7 +65,7 @@ class SeoActions extends Page
         $last = SeoActionItem::max('created_at');
 
         return $last
-            ? 'Laatst gegenereerd ' . Carbon::parse($last)->diffForHumans()
+            ? 'Laatst gegenereerd '.Carbon::parse($last)->diffForHumans()
             : 'Nog geen acties — genereer ze uit de laatste SEO-data.';
     }
 
@@ -131,17 +131,17 @@ class SeoActions extends Page
             return null;
         }
 
-        $when = ! empty($data['at']) ? ' (' . Carbon::parse($data['at'])->diffForHumans() . ')' : '';
+        $when = ! empty($data['at']) ? ' ('.Carbon::parse($data['at'])->diffForHumans().')' : '';
         $proposed = (int) ($data['proposed'] ?? 0);
 
         if ($proposed === 0) {
             return "De laatste analyse{$when} leverde geen voorstellen op. Krijg je dit vaker, "
-                . 'kijk dan in de log naar "SEO-acties: wat het model teruggaf".';
+                .'kijk dan in de log naar "SEO-acties: wat het model teruggaf".';
         }
 
         if ((int) ($data['created'] ?? 0) === 0) {
-            return "De laatste analyse{$when} stelde {$proposed} " . ($proposed === 1 ? 'actie' : 'acties')
-                . ' voor, maar die stonden hier al eerder — er is dus niets nieuws om te beoordelen.';
+            return "De laatste analyse{$when} stelde {$proposed} ".($proposed === 1 ? 'actie' : 'acties')
+                .' voor, maar die stonden hier al eerder — er is dus niets nieuws om te beoordelen.';
         }
 
         return null;
@@ -197,6 +197,7 @@ class SeoActions extends Page
         $faq = data_get($faqSection, 'content.items', data_get($proposed, 'content.items', []));
 
         $this->editForm = [
+            'has_text' => $text !== null,
             'meta_title' => $proposed['meta_title'] ?? '',
             'meta_description' => $proposed['meta_description'] ?? '',
             'heading' => data_get($text, 'content.heading', ''),
@@ -354,7 +355,9 @@ class SeoActions extends Page
                 if ($idx !== false) {
                     $sections[$idx]['content'] = array_merge($sections[$idx]['content'] ?? [], $patched);
                 } elseif ($patched) {
-                    $sections[] = ['section_type' => 'rich_text', 'content' => $patched];
+                    // Geen tekstblok in het voorstel: zet er één ná de hero.
+                    // Achteraan zou het ná de afsluitende CTA belanden.
+                    array_splice($sections, 1, 0, [['section_type' => 'rich_text', 'content' => $patched]]);
                 }
             }
 

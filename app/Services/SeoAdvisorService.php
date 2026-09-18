@@ -2,16 +2,19 @@
 
 namespace App\Services;
 
+use App\Models\Lead;
 use App\Models\Page;
 use App\Models\SeoActionItem;
 use App\Models\SeoGeoCheck;
 use App\Models\SeoKeyword;
 use App\Models\SeoSiteSnapshot;
 use App\Models\Setting;
+use App\Services\Seo\LandingPageBlueprint;
 use App\Support\FaqQuestionMatcher;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 /**
@@ -54,6 +57,8 @@ class SeoAdvisorService
     /** Gecachete ankers uit de homepage (herbruikbare CTA-link + huisstijl-toon). */
     protected ?array $homepageBlueprint = null;
 
+    protected ?LandingPageBlueprint $blueprint = null;
+
     /**
      * Waaróm de laatste opvraging niets opleverde — zelfde reden als in
      * GoogleApiClient: op gedeelde hosting sla je `storage/logs/laravel.log`
@@ -65,9 +70,7 @@ class SeoAdvisorService
     /** De reden waarom de AI-seeds mislukten, voor emptySuggestionReason(). */
     protected ?string $aiError = null;
 
-    public function __construct(protected DataForSeoService $api)
-    {
-    }
+    public function __construct(protected DataForSeoService $api) {}
 
     public function lastError(): ?string
     {
@@ -98,7 +101,7 @@ class SeoAdvisorService
 
         // Kansen: keywords met volume maar niet in top 10 (of niet rankend).
         $opportunities = $results
-            ->filter(fn ($r) => ($r['result']->search_volume ?? 0) >= 30 && (!$r['result']->rank_group || $r['result']->rank_group > 10))
+            ->filter(fn ($r) => ($r['result']->search_volume ?? 0) >= 30 && (! $r['result']->rank_group || $r['result']->rank_group > 10))
             ->sortByDesc(fn ($r) => $r['result']->search_volume ?? 0)
             ->take(15)
             ->map(fn ($r) => ['keyword' => $r['keyword'], 'rank' => $r['result']->rank_group, 'volume' => $r['result']->search_volume]);
@@ -136,14 +139,14 @@ class SeoAdvisorService
      */
     protected function leadsContext(): ?array
     {
-        if (! \Illuminate\Support\Facades\Schema::hasTable('leads')) {
+        if (! Schema::hasTable('leads')) {
             return null;
         }
 
-        $now = \Illuminate\Support\Carbon::now();
-        $recent = \App\Models\Lead::where('created_at', '>=', $now->copy()->subDays(28))
+        $now = Carbon::now();
+        $recent = Lead::where('created_at', '>=', $now->copy()->subDays(28))
             ->get(['channel', 'landing_path']);
-        $previous = \App\Models\Lead::whereBetween('created_at', [
+        $previous = Lead::whereBetween('created_at', [
             $now->copy()->subDays(56), $now->copy()->subDays(28),
         ])->count();
 
@@ -155,7 +158,7 @@ class SeoAdvisorService
             'total' => $recent->count(),
             'previous' => $previous,
             'by_channel' => $recent->groupBy('channel')->map->count()->sortDesc()
-                ->map(fn ($count, $channel) => ($channel ?: 'onbekend') . ": {$count}")->values()->all(),
+                ->map(fn ($count, $channel) => ($channel ?: 'onbekend').": {$count}")->values()->all(),
             'by_page' => $recent->whereNotNull('landing_path')->groupBy('landing_path')->map->count()->sortDesc()
                 ->take(10)->map(fn ($count, $path) => "{$path}: {$count}")->values()->all(),
         ];
@@ -213,14 +216,16 @@ PROMPT;
                 'messages' => [['role' => 'user', 'content' => $prompt]],
             ]);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 Log::warning('SEO-advies mislukt', ['status' => $response->status(), 'body' => $response->body()]);
+
                 return null;
             }
 
             return $this->firstTextBlock($response->json('content', []));
         } catch (\Throwable $e) {
             Log::error('SEO-advies fout', ['error' => $e->getMessage()]);
+
             return null;
         }
     }
@@ -272,6 +277,8 @@ PROMPT;
         $brand = Setting::get('brand_name') ?: config('app.name');
         $sector = Setting::get('business_description') ?: 'een lokale onderneming';
         $summary = $this->contextToText($context);
+        $landing = $this->landingPromptInstructions();
+
         $grounding = $this->buildGroundingText();
 
         $prompt = <<<PROMPT
@@ -294,12 +301,7 @@ Regels:
 - Twijfel je of een sectie op deze pagina past (bv. een aanbod-blok dat hier niets toevoegt), laat ze dan weg: een kortere, kloppende pagina verslaat een volledige met misplaatste blokken.
 - GEO/AI-zichtbaarheid: verschijnen we niet in AI-antwoorden, geef dan letterlijke vraag-antwoord-FAQ's die die vragen beantwoorden.
 
-Voor `create_page` denk je als **conversie-copywriter**: een bezoeker komt met concrete intentie binnen en moet binnen enkele seconden kunnen klikken. Lever een **volledige landingspagina** (niet enkel introtekst):
-- `h1_title` + `hero_subtitle`: scherpe titel en een emotionele belofte van 1-2 zinnen.
-- `why_title` + `why_html`: de echte, emotionele reden om hier te starten (2-3 korte alinea's, eenvoudige HTML).
-- `faq`: 4-6 vraag-antwoord-paren, incl. de zoekvraag zelf.
-- `closing_title` + `closing_body`: een afsluitende CTA met risico-omkering.
-De hero- en afsluit-knop krijgen automatisch de bestaande CTA-link van de homepage; verzin zelf geen knop-URL's.
+{$landing}
 
 DATA:
 {$summary}
@@ -313,8 +315,8 @@ PROMPT;
                 'x-api-key' => $apiKey,
                 'anthropic-version' => '2023-06-01',
                 'content-type' => 'application/json',
-            // Zes uitgeschreven landingspagina's duren ruim een minuut; de
-            // marge is er zodat een trage dag niet halverwege afbreekt.
+                // Zes uitgeschreven landingspagina's duren ruim een minuut; de
+                // marge is er zodat een trage dag niet halverwege afbreekt.
             ])->timeout(300)->post('https://api.anthropic.com/v1/messages', [
                 'model' => $this->model,
                 'max_tokens' => self::ACTIONS_MAX_TOKENS,
@@ -325,8 +327,8 @@ PROMPT;
 
             if (! $response->successful()) {
                 Log::warning('SEO-acties mislukt', ['status' => $response->status(), 'body' => $response->body()]);
-                $this->lastError = 'De Anthropic API antwoordde met status ' . $response->status() . ': '
-                    . ($response->json('error.message') ?: Str::limit($response->body(), 200));
+                $this->lastError = 'De Anthropic API antwoordde met status '.$response->status().': '
+                    .($response->json('error.message') ?: Str::limit($response->body(), 200));
 
                 return [];
             }
@@ -359,13 +361,13 @@ PROMPT;
 
             if (! $usable) {
                 $this->lastError = 'Het model gaf geen bruikbare acties terug (stop_reason: '
-                    . ($response->json('stop_reason') ?: 'onbekend') . ', ' . count($actions) . ' voorgesteld).';
+                    .($response->json('stop_reason') ?: 'onbekend').', '.count($actions).' voorgesteld).';
             }
 
             return $usable;
         } catch (\Throwable $e) {
             Log::error('SEO-acties fout', ['error' => $e->getMessage()]);
-            $this->lastError = 'De AI-oproep liep vast: ' . $e->getMessage();
+            $this->lastError = 'De AI-oproep liep vast: '.$e->getMessage();
 
             return [];
         }
@@ -484,11 +486,11 @@ PROMPT;
     /** Dekt een bestaande gepubliceerde pagina (titel of slug) dit keyword al? */
     protected function keywordCoveredByExistingPage(string $keyword): bool
     {
-        $matcher = new FaqQuestionMatcher();
+        $matcher = new FaqQuestionMatcher;
 
         return Page::where('published', true)
             ->get(['title', 'slug'])
-            ->contains(fn ($p) => $matcher->keywordCoveredBy($keyword, $p->title . ' ' . $p->slug));
+            ->contains(fn ($p) => $matcher->keywordCoveredBy($keyword, $p->title.' '.$p->slug));
     }
 
     protected function buildGroundingText(): string
@@ -512,9 +514,9 @@ PROMPT;
                 // de pagina daarvoor vorige week pas gemaakt of herschreven was.
                 $recent = '';
                 if ($p->created_at?->gte($recentCutoff)) {
-                    $recent = ' — NIEUW sinds ' . $p->created_at->format('d/m/Y') . ', nog niet verwerkt door Google';
+                    $recent = ' — NIEUW sinds '.$p->created_at->format('d/m/Y').', nog niet verwerkt door Google';
                 } elseif ($p->updated_at?->gte($recentCutoff)) {
-                    $recent = ' — RECENT aangepast op ' . $p->updated_at->format('d/m/Y') . ', wijzigingen sijpelen nog door in Google';
+                    $recent = ' — RECENT aangepast op '.$p->updated_at->format('d/m/Y').', wijzigingen sijpelen nog door in Google';
                 }
                 $lines[] = "- {$slug} — {$p->title} — {$meta}{$recent}";
             }
@@ -531,10 +533,10 @@ PROMPT;
             $slug = $p->is_homepage ? '/' : $p->slug;
             $count = count($items);
             $full = $count >= self::FAQ_MAX_QUESTIONS ? ' — VOL, stel hier geen add_section meer voor' : '';
-            $faqLines[] = "- {$slug} ({$count} " . ($count === 1 ? 'vraag' : 'vragen') . "{$full}):";
+            $faqLines[] = "- {$slug} ({$count} ".($count === 1 ? 'vraag' : 'vragen')."{$full}):";
             foreach ($items as $item) {
                 $answer = Str::limit(trim(strip_tags((string) ($item['answer'] ?? ''))), 120);
-                $faqLines[] = "  · \"{$item['question']}\"" . ($answer !== '' ? " — {$answer}" : '');
+                $faqLines[] = "  · \"{$item['question']}\"".($answer !== '' ? " — {$answer}" : '');
             }
         }
         if ($faqLines) {
@@ -549,11 +551,197 @@ PROMPT;
         if (! empty($hp['voice'])) {
             $lines[] = "\nToon & huisstijl (echte tekstfragmenten van de homepage — schrijf in deze stem):";
             foreach ($hp['voice'] as $sample) {
-                $lines[] = '- "' . $sample . '"';
+                $lines[] = '- "'.$sample.'"';
             }
         }
 
         return implode("\n", $lines) ?: 'Geen aanvullende feiten ingevoerd.';
+    }
+
+    /**
+     * De `create_page`-instructies, opgebouwd uit de sjabloonpagina. Het model
+     * krijgt enkel de secties te zien die het écht moet vullen, in de volgorde
+     * waarin ze op de pagina belanden — zo vraagt de prompt nooit om inhoud
+     * voor een blok dat het sjabloon niet heeft.
+     */
+    protected function landingPromptInstructions(): string
+    {
+        $skeleton = $this->blueprint()->skeleton();
+
+        $flow = implode(' → ', array_map(
+            fn (array $s): string => LandingPageBlueprint::LABELS[$s['section_type']] ?? $s['section_type'],
+            $skeleton,
+        ));
+
+        // Hoeveel knoplabels het model moet aanleveren, staat vast: zoveel als
+        // het sjabloon knoppen heeft. Zonder sjabloonknop valt de generator
+        // terug op die van de homepage — dan is het er precies één.
+        $buttons = [];
+        foreach ($skeleton as $s) {
+            $buttons[$s['section_type']] = max(1, count($s['ctas'] ?? []));
+        }
+
+        $lines = [
+            'hero' => '- `h1_title` + `hero_subtitle`: scherpe titel en een emotionele belofte van 1-2 zinnen.'
+                ."\n".'- `hero_cta_labels`: '.($buttons['hero'] ?? 1).' knoptekst(en) voor de hero, in volgorde. Kort en uitnodigend.',
+            'problem_recognition' => '- `problem_recognition`: "Herken je dit?" — 3-4 problemen die de bezoeker bij zichzelf herkent, in zijn woorden. Nog géén oplossingen.',
+            'advantages' => '- `advantages`: "Wat verandert er?" — 3-4 voordelen als uitkomst geformuleerd, niet als functie.',
+            'process_steps' => '- `process_steps`: onze aanpak in precies 3 stappen. Behapbaar, vertrekkend van hoe de klant vandaag werkt.',
+            'cases_grid' => '- `cases_grid`: enkel de kop boven de cases. De cases zelf komen uit de database — verzin geen klantnamen, cijfers of citaten.',
+            'cards' => '- `cards`: 4-6 concrete mogelijkheden. Pas hier mogen functies en technologie aan bod komen, ná de voordelen.',
+            'faq' => '- `faq`: 4-6 vraag-antwoord-paren, incl. de zoekvraag zelf.',
+            'cta' => '- `closing_title` + `closing_body`: een afsluitende CTA met risico-omkering.'
+                ."\n".'- `closing_cta_label`: de knoptekst eronder — concreter en directer dan die in de hero.',
+            'rich_text' => '- `why_title` + `why_html`: de echte, emotionele reden om hier te starten (2-3 korte alinea\'s, eenvoudige HTML).',
+        ];
+
+        $instructions = [];
+        foreach ($skeleton as $s) {
+            if (isset($lines[$s['section_type']])) {
+                $instructions[$s['section_type']] ??= $lines[$s['section_type']];
+            }
+        }
+
+        return "Voor `create_page` denk je als **conversie-copywriter**: een bezoeker komt met concrete intentie binnen en moet binnen enkele seconden kunnen klikken. Lever een **volledige landingspagina** (niet enkel introtekst), in deze vaste opbouw:\n\n"
+            ."**{$flow}**\n\n"
+            .implode("\n", $instructions)
+            ."\n\nVul enkel deze velden — laat een blok weg als je er niets zinnigs voor hebt, dan valt die sectie netjes weg. "
+            .'De bestemming van élke knop ligt vast (die nemen we over van de sjabloonpagina); jij schrijft alleen de knoptekst, nooit een URL.';
+    }
+
+    /**
+     * Inputvelden voor de rijke landingspagina-secties. Eén sleutel per
+     * sectietype, zodat schema en {@see LandingPageBlueprint} dezelfde namen
+     * gebruiken en niet uit elkaar kunnen lopen.
+     *
+     * Het model vult enkel de secties die in de prompt opgesomd staan — die
+     * lijst komt uit de sjabloonpagina, niet uit deze code.
+     *
+     * @return array<string,mixed>
+     */
+    protected function landingSchemaProperties(): array
+    {
+        $kop = fn (string $wat): array => [
+            'eyebrow' => ['type' => 'string', 'description' => "Korte boventitel boven de titel ({$wat})."],
+            'heading' => ['type' => 'string', 'description' => "Titel van {$wat}."],
+            'intro' => ['type' => 'string', 'description' => 'Optionele inleiding, eenvoudige HTML (één alinea).'],
+            'closing' => ['type' => 'string', 'description' => 'Afsluitende boodschap onder het blok, eenvoudige HTML (één alinea).'],
+        ];
+
+        return [
+            'hero_cta_labels' => [
+                'type' => 'array',
+                'description' => 'create_page: knopteksten voor de hero, in dezelfde volgorde als de knoppen van het sjabloon. Kort en actief, max 64 tekens. De bestemming van de knoppen ligt vast — verzin geen URL\'s.',
+                'items' => ['type' => 'string'],
+            ],
+            'closing_cta_label' => [
+                'type' => 'string',
+                'description' => 'create_page: knoptekst van de afsluitende CTA. Concreter en directer dan die in de hero.',
+            ],
+
+            'problem_recognition' => [
+                'type' => 'object',
+                'description' => 'create_page: "Herken je dit?" — de bezoeker moet zichzelf herkennen vóór je oplossingen toont. Schrijf de problemen in zijn taal, niet in de jouwe.',
+                'properties' => $kop('het probleemblok') + [
+                    'journey' => [
+                        'type' => 'array',
+                        'description' => 'Optionele stappenstrip die de route toont waarlangs het misloopt (bv. Lead → Opvolging → Klant). 4-6 stappen.',
+                        'items' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'label' => ['type' => 'string', 'description' => 'Eén of twee woorden.'],
+                                'icon' => ['type' => 'string', 'description' => 'Lucide-iconnaam, bv. inbox, phone-call, handshake.'],
+                            ],
+                            'required' => ['label'],
+                        ],
+                    ],
+                    'problems' => [
+                        'type' => 'array',
+                        'description' => '3-4 herkenbare problemen, elk met een concrete situatieschets.',
+                        'items' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'title' => ['type' => 'string', 'description' => 'Het probleem in één zin.'],
+                                'icon' => ['type' => 'string', 'description' => 'Lucide-iconnaam, bv. timer, phone-missed, shuffle.'],
+                                'description' => ['type' => 'string', 'description' => 'Een concreet voorbeeld van 1-2 zinnen.'],
+                                'tags' => [
+                                    'type' => 'array',
+                                    'description' => 'Hoogstens twee stille indicatie-chips, bv. "Bereikbaarheid". Geen diensten-CTA\'s.',
+                                    'items' => ['type' => 'string'],
+                                ],
+                            ],
+                            'required' => ['title', 'description'],
+                        ],
+                    ],
+                ],
+            ],
+
+            'advantages' => [
+                'type' => 'object',
+                'description' => 'create_page: "Wat verandert er?" — de gewenste situatie. Schrijf uitkomsten, geen functies.',
+                'properties' => $kop('het voordelenblok') + [
+                    'items' => [
+                        'type' => 'array',
+                        'description' => '3-4 voordelen, telkens als resultaat voor de klant geformuleerd.',
+                        'items' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'title' => ['type' => 'string', 'description' => 'Het voordeel in één korte zin.'],
+                                'icon' => ['type' => 'string', 'description' => 'Lucide-iconnaam, bv. zap, clock, list-checks.'],
+                                'description' => ['type' => 'string', 'description' => 'Wat het concreet betekent, 1-2 zinnen.'],
+                            ],
+                            'required' => ['title', 'description'],
+                        ],
+                    ],
+                ],
+            ],
+
+            'process_steps' => [
+                'type' => 'object',
+                'description' => 'create_page: onze aanpak in genummerde stappen. Toon dat het behapbaar is en vertrek van hoe de klant vandaag werkt.',
+                'properties' => $kop('het aanpakblok') + [
+                    'steps' => [
+                        'type' => 'array',
+                        'description' => 'Precies 3 stappen, in volgorde. De nummering gebeurt automatisch.',
+                        'items' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'title' => ['type' => 'string', 'description' => 'Wat er in deze stap gebeurt.'],
+                                'description' => ['type' => 'string', 'description' => 'Toelichting van 1-2 zinnen.'],
+                            ],
+                            'required' => ['title', 'description'],
+                        ],
+                    ],
+                ],
+            ],
+
+            'cases_grid' => [
+                'type' => 'object',
+                'description' => 'create_page: de kop boven de cases. De cases zelf komen uit de database — lever dus GEEN klantnamen, cijfers of voorbeelden aan.',
+                'properties' => $kop('het casesblok'),
+            ],
+
+            'cards' => [
+                'type' => 'object',
+                'description' => 'create_page: de concrete mogelijkheden — pas hier mogen functies en technologie aan bod komen, ná de voordelen.',
+                'properties' => $kop('het mogelijkhedenblok') + [
+                    'items' => [
+                        'type' => 'array',
+                        'description' => '4-6 concrete mogelijkheden.',
+                        'items' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'title' => ['type' => 'string', 'description' => 'Naam van de mogelijkheid.'],
+                                'subtitle' => ['type' => 'string', 'description' => 'Het resultaat in enkele woorden.'],
+                                'icon' => ['type' => 'string', 'description' => 'Lucide-iconnaam, bv. mail, calendar-check, kanban.'],
+                                'description' => ['type' => 'string', 'description' => 'Wat het doet, 1-2 zinnen.'],
+                            ],
+                            'required' => ['title', 'description'],
+                        ],
+                    ],
+                ],
+            ],
+        ];
     }
 
     /** Tool-schema voor gestructureerde output. */
@@ -598,6 +786,7 @@ PROMPT;
                                         'required' => ['question', 'answer'],
                                     ],
                                 ],
+                                ...$this->landingSchemaProperties(),
                             ],
                             'required' => ['action_type', 'priority', 'title', 'problem'],
                         ],
@@ -686,7 +875,7 @@ PROMPT;
             // detail na) al op de pagina beantwoord wordt, is geen verbetering
             // — ook al is de formulering net anders. De prompt vraagt het
             // model dit zelf te vermijden; dit filtert wat toch doorglipt.
-            $matcher = new FaqQuestionMatcher();
+            $matcher = new FaqQuestionMatcher;
             $faq = array_values(array_filter(
                 $faq,
                 fn ($f) => $matcher->firstOverlapping($f['question'], $existing) === null
@@ -707,7 +896,7 @@ PROMPT;
             ];
             // De vragen zelf horen in de sleutel: een tweede FAQ met ándere
             // vragen op dezelfde pagina is een nieuw voorstel, geen duplicaat.
-            $fpKey = 'page-' . $page->id . '|' . $this->contentKey($questions);
+            $fpKey = 'page-'.$page->id.'|'.$this->contentKey($questions);
         } else { // optimize_meta
             $page = $this->resolvePage($a['target_slug'] ?? null);
             if (! $page) {
@@ -744,7 +933,7 @@ PROMPT;
             }
             // Idem: een andere voorgestelde title/description op dezelfde
             // pagina mag opnieuw ter beoordeling komen.
-            $fpKey = 'page-' . $page->id . '|' . $this->contentKey($proposed);
+            $fpKey = 'page-'.$page->id.'|'.$this->contentKey($proposed);
         }
 
         return [
@@ -756,65 +945,30 @@ PROMPT;
             'page_id' => $pageId,
             'source_keyword' => $keyword,
             'metric' => null,
-            'fingerprint' => sha1($type . '|' . $fpKey),
+            'fingerprint' => sha1($type.'|'.$fpKey),
         ];
     }
 
     /**
-     * Bouwt een conversie-gerichte landingspagina uit de AI-velden, met de
-     * generieke builder-blokken (hero → rich_text → faq → cta). De hero- en
-     * afsluit-CTA hergebruiken de bestaande CTA-knop van de homepage (geen
-     * verzonnen URL's); is die er niet, dan blijven die knoppen gewoon weg.
+     * Bouwt een conversie-gerichte landingspagina naar het beeld van de
+     * sjabloonpagina die op Groei → SEO-instellingen is aangewezen: die levert
+     * de sectievolgorde, de achtergronden, de anker-ids en de knopstructuur;
+     * dit model levert alle tekst, inclusief de knoplabels. Zonder ingesteld
+     * sjabloon valt de opbouw terug op hero → rich_text → faq → cta.
      *
-     * Wil je nog rijker (bv. review- of stappen-blokken van de homepage klonen,
-     * zoals in bl-members), voeg dat hier per project toe — het hangt af van
-     * welke sectietypes dit project heeft.
+     * @see LandingPageBlueprint
      *
      * @return array<int,array<string,mixed>>
      */
     protected function buildLandingSections(array $a, string $h1, array $faq): array
     {
-        $cta = $this->homepage()['cta'] ?? null; // ['label','href'] of null
-        $ctaButton = $cta ? [['label' => $cta['label'], 'href' => $cta['href'], 'variant' => 'primary']] : null;
+        return $this->blueprint()->build(['h1_title' => $h1] + $a, $faq);
+    }
 
-        $sections = [];
-
-        // 1. Hero — belofte + primaire CTA.
-        if ($h1 !== '') {
-            $sections[] = ['section_type' => 'hero', 'content' => array_filter([
-                'heading' => $h1,
-                'subtitle' => trim((string) ($a['hero_subtitle'] ?? '')) ?: null,
-                'ctas' => $ctaButton,
-            ], fn ($v) => $v !== null)];
-        }
-
-        // 2. Waarom — de emotionele hook.
-        $whyTitle = trim((string) ($a['why_title'] ?? ''));
-        $whyBody = trim((string) ($a['why_html'] ?? $a['intro_html'] ?? ''));
-        if ($whyTitle !== '' || $whyBody !== '') {
-            $sections[] = ['section_type' => 'rich_text', 'content' => array_filter([
-                'heading' => $whyTitle ?: null,
-                'body' => $whyBody ?: null,
-            ], fn ($v) => $v !== null)];
-        }
-
-        // 3. FAQ.
-        if ($faq) {
-            $sections[] = ['section_type' => 'faq', 'content' => ['heading' => 'Veelgestelde vragen', 'items' => $faq]];
-        }
-
-        // 4. Afsluitende CTA met risico-omkering (enkel als er een CTA-link is).
-        $closingTitle = trim((string) ($a['closing_title'] ?? ''));
-        $closingBody = trim((string) ($a['closing_body'] ?? ''));
-        if ($ctaButton && ($closingTitle !== '' || $closingBody !== '')) {
-            $sections[] = ['section_type' => 'cta', 'content' => array_filter([
-                'heading' => $closingTitle ?: null,
-                'intro' => $closingBody ?: null,
-                'ctas' => $ctaButton,
-            ], fn ($v) => $v !== null)];
-        }
-
-        return $sections;
+    /** De sjabloon-blueprint, met de homepage-knop als laatste terugval. */
+    protected function blueprint(): LandingPageBlueprint
+    {
+        return $this->blueprint ??= new LandingPageBlueprint($this->homepage()['cta'] ?? null);
     }
 
     /**
@@ -984,13 +1138,13 @@ PROMPT;
         // stuur je de gebruiker naar het verkeerde instellingenveld.
         if ($seeds === []) {
             return 'De AI leverde geen enkele zoekterm op om mee te starten. '
-                . ($this->aiError ?? 'Controleer de Anthropic-key bij Groei → SEO-instellingen.')
-                . (! $this->api->isConfigured() ? ' DataForSEO is bovendien niet ingesteld.' : '');
+                .($this->aiError ?? 'Controleer de Anthropic-key bij Groei → SEO-instellingen.')
+                .(! $this->api->isConfigured() ? ' DataForSEO is bovendien niet ingesteld.' : '');
         }
 
         if ($candidateCount === 0) {
             return $this->api->isConfigured()
-                ? 'DataForSEO gaf geen enkele zoeksuggestie terug. ' . ($this->api->lastError() ?? 'Controleer je DataForSEO-saldo en -inloggegevens bij Groei → SEO-instellingen.')
+                ? 'DataForSEO gaf geen enkele zoeksuggestie terug. '.($this->api->lastError() ?? 'Controleer je DataForSEO-saldo en -inloggegevens bij Groei → SEO-instellingen.')
                 : 'DataForSEO is niet ingesteld, dus er kwamen geen volumes of verwante zoektermen bij.';
         }
 
@@ -1045,8 +1199,8 @@ PROMPT;
 
             if (! $response->successful()) {
                 Log::warning('Keyword-seeds mislukt', ['status' => $response->status(), 'body' => $response->body()]);
-                $this->aiError = 'De Anthropic API antwoordde met status ' . $response->status() . ': '
-                    . ($response->json('error.message') ?: Str::limit($response->body(), 200));
+                $this->aiError = 'De Anthropic API antwoordde met status '.$response->status().': '
+                    .($response->json('error.message') ?: Str::limit($response->body(), 200));
 
                 return [];
             }
@@ -1064,7 +1218,7 @@ PROMPT;
                     'types' => array_map(fn ($b) => $b['type'] ?? '?', $response->json('content', [])),
                 ]);
                 $this->aiError = 'De AI gaf geen bruikbaar antwoord terug (stop_reason: '
-                    . ($response->json('stop_reason') ?: 'onbekend') . ').';
+                    .($response->json('stop_reason') ?: 'onbekend').').';
 
                 return [];
             }
@@ -1085,7 +1239,7 @@ PROMPT;
                 ->all();
         } catch (\Throwable $e) {
             Log::error('Keyword-seeds fout', ['error' => $e->getMessage()]);
-            $this->aiError = 'De AI-oproep liep vast: ' . $e->getMessage();
+            $this->aiError = 'De AI-oproep liep vast: '.$e->getMessage();
 
             return [];
         }
@@ -1104,33 +1258,33 @@ PROMPT;
             $lines[] = "Aantal keywords in Google: {$l->organic_keywords_count}{$kwPrev}";
         }
         $s = $c['stats'];
-        $lines[] = "Opgevolgde keywords: {$s['tracked']} | top 3: {$s['top3']} | top 10: {$s['top10']} | gem. positie: " . ($s['avg_position'] ?? 'n/a');
+        $lines[] = "Opgevolgde keywords: {$s['tracked']} | top 3: {$s['top3']} | top 10: {$s['top10']} | gem. positie: ".($s['avg_position'] ?? 'n/a');
         $lines[] = "AI Overview aanwezig bij {$s['in_ai_overview']} keywords, ons domein geciteerd bij {$s['ai_cited']}.";
 
         if ($c['up']) {
-            $lines[] = "\nGestegen: " . collect($c['up'])->map(fn ($m) => "{$m['keyword']} (+{$m['delta']} → #{$m['rank']})")->implode(', ');
+            $lines[] = "\nGestegen: ".collect($c['up'])->map(fn ($m) => "{$m['keyword']} (+{$m['delta']} → #{$m['rank']})")->implode(', ');
         }
         if ($c['down']) {
-            $lines[] = "Gedaald: " . collect($c['down'])->map(fn ($m) => "{$m['keyword']} ({$m['delta']} → #{$m['rank']})")->implode(', ');
+            $lines[] = 'Gedaald: '.collect($c['down'])->map(fn ($m) => "{$m['keyword']} ({$m['delta']} → #{$m['rank']})")->implode(', ');
         }
         if ($c['opportunities']) {
-            $lines[] = "\nKansen (volume maar niet in top 10): " . collect($c['opportunities'])->map(fn ($o) => "{$o['keyword']} (vol {$o['volume']}, " . ($o['rank'] ? "#{$o['rank']}" : 'niet rankend') . ")")->implode(', ');
+            $lines[] = "\nKansen (volume maar niet in top 10): ".collect($c['opportunities'])->map(fn ($o) => "{$o['keyword']} (vol {$o['volume']}, ".($o['rank'] ? "#{$o['rank']}" : 'niet rankend').')')->implode(', ');
         }
-        if (!empty($c['leads'])) {
+        if (! empty($c['leads'])) {
             $ld = $c['leads'];
             $lines[] = "\n== LEADS (first-party gemeten conversies) ==";
             $lines[] = "Laatste 28 dagen: {$ld['total']} (vorige periode: {$ld['previous']})";
-            if (!empty($ld['by_channel'])) {
-                $lines[] = 'Per kanaal: ' . implode(', ', $ld['by_channel']);
+            if (! empty($ld['by_channel'])) {
+                $lines[] = 'Per kanaal: '.implode(', ', $ld['by_channel']);
             }
-            if (!empty($ld['by_page'])) {
-                $lines[] = "Landingspagina's die leads opleveren: " . implode(', ', $ld['by_page']);
+            if (! empty($ld['by_page'])) {
+                $lines[] = "Landingspagina's die leads opleveren: ".implode(', ', $ld['by_page']);
             }
         }
 
         if ($c['geo']) {
             $cited = collect($c['geo'])->filter(fn ($g) => $g['cited'])->count();
-            $lines[] = "\nGEO: {$cited}/" . count($c['geo']) . " AI-checks citeren ons domein. Vragen: " . collect($c['geo'])->take(5)->map(fn ($g) => "\"{$g['prompt']}\" (" . ($g['cited'] ? 'gelinkt' : ($g['mentioned'] ? 'vermeld' : 'afwezig')) . ")")->implode('; ');
+            $lines[] = "\nGEO: {$cited}/".count($c['geo']).' AI-checks citeren ons domein. Vragen: '.collect($c['geo'])->take(5)->map(fn ($g) => "\"{$g['prompt']}\" (".($g['cited'] ? 'gelinkt' : ($g['mentioned'] ? 'vermeld' : 'afwezig')).')')->implode('; ');
         }
 
         return implode("\n", $lines);
