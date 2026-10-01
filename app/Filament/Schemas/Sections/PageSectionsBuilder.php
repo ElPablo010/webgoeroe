@@ -67,6 +67,12 @@ class PageSectionsBuilder
                     ...SectionCommonFields::make(),
                     ...TextMediaFields::make(),
                 ]),
+            'Calculator (gemiste omzet)' => Block::make('calculator')
+                ->label(self::numberedLabel('Calculator (gemiste omzet)'))
+                ->schema([
+                    ...SectionCommonFields::make(),
+                    ...CalculatorFields::make(),
+                ]),
             'Cards' => Block::make('cards')
                 ->label(self::numberedLabel('Cards'))
                 ->schema([
