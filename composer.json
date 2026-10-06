@@ -15,7 +15,8 @@
         "laravel/sanctum": "^4.3",
         "laravel/tinker": "^3.0",
         "livewire/livewire": "^4.3",
-        "mallardduck/blade-lucide-icons": "^1.26"
+        "mallardduck/blade-lucide-icons": "^1.26",
+        "webgoeroe/seo-growth": "*@dev"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
@@ -92,5 +93,13 @@
         }
     },
     "minimum-stability": "stable",
-    "prefer-stable": true
+    "prefer-stable": true,
+    "repositories": [{
+        "name": "seo-growth",
+        "type": "path",
+        "url": "../../Modules/repo/seo-growth",
+        "options": {
+            "symlink": true
+        }
+    }]
 }

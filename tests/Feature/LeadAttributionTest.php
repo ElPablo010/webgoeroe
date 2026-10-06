@@ -2,9 +2,9 @@
 
 use App\Livewire\Forms\ContactForm;
 use App\Models\FormSubmission;
-use App\Models\Lead;
+use Webgoeroe\SeoGrowth\Models\Lead;
 use App\Models\Page;
-use App\Support\Attribution;
+use Webgoeroe\SeoGrowth\Support\Attribution;
 use Livewire\Livewire;
 
 use function Pest\Laravel\get;

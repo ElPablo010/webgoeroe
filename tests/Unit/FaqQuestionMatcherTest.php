@@ -1,6 +1,6 @@
 <?php
 
-use App\Support\FaqQuestionMatcher;
+use Webgoeroe\SeoGrowth\Support\FaqQuestionMatcher;
 
 /**
  * Het vangnet tegen SEO-voorstellen die een bestaande FAQ-vraag herhalen.

@@ -1,7 +1,7 @@
 <?php
 
 use App\Enums\UserRole;
-use App\Filament\Pages\SeoSettings;
+use Webgoeroe\SeoGrowth\Filament\Pages\SeoSettings;
 use App\Models\User;
 use Filament\Facades\Filament;
 

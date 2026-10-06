@@ -1,13 +1,13 @@
 <?php
 
-use App\Filament\Resources\SeoKeywords\Pages\ListSeoKeywords;
-use App\Filament\Widgets\SeoKeywordSuggestions;
-use App\Jobs\SuggestKeywordsJob;
-use App\Models\SeoKeyword;
+use Webgoeroe\SeoGrowth\Filament\Resources\SeoKeywords\Pages\ListSeoKeywords;
+use Webgoeroe\SeoGrowth\Filament\Widgets\SeoKeywordSuggestions;
+use Webgoeroe\SeoGrowth\Jobs\SuggestKeywordsJob;
+use Webgoeroe\SeoGrowth\Models\SeoKeyword;
 use App\Models\Setting;
 use App\Models\User;
-use App\Services\SeoAdvisorService;
-use App\Support\JobStatus;
+use Webgoeroe\SeoGrowth\Services\SeoAdvisorService;
+use Webgoeroe\SeoGrowth\Support\JobStatus;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Livewire\Livewire;

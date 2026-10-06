@@ -3,8 +3,8 @@
 use App\Models\CaseStudy;
 use App\Models\Page;
 use App\Models\Setting;
-use App\Services\Seo\LandingPageBlueprint;
-use App\Services\SeoAdvisorService;
+use Webgoeroe\SeoGrowth\Services\Seo\LandingPageBlueprint;
+use Webgoeroe\SeoGrowth\Services\SeoAdvisorService;
 use Illuminate\Support\Facades\Http;
 
 /**

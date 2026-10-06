@@ -1,16 +1,16 @@
 <?php
 
 use App\Enums\UserRole;
-use App\Filament\Pages\SearchConsole;
-use App\Filament\Pages\SeoSettings;
-use App\Models\Ga4DailyMetric;
-use App\Models\Ga4DimensionMetric;
-use App\Models\GscDailyMetric;
+use Webgoeroe\SeoGrowth\Filament\Pages\SearchConsole;
+use Webgoeroe\SeoGrowth\Filament\Pages\SeoSettings;
+use Webgoeroe\SeoGrowth\Models\Ga4DailyMetric;
+use Webgoeroe\SeoGrowth\Models\Ga4DimensionMetric;
+use Webgoeroe\SeoGrowth\Models\GscDailyMetric;
 use App\Models\Setting;
 use App\Models\User;
-use App\Services\Ga4Collector;
-use App\Services\Google\GoogleApiClient;
-use App\Services\GoogleAnalyticsService;
+use Webgoeroe\SeoGrowth\Services\Ga4Collector;
+use Webgoeroe\SeoGrowth\Services\Google\GoogleApiClient;
+use Webgoeroe\SeoGrowth\Services\GoogleAnalyticsService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;

@@ -1,12 +1,12 @@
 <?php
 
-use App\Filament\Pages\SeoActions;
-use App\Jobs\GenerateSeoActionsJob;
+use Webgoeroe\SeoGrowth\Filament\Pages\SeoActions;
+use Webgoeroe\SeoGrowth\Jobs\GenerateSeoActionsJob;
 use App\Models\Page;
 use App\Models\Setting;
 use App\Models\User;
-use App\Services\SeoAdvisorService;
-use App\Support\JobStatus;
+use Webgoeroe\SeoGrowth\Services\SeoAdvisorService;
+use Webgoeroe\SeoGrowth\Support\JobStatus;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;

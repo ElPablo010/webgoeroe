@@ -1,14 +1,14 @@
 <?php
 
-use App\Filament\Pages\SeoActions;
-use App\Jobs\GenerateSeoActionsJob;
-use App\Mail\SeoWeeklyReport;
-use App\Models\SeoActionItem;
+use Webgoeroe\SeoGrowth\Filament\Pages\SeoActions;
+use Webgoeroe\SeoGrowth\Jobs\GenerateSeoActionsJob;
+use Webgoeroe\SeoGrowth\Mail\SeoWeeklyReport;
+use Webgoeroe\SeoGrowth\Models\SeoActionItem;
 use App\Models\Setting;
 use App\Models\User;
-use App\Services\Seo\ActionBacklog;
-use App\Services\SeoAdvisorService;
-use App\Support\JobStatus;
+use Webgoeroe\SeoGrowth\Services\Seo\ActionBacklog;
+use Webgoeroe\SeoGrowth\Services\SeoAdvisorService;
+use Webgoeroe\SeoGrowth\Support\JobStatus;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;

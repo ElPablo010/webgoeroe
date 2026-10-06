@@ -1,12 +1,12 @@
 <?php
 
-use App\Filament\Pages\SeoLeads;
-use App\Models\Lead;
+use Webgoeroe\SeoGrowth\Filament\Pages\SeoLeads;
+use Webgoeroe\SeoGrowth\Models\Lead;
 use App\Models\Setting;
 use App\Enums\UserRole;
 use App\Models\User;
-use App\Support\Attribution;
-use App\Support\LeadStats;
+use Webgoeroe\SeoGrowth\Support\Attribution;
+use Webgoeroe\SeoGrowth\Support\LeadStats;
 use Livewire\Livewire;
 
 use function Pest\Laravel\actingAs;

@@ -43,8 +43,8 @@ class FormSubmission extends Model
     protected static function booted(): void
     {
         static::created(function (self $submission): void {
-            if (class_exists(\App\Models\Lead::class)) {
-                \App\Models\Lead::record($submission->type, $submission);
+            if (class_exists(\Webgoeroe\SeoGrowth\Models\Lead::class)) {
+                \Webgoeroe\SeoGrowth\Models\Lead::record($submission->type, $submission);
             }
         });
     }

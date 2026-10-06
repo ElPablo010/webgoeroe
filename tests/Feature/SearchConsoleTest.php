@@ -1,14 +1,14 @@
 <?php
 
 use App\Enums\UserRole;
-use App\Filament\Pages\SearchConsole;
-use App\Filament\Pages\SeoSettings;
-use App\Models\GscDailyMetric;
-use App\Models\GscDimensionMetric;
+use Webgoeroe\SeoGrowth\Filament\Pages\SearchConsole;
+use Webgoeroe\SeoGrowth\Filament\Pages\SeoSettings;
+use Webgoeroe\SeoGrowth\Models\GscDailyMetric;
+use Webgoeroe\SeoGrowth\Models\GscDimensionMetric;
 use App\Models\Setting;
 use App\Models\User;
-use App\Services\GoogleSearchConsoleService;
-use App\Services\GscCollector;
+use Webgoeroe\SeoGrowth\Services\GoogleSearchConsoleService;
+use Webgoeroe\SeoGrowth\Services\GscCollector;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;

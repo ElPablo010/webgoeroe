@@ -1,7 +1,7 @@
 <?php
 
 use App\Models\Setting;
-use App\Services\Google\GoogleApiClient;
+use Webgoeroe\SeoGrowth\Services\Google\GoogleApiClient;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
