@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "1eaf6bed458074006caa44821075b673",
+    "content-hash": "fd138c943df90246d71c02b7ee355370",
     "packages": [
         {
             "name": "blade-ui-kit/blade-heroicons",
@@ -9451,11 +9451,17 @@
         },
         {
             "name": "webgoeroe/seo-growth",
-            "version": "dev-main",
+            "version": "v0.1.0",
+            "source": {
+                "type": "git",
+                "url": "git@github.com:ElPablo010/seo-growth.git",
+                "reference": "e19d7193474c3f66bc0e565535d16bd84be49c2e"
+            },
             "dist": {
-                "type": "path",
-                "url": "../../Modules/repo/seo-growth",
-                "reference": "0521a300086a6993f40657be9906ab284c2a52b0"
+                "type": "zip",
+                "url": "https://api.github.com/repos/ElPablo010/seo-growth/zipball/e19d7193474c3f66bc0e565535d16bd84be49c2e",
+                "reference": "e19d7193474c3f66bc0e565535d16bd84be49c2e",
+                "shasum": ""
             },
             "require": {
                 "filament/filament": "^5.0",
@@ -9479,10 +9485,11 @@
                 "proprietary"
             ],
             "description": "Groei-module van De WebGoeroe: Search Console, Google Analytics 4, leads-attributie, DataForSEO, AI-briefing en goedkeuringsdashboard voor Laravel + Filament-sites.",
-            "transport-options": {
-                "symlink": true,
-                "relative": true
-            }
+            "support": {
+                "source": "https://github.com/ElPablo010/seo-growth/tree/v0.1.0",
+                "issues": "https://github.com/ElPablo010/seo-growth/issues"
+            },
+            "time": "2026-10-06T08:58:40+00:00"
         }
     ],
     "packages-dev": [
@@ -13058,9 +13065,7 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {
-        "webgoeroe/seo-growth": 20
-    },
+    "stability-flags": {},
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
