@@ -9,7 +9,7 @@ use Filament\Forms\Components\RichEditor;
  * privacybeleid, algemene voorwaarden) die geen conversie-secties nodig
  * hebben, enkel doorlopende tekst met kopjes, lijsten en eventueel tabellen.
  */
-class RichTextFields
+class TextFields
 {
     public static function make(): array
     {

@@ -88,6 +88,23 @@ Drie plekken:
    Vergeet je die key, dan krijgt het block een numerieke key en belandt het
    bovenaan de lijst in plaats van op z'n alfabetische plek.
 
+### Bloknamen volgen de gedeelde core-standaard
+
+Sinds 07/10/2026 (migratie `2026_10_07_120000_align_section_types_with_core`)
+heten de blokken zoals in de andere sites, als voorbereiding op een gedeeld
+`core`-package:
+
+| Type | Was | Content-sleutels |
+|------|-----|------------------|
+| `text` (Tekst) | `rich_text` | eyebrow, heading, body |
+| `reviews` (Reviews) | `testimonials` | items[]: highlight, quote, name, role, rating, image |
+| `booking` (Agenda (boeking)) | `calendly` + `booking_hero` | layout (`section`/`hero`), provider, url, height, badge + benefits (enkel hero), button_label, privacy_note |
+| `hero` | — | `height`: compact / medium / tall (was `size`: compact / default) |
+
+Achtergrond-sleutels (`background`) zijn bewust níét hernoemd. Maak geen nieuwe
+secties meer aan met de oude namen: er is geen view meer voor, dus de pagina
+geeft een 500.
+
 ---
 
 ## Site-brede call-to-action
@@ -385,7 +402,7 @@ OAuth-callback keert ook daarheen terug.
     dat blok er niet — een kortere kloppende pagina verslaat een volledige met
     lege blokken. Ankerknoppen (`#aanpak`) verdwijnen automatisch mee met de
     sectie waar ze heen scrollen, anders scrollen ze nergens heen.
-  - **Zonder sjabloon** valt de opbouw terug op de generieke hero → `rich_text`
+  - **Zonder sjabloon** valt de opbouw terug op de generieke hero → `text`
     → faq → cta. Die terugval is er voor een verse installatie en voor andere
     projecten: de sectietypes van dit project (`problem_recognition`,
     `advantages`, `process_steps`, `cases_grid`) bestaan daar niet.
@@ -395,7 +412,7 @@ OAuth-callback keert ook daarheen terug.
     [`SeoAdvisorService`](app/Services/SeoAdvisorService.php). De prompt somt
     enkel de secties op die het sjabloon écht heeft.
   - Let op bij het **bewerkformulier** op het Acties-scherm: de velden "Titel" en
-    "Introtekst" hangen aan het `rich_text`-blok. Een sjabloonpagina heeft dat
+    "Introtekst" hangen aan het `text`-blok. Een sjabloonpagina heeft dat
     niet, dus die velden verbergen zich dan (`editForm['has_text']`) — anders
     zou wat je intikt als los tekstblok áchter de afsluitende CTA belanden.
 - Datums in deze schermen altijd `dd/mm/jjjj`.

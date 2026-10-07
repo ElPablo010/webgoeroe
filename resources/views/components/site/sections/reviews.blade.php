@@ -46,9 +46,9 @@
                     </div>
 
                     {{-- Stat-titel: zet het resultaat in de kijker vóór de quote --}}
-                    @if (! empty($item['title']))
+                    @if (! empty($item['highlight']))
                         <div class="mb-2 text-lg font-bold leading-snug {{ $isDark ? 'text-white' : 'text-slate-900' }}">
-                            {{ $item['title'] }}
+                            {{ $item['highlight'] }}
                         </div>
                     @endif
 
@@ -57,22 +57,22 @@
                     </blockquote>
 
                     <div class="mt-6 flex items-center gap-3">
-                        @if (! empty($item['avatar']))
+                        @if (! empty($item['image']))
                             <img
-                                src="{{ $item['avatar'] }}"
-                                alt="{{ $item['author'] ?? '' }}"
+                                src="{{ $item['image'] }}"
+                                alt="{{ $item['name'] ?? '' }}"
                                 class="h-10 w-10 rounded-full object-cover"
                                 loading="lazy"
                             >
                         @else
                             <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-cyan-400/20 bg-gradient-to-br from-cyan-400/15 to-primary-600/15 text-sm font-bold text-cyan-400">
-                                {{ strtoupper(substr($item['author'] ?? 'A', 0, 1)) }}
+                                {{ strtoupper(substr($item['name'] ?? 'A', 0, 1)) }}
                             </div>
                         @endif
                         <div>
-                            <div class="text-sm font-semibold {{ $isDark ? 'text-white' : 'text-slate-900' }}">{{ $item['author'] ?? '' }}</div>
-                            @if (! empty($item['company']))
-                                <div class="text-xs {{ $isDark ? 'text-white/40' : 'text-slate-500' }}">{{ $item['company'] }}</div>
+                            <div class="text-sm font-semibold {{ $isDark ? 'text-white' : 'text-slate-900' }}">{{ $item['name'] ?? '' }}</div>
+                            @if (! empty($item['role']))
+                                <div class="text-xs {{ $isDark ? 'text-white/40' : 'text-slate-500' }}">{{ $item['role'] }}</div>
                             @endif
                         </div>
                     </div>

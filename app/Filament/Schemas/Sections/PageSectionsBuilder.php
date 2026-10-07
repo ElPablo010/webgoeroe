@@ -5,8 +5,6 @@ namespace App\Filament\Schemas\Sections;
 use Closure;
 use Filament\Forms\Components\Builder;
 use Filament\Forms\Components\Builder\Block;
-use Filament\Forms\Components\Select;
-use Filament\Schemas\Components\Grid;
 
 /**
  * De pagina-secties builder: één Block per sectietype. Een nieuw sectietype
@@ -48,17 +46,7 @@ class PageSectionsBuilder
             'Hero' => Block::make('hero')
                 ->label(self::numberedLabel('Hero'))
                 ->schema([
-                    Grid::make(['default' => 1, 'md' => 2])
-                        ->schema([
-                            ...SectionCommonFields::make(withBackground: false),
-                            Select::make('size')
-                                ->label('Grootte')
-                                ->options([
-                                    'compact' => 'Compact',
-                                    'default' => 'Standaard',
-                                ])
-                                ->default('default'),
-                        ]),
+                    ...SectionCommonFields::make(withBackground: false),
                     ...HeroFields::make(),
                 ]),
             'Tekst en media' => Block::make('text_media')
@@ -103,11 +91,11 @@ class PageSectionsBuilder
                     ...SectionCommonFields::make(),
                     ...CtaFields::make(),
                 ]),
-            'Testimonials' => Block::make('testimonials')
-                ->label(self::numberedLabel('Testimonials'))
+            'Reviews' => Block::make('reviews')
+                ->label(self::numberedLabel('Reviews'))
                 ->schema([
                     ...SectionCommonFields::make(),
-                    ...TestimonialsFields::make(),
+                    ...ReviewsFields::make(),
                 ]),
             'Case-resultaten' => Block::make('case_results')
                 ->label(self::numberedLabel('Case-resultaten'))
@@ -115,17 +103,11 @@ class PageSectionsBuilder
                     ...SectionCommonFields::make(),
                     ...CaseResultsFields::make(),
                 ]),
-            'Boeking' => Block::make('booking_hero')
-                ->label(self::numberedLabel('Boeking'))
+            'Agenda (boeking)' => Block::make('booking')
+                ->label(self::numberedLabel('Agenda (boeking)'))
                 ->schema([
                     ...SectionCommonFields::make(),
-                    ...BookingHeroFields::make(),
-                ]),
-            'Calendly' => Block::make('calendly')
-                ->label(self::numberedLabel('Calendly'))
-                ->schema([
-                    ...SectionCommonFields::make(),
-                    ...CalendlyFields::make(),
+                    ...BookingFields::make(),
                 ]),
             'Case studies grid' => Block::make('cases_grid')
                 ->label(self::numberedLabel('Case studies grid'))
@@ -151,11 +133,11 @@ class PageSectionsBuilder
                     ...SectionCommonFields::make(),
                     ...ProcessStepsFields::make(),
                 ]),
-            'Tekst (lange inhoud)' => Block::make('rich_text')
-                ->label(self::numberedLabel('Tekst (lange inhoud)'))
+            'Tekst' => Block::make('text')
+                ->label(self::numberedLabel('Tekst'))
                 ->schema([
                     ...SectionCommonFields::make(),
-                    ...RichTextFields::make(),
+                    ...TextFields::make(),
                 ]),
         ];
 

@@ -4,7 +4,19 @@
     $image    = $content['image'] ?? [];
     $ctas     = $content['ctas'] ?? [];
     $hasImage = ! empty($image['src']);
-    $compact  = ($content['size'] ?? 'default') === 'compact';
+    // Hoogte: compact = enkel de inhoud, medium = ± 60% van het scherm,
+    // tall = bijna schermvullend (met scroll-indicator). Onbekend/leeg = tall.
+    $height   = in_array($content['height'] ?? null, ['compact', 'medium', 'tall'], true) ? $content['height'] : 'tall';
+    $sectionHeight = match ($height) {
+        'compact' => 'items-center',
+        'medium'  => 'min-h-[60vh] items-center',
+        default   => 'min-h-[90vh] items-center',
+    };
+    $innerPadding = match ($height) {
+        'compact' => 'pt-28 pb-16 md:pt-32 md:pb-20',
+        'medium'  => 'pt-28 pb-20 md:pt-32 md:pb-28',
+        default   => 'py-28 md:py-36',
+    };
     // Lange titels (± 48+ tekens) passen op 72px niet op twee regels; één maat
     // kleiner op grote schermen houdt ze op twee i.p.v. drie regels.
     $longHeading  = mb_strlen(trim((string) ($content['heading'] ?? ''))) >= 48;
@@ -13,7 +25,7 @@
 
 <section
     @if (! empty($content['section_id'])) id="{{ $content['section_id'] }}" @endif
-    class="relative flex overflow-hidden bg-[#050507] {{ $compact ? 'items-center' : 'min-h-[90vh] items-center' }}"
+    class="relative flex overflow-hidden bg-[#050507] {{ $sectionHeight }}"
 >
     {{-- Subtiel grid-patroon --}}
     <div
@@ -43,7 +55,7 @@
         <div class="pointer-events-none absolute inset-0" style="background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(124,58,237,0.06) 0%, transparent 70%);"></div>
     @endif
 
-    <div class="relative mx-auto w-full max-w-6xl px-6 {{ $compact ? 'pt-28 pb-16 md:pt-32 md:pb-20' : 'py-28 md:py-36' }}">
+    <div class="relative mx-auto w-full max-w-6xl px-6 {{ $innerPadding }}">
         {{-- Tekstkolom zo breed als de sectie zelf, zodat een titel op twee regels kan i.p.v. drie --}}
         <div class="mx-auto max-w-6xl text-center">
 
@@ -102,7 +114,7 @@
         </div>
     </div>
 
-    @unless ($compact)
+    @if ($height === 'tall')
         {{-- Scroll-down indicator: laat zien dat er meer content onder de hero volgt --}}
         <button
             type="button"
@@ -114,5 +126,5 @@
                 <span class="h-1.5 w-1.5 animate-scroll-dot rounded-full bg-current"></span>
             </span>
         </button>
-    @endunless
+    @endif
 </section>

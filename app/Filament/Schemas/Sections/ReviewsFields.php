@@ -10,10 +10,13 @@ use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Grid;
 
 /**
- * Testimonials — een grid van klantgetuigenissen met naam, bedrijf, quote en
- * optionele profielfoto + sterrenbeoordeling.
+ * Reviews — een grid van klantgetuigenissen met naam, bedrijf/functie, quote
+ * en optionele profielfoto + sterrenbeoordeling.
+ *
+ * Itemvelden volgen de gedeelde core-standaard: highlight, quote, name, role,
+ * rating, image.
  */
-class TestimonialsFields
+class ReviewsFields
 {
     public static function make(): array
     {
@@ -21,14 +24,14 @@ class TestimonialsFields
             ...HeadingFields::make(headingRequired: false, withIntro: false),
 
             Repeater::make('items')
-                ->label('Testimonials')
+                ->label('Reviews')
                 ->collapsible()
                 ->collapsed()
                 ->collapseAllAction(RepeaterToggleStyle::make())
                 ->expandAllAction(RepeaterToggleStyle::make())
-                ->itemLabel(fn (array $state): ?string => $state['author'] ?? null)
+                ->itemLabel(fn (array $state): ?string => $state['name'] ?? null)
                 ->schema([
-                    TextInput::make('title')
+                    TextInput::make('highlight')
                         ->label('Stat-titel (optioneel)')
                         ->helperText('Kort resultaat boven de quote, bv. "Van 3 naar 14 aanvragen per maand".')
                         ->maxLength(120),
@@ -39,11 +42,11 @@ class TestimonialsFields
                         ->maxLength(500),
                     Grid::make(['default' => 1, 'md' => 2])
                         ->schema([
-                            TextInput::make('author')
+                            TextInput::make('name')
                                 ->label('Naam')
                                 ->required()
                                 ->maxLength(100),
-                            TextInput::make('company')
+                            TextInput::make('role')
                                 ->label('Bedrijf / functie')
                                 ->maxLength(100),
                         ]),
@@ -57,7 +60,7 @@ class TestimonialsFields
                                     '5' => '⭐⭐⭐⭐⭐  5 sterren',
                                 ])
                                 ->default('5'),
-                            MediaPickerField::make('avatar', 'Profielfoto', required: false),
+                            MediaPickerField::make('image', 'Profielfoto', required: false),
                         ]),
                 ])
                 ->columns(1)

@@ -8,7 +8,7 @@ use Illuminate\Database\Seeder;
 /**
  * Over De Webgoeroe-pagina — conversie-ritme:
  * Hero → Verhaal (text_media) → Aanpak (text_media) → Waarom anders (cards)
- * → Testimonials → FAQ → CTA
+ * → Reviews → FAQ → CTA
  */
 class OverOnsSeeder extends Seeder
 {
@@ -176,9 +176,9 @@ class OverOnsSeeder extends Seeder
                 ],
             ],
 
-            // 5. Testimonials -----------------------------------------------
+            // 5. Reviews -----------------------------------------------
             [
-                'section_type' => 'testimonials',
+                'section_type' => 'reviews',
                 'content' => [
                     'section_id' => null,
                     'background' => 'dark',
@@ -187,24 +187,24 @@ class OverOnsSeeder extends Seeder
                     'items'      => [
                         [
                             'quote'   => 'Het grootste verschil met andere bureaus: Pieter denkt écht mee. Hij stelde zelf voor om te starten met de AI-assistent in plaats van een nieuwe website — dat was de juiste keuze en dat weet hij.',
-                            'author'  => 'Kevin D.',
-                            'company' => 'Elektricien, Antwerpen',
+                            'name'    => 'Kevin D.',
+                            'role'    => 'Elektricien, Antwerpen',
                             'rating'  => '5',
-                            'avatar'  => null,
+                            'image'   => null,
                         ],
                         [
                             'quote'   => 'We hadden al twee andere bureaus geprobeerd. Mooie websites, maar het bracht niets op. Met De Webgoeroe is dat anders: alles is gericht op resultaat, en we zien dat ook in de cijfers.',
-                            'author'  => 'Sofie V.',
-                            'company' => 'Zaakvoerder, bouwbedrijf Mechelen',
+                            'name'    => 'Sofie V.',
+                            'role'    => 'Zaakvoerder, bouwbedrijf Mechelen',
                             'rating'  => '5',
-                            'avatar'  => null,
+                            'image'   => null,
                         ],
                         [
                             'quote'   => 'Ik stuurde een berichtje op een zaterdagavond en had een antwoord voor het weekend voorbij was. Dat vind je nergens anders bij een bureau. En het werk klopt ook gewoon.',
-                            'author'  => 'An V.',
-                            'company' => 'Coach & therapeute, Gent',
+                            'name'    => 'An V.',
+                            'role'    => 'Coach & therapeute, Gent',
                             'rating'  => '5',
-                            'avatar'  => null,
+                            'image'   => null,
                         ],
                     ],
                 ],

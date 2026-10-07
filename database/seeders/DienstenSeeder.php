@@ -7,7 +7,7 @@ use Illuminate\Database\Seeder;
 
 /**
  * Diensten-overzichtspagina — conversie-ritme:
- * Hero → 3 Diensten (cards) → Aanpak (text_media) → Testimonials → FAQ → CTA
+ * Hero → 3 Diensten (cards) → Aanpak (text_media) → Reviews → FAQ → CTA
  */
 class DienstenSeeder extends Seeder
 {
@@ -142,9 +142,9 @@ class DienstenSeeder extends Seeder
                 ],
             ],
 
-            // 4. Testimonials -----------------------------------------------
+            // 4. Reviews -----------------------------------------------
             [
-                'section_type' => 'testimonials',
+                'section_type' => 'reviews',
                 'content' => [
                     'section_id' => null,
                     'background' => 'light',
@@ -153,24 +153,24 @@ class DienstenSeeder extends Seeder
                     'items'      => [
                         [
                             'quote'   => 'De AI-assistent stond live binnen vijf dagen. Eerste week al drie afspraken ingepland terwijl ik werkte. Dat is pure omzet die ik vroeger miste.',
-                            'author'  => 'Thomas B.',
-                            'company' => 'Loodgieter, Brussel',
+                            'name'    => 'Thomas B.',
+                            'role'    => 'Loodgieter, Brussel',
                             'rating'  => '5',
-                            'avatar'  => null,
+                            'image'   => null,
                         ],
                         [
                             'quote'   => 'Onze website haalt nu elke maand 40–50 nieuwe leads binnen via Google en Meta. Vroeger moesten we alles via mond-aan-mondreclame doen. Dat verschil is enorm.',
-                            'author'  => 'Sofie V.',
-                            'company' => 'Zaakvoerder, bouwbedrijf Mechelen',
+                            'name'    => 'Sofie V.',
+                            'role'    => 'Zaakvoerder, bouwbedrijf Mechelen',
                             'rating'  => '5',
-                            'avatar'  => null,
+                            'image'   => null,
                         ],
                         [
                             'quote'   => 'De automatisering heeft mij elke week minstens vier uur teruggegeven. Die tijd steek ik nu in het werk zelf, niet in e-mails sturen en formulieren invullen.',
-                            'author'  => 'Marc D.',
-                            'company' => 'Aannemer, Hasselt',
+                            'name'    => 'Marc D.',
+                            'role'    => 'Aannemer, Hasselt',
                             'rating'  => '5',
-                            'avatar'  => null,
+                            'image'   => null,
                         ],
                     ],
                 ],

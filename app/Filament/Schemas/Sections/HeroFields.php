@@ -9,7 +9,8 @@ use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Grid;
 
 /**
- * Hero — kop + intro + achtergrondbeeld + CTA-knoppen.
+ * Hero — kop + intro + achtergrondbeeld + CTA-knoppen, met een hoogte
+ * (compact / medium / tall) volgens de gedeelde core-standaard.
  *
  * De hero heeft een eigen kopblok (geen gedeelde HeadingFields): de tekst staat
  * hier als 'subtitle' i.p.v. 'intro' omdat een hero zelden een lange intro heeft.
@@ -56,6 +57,16 @@ class HeroFields
                         ])
                         ->default('center 50%'),
                 ]),
+
+            Select::make('height')
+                ->label('Hoogte')
+                ->options([
+                    'compact' => 'Compact (alleen de inhoud)',
+                    'medium' => 'Normaal (± 60% van het scherm)',
+                    'tall' => 'Groot (bijna schermvullend)',
+                ])
+                ->default('tall')
+                ->selectablePlaceholder(false),
 
             CtaLinkSchema::repeater('ctas', 'Knoppen (CTA\'s)'),
         ];

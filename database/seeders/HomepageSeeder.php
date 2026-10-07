@@ -7,7 +7,7 @@ use Illuminate\Database\Seeder;
 
 /**
  * Homepage van De Webgoeroe — conversie-gericht ritme:
- * Hero → 3 Pijlers (cards) → Testimonials → FAQ → CTA
+ * Hero → 3 Pijlers (cards) → Reviews → FAQ → CTA
  */
 class HomepageSeeder extends Seeder
 {
@@ -111,29 +111,29 @@ class HomepageSeeder extends Seeder
                 ],
             ],
 
-            // 3. Testimonials -----------------------------------------------
+            // 3. Reviews -----------------------------------------------
             [
-                'section_type' => 'testimonials',
+                'section_type' => 'reviews',
                 'content' => [
                     'eyebrow'    => 'Wat klanten zeggen',
                     'heading'    => 'Resultaten die spreken voor zich',
                     'items'      => [
                         [
                             'quote'   => 'Vroeger miste ik elke dag minstens drie oproepen terwijl ik op de werf werkte. Nu plant de AI-assistent van De Webgoeroe mijn afspraken automatisch in. Ik heb er vorige maand twee nieuwe klanten mee binnengehaald.',
-                            'author'  => 'Kevin D.',
-                            'company' => 'Elektricien, Antwerpen',
+                            'name'    => 'Kevin D.',
+                            'role'    => 'Elektricien, Antwerpen',
                             'rating'  => '5',
                         ],
                         [
                             'quote'   => 'Onze nieuwe website converteert drie keer beter dan de oude. Pieter heeft echt meegedacht over wat onze klanten nodig hebben, niet gewoon een mooie pagina gemaakt.',
-                            'author'  => 'Sofie V.',
-                            'company' => 'Zaakvoerder, bouwbedrijf Mechelen',
+                            'name'    => 'Sofie V.',
+                            'role'    => 'Zaakvoerder, bouwbedrijf Mechelen',
                             'rating'  => '5',
                         ],
                         [
                             'quote'   => 'Dankzij de automatisering steek ik geen tijd meer in het versturen van offerteherinneringen. Dat doet het systeem gewoon. Mijn opvolgingspercentage is verdubbeld.',
-                            'author'  => 'Joris M.',
-                            'company' => 'Schrijnwerker, Gent',
+                            'name'    => 'Joris M.',
+                            'role'    => 'Schrijnwerker, Gent',
                             'rating'  => '5',
                         ],
                     ],

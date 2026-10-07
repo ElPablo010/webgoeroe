@@ -11,7 +11,7 @@ use Illuminate\Database\Seeder;
  * Doel: bezoekers van advertenties omzetten in gekwalificeerde leads.
  * Conversie-ritme (geen navigatie-afleiding):
  * Hero → Wat je krijgt (cards) → Cijfers (cards) → Hoe het werkt (cards)
- * → Voor wie (text_media) → Testimonials → FAQ → Formulier/CTA
+ * → Voor wie (text_media) → Reviews → FAQ → Formulier/CTA
  */
 class GratisDigitaleScanSeeder extends Seeder
 {
@@ -235,9 +235,9 @@ class GratisDigitaleScanSeeder extends Seeder
                 ],
             ],
 
-            // 6. Testimonials -----------------------------------------------
+            // 6. Reviews -----------------------------------------------
             [
-                'section_type' => 'testimonials',
+                'section_type' => 'reviews',
                 'content' => [
                     'section_id' => null,
                     'background' => 'light',
@@ -246,24 +246,24 @@ class GratisDigitaleScanSeeder extends Seeder
                     'items'      => [
                         [
                             'quote'   => 'Ik dacht dat mijn website OK was. Na de scan bleek dat ik elke week gemiddeld 15 oproepen miste en mijn website slechts 0,8% converteerde. Die twee dingen wisten we in drie maanden recht te zetten. Game changer.',
-                            'author'  => 'Kevin D.',
-                            'company' => 'Elektricien, Antwerpen',
+                            'name'    => 'Kevin D.',
+                            'role'    => 'Elektricien, Antwerpen',
                             'rating'  => '5',
-                            'avatar'  => null,
+                            'image'   => null,
                         ],
                         [
                             'quote'   => 'De scan was niet wat ik verwachtte. Geen verkooppraatje maar echt een analyse. Pieter toonde me concreet welke concurrenten beter scoorden dan wij en waarom. Dat was confronterend maar enorm waardevol.',
-                            'author'  => 'Sofie V.',
-                            'company' => 'Zaakvoerder, bouwbedrijf Mechelen',
+                            'name'    => 'Sofie V.',
+                            'role'    => 'Zaakvoerder, bouwbedrijf Mechelen',
                             'rating'  => '5',
-                            'avatar'  => null,
+                            'image'   => null,
                         ],
                         [
                             'quote'   => 'Het gratis gesprek duurde 35 minuten. De informatie die ik meekreeg was de afgelopen vijf jaar de meest waardevolle 35 minuten voor mijn bedrijf. Ik begrijp nu eindelijk hoe mijn digitale systeem werkt — of beter gezegd: hoe het niet werkte.',
-                            'author'  => 'Marc D.',
-                            'company' => 'Aannemer, Hasselt',
+                            'name'    => 'Marc D.',
+                            'role'    => 'Aannemer, Hasselt',
                             'rating'  => '5',
-                            'avatar'  => null,
+                            'image'   => null,
                         ],
                     ],
                 ],
