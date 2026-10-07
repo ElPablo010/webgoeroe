@@ -13,6 +13,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Webgoeroe\Core\Filament\NavigationOrder;
 
 class PostResource extends Resource
 {
@@ -21,6 +22,8 @@ class PostResource extends Resource
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedNewspaper;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Website';
+
+    protected static ?int $navigationSort = NavigationOrder::BLOG;
 
     protected static ?string $recordTitleAttribute = 'title';
 
@@ -57,9 +60,9 @@ class PostResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index'  => ListPosts::route('/'),
+            'index' => ListPosts::route('/'),
             'create' => CreatePost::route('/create'),
-            'edit'   => EditPost::route('/{record}/edit'),
+            'edit' => EditPost::route('/{record}/edit'),
         ];
     }
 }
