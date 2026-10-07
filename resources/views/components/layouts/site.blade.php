@@ -16,7 +16,7 @@
 @php
     // Site-brede structured data (LocalBusiness + WebSite) + pagina-specifieke nodes
     // in één @graph.
-    $graph = array_merge(\App\Support\Seo::globalGraph(), $schema ?? []);
+    $graph = array_merge(\Webgoeroe\Core\Support\Seo::globalGraph(), $schema ?? []);
 @endphp
 
 <!DOCTYPE html>

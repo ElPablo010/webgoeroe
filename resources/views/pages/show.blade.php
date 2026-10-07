@@ -25,7 +25,7 @@
         // zwevende menubalk relatief meer ruimte in.
         $firstSection   = $page->sections->first();
         $startsWithHero = optional($firstSection)->section_type === 'hero';
-        $spacerBg       = \App\Filament\Schemas\Sections\SectionBackground::classes($firstSection?->content['background'] ?? null);
+        $spacerBg       = \Webgoeroe\Core\Filament\Schemas\Sections\SectionBackground::classes($firstSection?->content['background'] ?? null);
     @endphp
 
     @unless ($startsWithHero)
@@ -35,7 +35,9 @@
     <div>
     @foreach ($page->sections as $section)
         @php
-            $componentName = 'site.sections.' . str_replace('_', '-', $section->section_type);
+            // Sectieview uit dit project (components/site/sections/<type>), anders
+            // de standaardview van webgoeroe/core.
+            $componentName = \Webgoeroe\Core\Support\Views::section($section->section_type) ?? 'core::sections.unknown';
             $content = $section->content ?? [];
             $anchorId = $content['section_id'] ?? null;
 

@@ -76,17 +76,55 @@ http://localhost:8000/admin
 
 ---
 
+## Site-basis — package webgoeroe/core
+
+De basis (modellen, page-builder en core-blokken, media, menu's, redirects,
+header/footer/algemene instellingen, inzendingen, sitemap/robots/llms,
+catch-all, contactformulier, admin-chrome) komt uit **`webgoeroe/core`** (code
+in `Internal OS/Modules/repo/core`, zie de README daar). Pas die nooit hier
+aan: een verbetering of fix gaat in de package, met een nieuwe versie.
+Hier blijft wat eigen is aan deze site:
+
+- **Design**: layout, header, footer, meta, cookiebanner, de contactformulier-view
+  en álle sectieviews in `resources/views` (die gaan voor op de standaardviews
+  van de core), plus `sitemap.blade.php` (zonder xhtml-namespace). De
+  "Bekijk website"-knop in de admin is de WebGoeroe-variant:
+  `resources/views/vendor/core/filament/admin/view-site.blade.php`.
+- **Modellen** in `app/Models` zijn dunne subklassen (`Page extends
+  Webgoeroe\Core\Models\Page`); `FormSubmission::TYPE_LABELS` staat hier.
+  `Post` en `CaseStudy` zijn van deze site.
+- **`config/core.php`**: achtergronden (donker standaard; alles behalve wit is
+  donker), geen host-redirect, blokopties (klantreis op cards en
+  probleemherkenning, reviews zonder kolommen/intro, cards zonder badge,
+  tekst-en-media zonder beeldvorm, editor met tabellen op het tekstblok),
+  favicon op de Header-pagina, geen LinkedIn in de footer, pixelbudget 12 MP.
+- **`AppServiceProvider`**: de eigen blokken `calculator`, `case_results`,
+  `cases_grid`, de contactvelden (e-mail/telefoon/adres) op het form-blok, de
+  sectie "Call-to-action" op Instellingen → Algemeen (`Core::generalSettings()`)
+  en `App\Support\ContentSeo::register()`.
+- **`App\Support\ContentSeo`**: cases en blog in sitemap.xml en llms.txt
+  (`Core::seo()`), en de meta/JSON-LD als Seo-macro's: `Seo::fromCaseStudy()`,
+  `Seo::fromPost()`, `Seo::fromBlogIndex()`, `Seo::fromCaseStudiesIndex()`.
+  Registreer een macro als callable (`[self::class, 'methode']`), niet als
+  closure met `self::` — die wordt aan Seo gebonden en roept zichzelf aan.
+- Blog en cases (resources, controllers, MCP-server, `MediaPath`, `MediaUrl`)
+  zijn volledig van deze site.
+- De standaardtests van de core draaien mee (`tests/Pest.php`, `phpunit.xml`).
+
+Composer: lokaal staat de core als path-repository (`../../Modules/repo/core`,
+`@dev`). Vóór een deploy: VCS-repository `ElPablo010/core` met `^0.2`.
+
 ## Nieuwe sectietype toevoegen
 
 Drie plekken:
 
 1. `resources/views/components/site/sections/<type-met-streepjes>.blade.php`
 2. `app/Filament/Schemas/Sections/<Type>Fields.php` met `static make(): array`
-3. `'<Label>' => Block::make('<type_snake_case>')` in `PageSectionsBuilder::blocks()`
-   — de array is **gekeyed op het label** en wordt alfabetisch gesorteerd voor ze
-   naar de Builder gaat, zodat de "Sectie toevoegen"-lijst voorspelbaar blijft.
-   Vergeet je die key, dan krijgt het block een numerieke key en belandt het
-   bovenaan de lijst in plaats van op z'n alfabetische plek.
+   (bouwstenen zoals `HeadingFields`, `CtaLinkSchema`, `MediaPickerField` uit
+   `Webgoeroe\Core\Filament\Schemas\…`)
+3. `Core::blocks()->register('<type_snake_case>', '<Label>', <Type>Fields::class)`
+   in `AppServiceProvider::registerBlocks()`. De builder toont de blokken
+   alfabetisch op label.
 
 ### Bloknamen volgen de gedeelde core-standaard
 
@@ -119,7 +157,7 @@ opgeslagen als de `cta`-sleutel in de `settings`-tabel.
   uit de slug van die pagina — hernoem je de pagina in het CMS, dan volgen alle
   CTA's mee zonder code-wijziging. Zelfde afweging (en dezelfde reden dat
   `PageLinkField` z'n href binnen een `statePath`-group niet betrouwbaar
-  wegschrijft) als in [`SiteHeader`](app/Support/SiteHeader.php).
+  wegschrijft) als in `SiteHeader` (core).
 - Een case mag afwijken via z'n eigen `content.cta`-velden — die zijn **puur
   override**: laat je er één leeg, dan erft de case de site-instelling
   (`SiteCta::mergedWith()`). In de praktijk vullen cases alleen `title`/`body`
@@ -127,7 +165,9 @@ opgeslagen als de `cta`-sleutel in de `settings`-tabel.
 - Blogartikelen hebben géén eigen CTA-velden; die gebruiken de instelling volledig.
 
 Wijzig de CTA-tekst dus **niet in de blade-views** — die lezen enkel `$cta`, dat
-de controllers meegeven.
+de controllers meegeven. Het formulier op Instellingen → Algemeen staat in
+`AppServiceProvider::registerGeneralSettings()` (uitbreidingspunt
+`Core::generalSettings()` van de core).
 
 ---
 
@@ -161,20 +201,18 @@ Media-sync voegt toe en overschrijft, maar **verwijdert nooit** (in beide richti
 
 ## Admin-chrome (zijbalk en topbalk)
 
-Alles staat in `AdminPanelProvider`:
+De chrome komt uit `CorePlugin` (webgoeroe/core); `AdminPanelProvider` regelt
+de groepsvolgorde, de kleur en de favicon (`SiteHeader::favicon()`):
 
 - **Groepsvolgorde ligt vast**: `navigationGroups(['Website', 'Groei',
   'Instellingen'])`. Zonder die regel sorteert Filament op de volgorde waarin hij
   pagina's ontdekt, en wandelt Instellingen naar boven zodra er een pagina
   bijkomt. Instellingen hoort onderaan — dat open je zelden.
-- **Uitlogknop onderaan de zijbalk** via render hook `SIDEBAR_FOOTER` →
-  `filament.admin.sidebar-logout`. Uitloggen zat al in het accountmenu
-  rechtsboven, maar dat moet je eerst openklappen. De view hergebruikt de
-  Filament-klassen van een navigatie-item zodat hij er identiek uitziet; padding
-  staat inline, want dit valt buiten `.fi-sidebar-nav` en de app-Tailwind wordt
-  niet in de admin geladen.
-- **Oogje naar de site** via `GLOBAL_SEARCH_AFTER` →
-  `filament.admin.view-site-button`.
+- **Uitlogknop onderaan de zijbalk** (core, render hook `SIDEBAR_NAV_END`).
+  Uitloggen zat al in het accountmenu rechtsboven, maar dat moet je eerst
+  openklappen.
+- **Oogje naar de site** (core, `USER_MENU_BEFORE`), in de WebGoeroe-variant:
+  `resources/views/vendor/core/filament/admin/view-site.blade.php`.
 
 Vastgelegd in `tests/Feature/AdminSidebarTest.php`, dat óók de volgorde in de
 gerenderde HTML controleert. Let op bij het schrijven van zo'n test: "Uitloggen"
@@ -185,7 +223,7 @@ is de láátste.
 
 - **Media-velden**: altijd `MediaPickerField`, nooit kaal URL-veld.
 - **Tabel-rij-acties**: icon-only (`->button()->hiddenLabel()->tooltip(...)`).
-- **Titelkolom**: via [`TitleColumn::make(<Resource>::class)`](app/Filament/Tables/Columns/TitleColumn.php)
+- **Titelkolom**: via `Webgoeroe\Core\Filament\Tables\Columns\TitleColumn::make(<Resource>::class)`
   — klikbaar naar het bewerkscherm, met `wrap()` + een inline `max-width` zodat
   één lange titel de volgende kolommen niet wegduwt. Chain er gerust extra's
   achteraan (bv. het homepage-icoontje in `PagesTable`).
@@ -499,13 +537,13 @@ library (WebP + JPG-fallback, max 2400 px). De teruggegeven `/storage/...`-URL g
 je als `cover_url`.
 
 Omdat de URL van buitenaf komt (een MCP-client kiest 'm), is de fetch afgeschermd —
-zie [WebsiteMediaService](app/Services/Website/WebsiteMediaService.php):
+zie `Webgoeroe\Core\Services\WebsiteMediaService` (core):
 
 - **SSRF**: enkel `http(s)`, en enkel publieke IP's. Loopback, privé-ranges en
   cloud-metadata (`169.254.169.254`) worden geweigerd — óók per redirect-hop, zodat
   een publieke URL je niet alsnog naar binnen stuurt.
 - **Decompression bomb**: naast de 15 MB byte-cap geldt een **pixel-cap van 12 MP**
-  (`MAX_PIXELS`). Een klein JPEG kan enorme afmetingen hebben; GD houdt een afbeelding
+  (`config/core.php` → `media.max_pixels`). Een klein JPEG kan enorme afmetingen hebben; GD houdt een afbeelding
   onverpakt in het geheugen (b×h×4 bytes), dus zonder deze check blaast een 10000×8000
   bron het PHP-geheugen op de server op. De header wordt via `getimagesize()` gelezen
   vóór GD decodeert.

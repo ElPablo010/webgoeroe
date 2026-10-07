@@ -5,6 +5,8 @@ namespace App\Filament\Schemas\Sections;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Grid;
+use Webgoeroe\Core\Filament\Schemas\Sections\HeadingFields;
+use Webgoeroe\Core\Filament\Schemas\Sections\RepeaterToggleStyle;
 
 /**
  * Case-resultaten — KPI statistieken-strip.

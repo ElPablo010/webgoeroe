@@ -2,18 +2,15 @@
 
 use App\Http\Controllers\CaseStudyController;
 use App\Http\Controllers\PostController;
-use App\Http\Controllers\PublicPageController;
-use App\Http\Controllers\SeoController;
 use Illuminate\Support\Facades\Route;
 
 // Filament is het enige login-systeem; de korte /login redirect ernaartoe.
 Route::redirect('/login', '/admin/login')->name('login');
 
-// SEO/GEO-assets — dynamisch zodat ze de live database + omgeving weerspiegelen.
-// Vóór de catch-all geregistreerd.
-Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('sitemap');
-Route::get('/robots.txt', [SeoController::class, 'robots'])->name('robots');
-Route::get('/llms.txt', [SeoController::class, 'llms'])->name('llms');
+// /sitemap.xml, /robots.txt, /llms.txt en de catch-all paginarouter komen uit
+// de package webgoeroe/core; die registreert ze ná deze routes (catch-all als
+// allerlaatste). Cases en blog vullen de sitemap en llms.txt aan via
+// App\Support\ContentSeo.
 
 // Design-previews voor pagina's die nog niet via de Filament-builder bestaan.
 // Bereikbaar voor ingelogde users als referentie naast de live versie.
@@ -44,8 +41,3 @@ Route::get('/blog/{slug}', [PostController::class, 'show'])
 
 // Google OAuth-routes (Search Console + Analytics) komen uit de package
 // webgoeroe/seo-growth en laden vóór deze routes.
-
-// Catch-all paginarouter (homepage + alle slugs). Sluit admin/livewire/storage uit.
-Route::get('/{slug?}', [PublicPageController::class, 'show'])
-    ->where('slug', '^(?!admin|login|livewire|storage|_debugbar|design).*$')
-    ->name('page.show');

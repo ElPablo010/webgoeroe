@@ -2,17 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Webgoeroe\Core\Models\Redirect as CoreModel;
 
-class Redirect extends Model
+/**
+ * Basis uit de package webgoeroe/core. Projecteigen gedrag hoort hier; de
+ * gedeelde logica in de package.
+ */
+class Redirect extends CoreModel
 {
-    protected $fillable = [
-        'from',
-        'to',
-        'status_code',
-    ];
-
-    protected $casts = [
-        'status_code' => 'integer',
-    ];
+    //
 }

@@ -88,7 +88,7 @@
                         @if ($variant === 'primary')
                             {{-- Exacte leadexpert btn-primary: wit, zwart, pill, hover-glow + lift --}}
                             <a
-                                href="{{ \App\Support\Url::resolveCtaHref($cta) }}"
+                                href="{{ \Webgoeroe\Core\Support\Url::resolveCtaHref($cta) }}"
                                 class="cursor-pointer px-7 py-3.5 text-sm font-semibold transition-all"
                                 style="background:#fff; color:#000; border-radius:100px; box-shadow:0 0 rgba(255,255,255,0);"
                                 onmouseenter="this.style.background='rgba(255,255,255,0.92)'; this.style.boxShadow='0 0 40px rgba(255,255,255,0.2),0 8px 30px rgba(0,0,0,0.4)'; this.style.transform='translateY(-1px)'"
@@ -98,7 +98,7 @@
                         @elseif ($variant === 'ghost' || $variant === 'secondary')
                             {{-- Exacte leadexpert btn-secondary: donker-transparant, witte rand --}}
                             <a
-                                href="{{ \App\Support\Url::resolveCtaHref($cta) }}"
+                                href="{{ \Webgoeroe\Core\Support\Url::resolveCtaHref($cta) }}"
                                 class="cursor-pointer px-7 py-3.5 text-sm font-semibold transition-all"
                                 style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.7); border-radius:100px;"
                                 onmouseenter="this.style.background='rgba(255,255,255,0.1)'; this.style.borderColor='rgba(255,255,255,0.2)'; this.style.color='#fff'; this.style.transform='translateY(-1px)'"
@@ -106,7 +106,7 @@
                             >{{ $cta['label'] ?? '' }}</a>
 
                         @else
-                            <a href="{{ \App\Support\Url::resolveCtaHref($cta) }}" class="cursor-pointer rounded-full bg-primary-600 px-7 py-3.5 text-sm font-semibold text-white transition-all hover:bg-primary-500">{{ $cta['label'] ?? '' }}</a>
+                            <a href="{{ \Webgoeroe\Core\Support\Url::resolveCtaHref($cta) }}" class="cursor-pointer rounded-full bg-primary-600 px-7 py-3.5 text-sm font-semibold text-white transition-all hover:bg-primary-500">{{ $cta['label'] ?? '' }}</a>
                         @endif
                     @endforeach
                 </div>

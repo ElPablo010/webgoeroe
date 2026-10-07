@@ -2,7 +2,7 @@
 
 namespace App\Mcp\Tools;
 
-use App\Services\Website\WebsiteMediaService;
+use Webgoeroe\Core\Services\WebsiteMediaService;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use InvalidArgumentException;
 use Laravel\Mcp\Request;

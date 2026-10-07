@@ -1,6 +1,6 @@
 <?php
 
-use App\Filament\Pages\GeneralSettings;
+use Webgoeroe\Core\Filament\Pages\GeneralSettings;
 use App\Models\CaseStudy;
 use App\Models\Page;
 use App\Models\Post;

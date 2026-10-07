@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Http\Middleware\HandleRedirects;
+use Webgoeroe\Core\Http\Middleware\HandleRedirects;
 use App\Models\CaseStudy;
 use App\Models\Menu;
 use App\Models\MenuItem;

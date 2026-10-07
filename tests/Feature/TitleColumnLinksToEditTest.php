@@ -2,12 +2,9 @@
 
 use App\Filament\Resources\CaseStudies\CaseStudyResource;
 use App\Filament\Resources\CaseStudies\Pages\ListCaseStudies;
-use App\Filament\Resources\Pages\PageResource;
-use App\Filament\Resources\Pages\Pages\ListPages;
 use App\Filament\Resources\Posts\Pages\ListPosts;
 use App\Filament\Resources\Posts\PostResource;
 use App\Models\CaseStudy;
-use App\Models\Page;
 use App\Models\Post;
 use App\Models\User;
 use Filament\Tables\Columns\TextColumn;
@@ -16,23 +13,9 @@ use Livewire\Livewire;
 /**
  * De titel in een overzichtstabel is een link naar het bewerkscherm — de
  * kortste weg van lijst naar edit, zonder eerst de knoppenrij te zoeken.
+ * Pagina's: zie de tests van webgoeroe/core (TitleColumn komt uit de core).
  */
 beforeEach(fn () => $this->actingAs(User::factory()->create()));
-
-it('links a page title to its edit screen', function () {
-    $page = Page::create([
-        'title' => 'Over ons',
-        'slug' => 'over-ons',
-        'published' => true,
-    ]);
-
-    Livewire::test(ListPages::class)
-        ->assertTableColumnExists(
-            'title',
-            fn (TextColumn $column): bool => $column->getUrl() === PageResource::getUrl('edit', ['record' => $page]),
-            $page,
-        );
-});
 
 it('links a post title to its edit screen', function () {
     $post = Post::create([

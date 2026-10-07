@@ -3,7 +3,7 @@
 namespace App\Filament\Resources\Posts\Tables;
 
 use App\Filament\Resources\Posts\PostResource;
-use App\Filament\Tables\Columns\TitleColumn;
+use Webgoeroe\Core\Filament\Tables\Columns\TitleColumn;
 use App\Models\Post;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;

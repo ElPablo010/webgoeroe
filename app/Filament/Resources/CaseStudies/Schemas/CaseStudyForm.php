@@ -2,8 +2,8 @@
 
 namespace App\Filament\Resources\CaseStudies\Schemas;
 
-use App\Filament\Schemas\Components\SeoMetaFields;
-use App\Filament\Schemas\Components\MediaPickerField;
+use Webgoeroe\Core\Filament\Schemas\Components\SeoMetaFields;
+use Webgoeroe\Core\Filament\Schemas\Components\MediaPickerField;
 use App\Support\SiteCta;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;

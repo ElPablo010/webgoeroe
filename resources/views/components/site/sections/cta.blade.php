@@ -2,8 +2,8 @@
 
 @php
     $bgKey   = $content['background'] ?? 'primary';
-    $bg      = \App\Filament\Schemas\Sections\SectionBackground::classes($bgKey);
-    $isDark  = \App\Filament\Schemas\Sections\SectionBackground::isDark($bgKey);
+    $bg      = \Webgoeroe\Core\Filament\Schemas\Sections\SectionBackground::classes($bgKey);
+    $isDark  = \Webgoeroe\Core\Filament\Schemas\Sections\SectionBackground::isDark($bgKey);
     $isFirst = $content['is_first'] ?? false;
     $ctas    = $content['ctas'] ?? [];
     $note    = $content['note'] ?? '';
@@ -74,7 +74,7 @@
                         @if ($variant === 'primary')
                             {{-- Exacte leadexpert btn-primary: groot, wit, zwart, pill, hover-glow + lift --}}
                             <a
-                                href="{{ \App\Support\Url::resolveCtaHref($cta) }}"
+                                href="{{ \Webgoeroe\Core\Support\Url::resolveCtaHref($cta) }}"
                                 class="cursor-pointer inline-flex items-center gap-2 px-8 py-4 text-base font-semibold transition-all"
                                 style="background:#fff; color:#000; border-radius:100px; box-shadow:0 0 rgba(255,255,255,0);"
                                 onmouseenter="this.style.background='rgba(255,255,255,0.92)'; this.style.boxShadow='0 0 40px rgba(255,255,255,0.2),0 8px 30px rgba(0,0,0,0.4)'; this.style.transform='translateY(-1px)'"
@@ -89,7 +89,7 @@
                         @else
                             {{-- Secundaire knop: leadexpert btn-secondary stijl --}}
                             <a
-                                href="{{ \App\Support\Url::resolveCtaHref($cta) }}"
+                                href="{{ \Webgoeroe\Core\Support\Url::resolveCtaHref($cta) }}"
                                 class="cursor-pointer inline-flex items-center gap-2 px-8 py-4 text-base font-semibold transition-all"
                                 style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.7); border-radius:100px;"
                                 onmouseenter="this.style.background='rgba(255,255,255,0.10)'; this.style.borderColor='rgba(255,255,255,0.2)'; this.style.color='#fff'; this.style.transform='translateY(-1px)'"

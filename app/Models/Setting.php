@@ -2,43 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Cache;
+use Webgoeroe\Core\Models\Setting as CoreModel;
 
-class Setting extends Model
+/**
+ * Basis uit de package webgoeroe/core. Projecteigen gedrag hoort hier; de
+ * gedeelde logica in de package.
+ */
+class Setting extends CoreModel
 {
-    protected $fillable = ['key', 'value'];
-
-    protected $casts = [
-        'value' => 'array',
-    ];
-
-    /**
-     * Haal een instellingen-groep op (gecached). Geeft $default terug wanneer
-     * de groep nog niet bestaat — zo blijft de site werken vóór de eerste save.
-     */
-    public static function get(string $key, mixed $default = null): mixed
-    {
-        $value = Cache::rememberForever(
-            self::cacheKey($key),
-            fn () => static::query()->where('key', $key)->first()?->value,
-        );
-
-        return $value ?? $default;
-    }
-
-    /**
-     * Bewaar (of overschrijf) een instellingen-groep en wis de cache.
-     */
-    public static function set(string $key, mixed $value): void
-    {
-        static::query()->updateOrCreate(['key' => $key], ['value' => $value]);
-
-        Cache::forget(self::cacheKey($key));
-    }
-
-    private static function cacheKey(string $key): string
-    {
-        return "setting.{$key}";
-    }
+    //
 }

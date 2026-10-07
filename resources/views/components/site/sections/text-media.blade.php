@@ -1,8 +1,8 @@
 @props(['section' => null, 'content' => []])
 
 @php
-    $bg        = \App\Filament\Schemas\Sections\SectionBackground::classes($content['background'] ?? null);
-    $isDark    = \App\Filament\Schemas\Sections\SectionBackground::isDark($content['background'] ?? null);
+    $bg        = \Webgoeroe\Core\Filament\Schemas\Sections\SectionBackground::classes($content['background'] ?? null);
+    $isDark    = \Webgoeroe\Core\Filament\Schemas\Sections\SectionBackground::isDark($content['background'] ?? null);
     $isFirst   = $content['is_first'] ?? false;
     $mediaType = $content['media_type'] ?? 'image';
     $mediaSide = $content['media_side'] ?? 'right';
@@ -59,7 +59,7 @@
                             };
                         @endphp
                         <a
-                            href="{{ \App\Support\Url::resolveCtaHref($cta) }}"
+                            href="{{ \Webgoeroe\Core\Support\Url::resolveCtaHref($cta) }}"
                             class="cursor-pointer rounded-full px-6 py-3 text-sm font-semibold transition-all {{ $btnClass }}"
                         >{{ $cta['label'] ?? '' }}</a>
                     @endforeach

@@ -1,6 +1,6 @@
 <?php
 
-use App\Livewire\Forms\ContactForm;
+use Webgoeroe\Core\Livewire\Forms\ContactForm;
 use App\Models\FormSubmission;
 use Webgoeroe\SeoGrowth\Models\Lead;
 use App\Models\Page;

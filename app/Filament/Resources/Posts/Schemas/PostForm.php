@@ -2,8 +2,8 @@
 
 namespace App\Filament\Resources\Posts\Schemas;
 
-use App\Filament\Schemas\Components\SeoMetaFields;
-use App\Filament\Schemas\Components\MediaPickerField;
+use Webgoeroe\Core\Filament\Schemas\Components\SeoMetaFields;
+use Webgoeroe\Core\Filament\Schemas\Components\MediaPickerField;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;

@@ -1,7 +1,7 @@
 @props(['section' => null, 'content' => []])
 
 @php
-    $bg       = \App\Filament\Schemas\Sections\SectionBackground::classes($content['background'] ?? null);
+    $bg       = \Webgoeroe\Core\Filament\Schemas\Sections\SectionBackground::classes($content['background'] ?? null);
     $problems = $content['problems'] ?? [];
     $journey  = $content['journey'] ?? [];
 @endphp
@@ -62,7 +62,7 @@
                     {!! $content['closing'] !!}
                 </div>
 
-                @php $ctaHref = \App\Support\Url::resolveCtaHref($content, ''); @endphp
+                @php $ctaHref = \Webgoeroe\Core\Support\Url::resolveCtaHref($content, ''); @endphp
                 @if (! empty($content['cta_label']) && $ctaHref !== '')
                     {{-- Zelfde primaire buttonstijl als de hero-CTA --}}
                     <a

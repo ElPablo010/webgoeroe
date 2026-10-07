@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\CaseStudy;
-use App\Support\Seo;
+use Webgoeroe\Core\Support\Seo;
 use App\Support\SiteCta;
 use Illuminate\Http\Response;
 

@@ -1,5 +1,5 @@
 @php
-    $header = \App\Support\SiteHeader::current();
+    $header = \Webgoeroe\Core\Support\SiteHeader::current();
     $menu = \App\Models\Menu::where('location', 'main')->with('items.children')->first();
     $cta = $header['cta'] ?? [];
 @endphp

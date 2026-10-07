@@ -1,7 +1,7 @@
 @props(['section' => null, 'content' => []])
 
 @php
-    $bg      = \App\Filament\Schemas\Sections\SectionBackground::classes($content['background'] ?? null);
+    $bg      = \Webgoeroe\Core\Filament\Schemas\Sections\SectionBackground::classes($content['background'] ?? null);
     $isFirst = $content['is_first'] ?? false;
     $stats   = $content['stats'] ?? [];
     $colClass = match (count($stats)) {

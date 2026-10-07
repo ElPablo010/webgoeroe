@@ -13,7 +13,7 @@ use function Pest\Laravel\get;
  * De bloknamen volgen de gedeelde core-standaard (text, reviews, booking,
  * hero.height). Zie CLAUDE.md → "Bloknamen volgen de gedeelde core-standaard".
  */
-function corePage(array $sections): Page
+function alignedPage(array $sections): Page
 {
     $page = Page::create([
         'title' => 'Core',
@@ -33,7 +33,7 @@ function corePage(array $sections): Page
 }
 
 it('renders the text, reviews and booking blocks', function () {
-    corePage([
+    alignedPage([
         ['hero', ['heading' => 'Kop', 'height' => 'medium']],
         ['text', ['heading' => 'Lange tekst', 'body' => '<p>Doorlopende inhoud.</p>']],
         ['reviews', ['heading' => 'Wat klanten zeggen', 'items' => [
@@ -58,7 +58,7 @@ it('renders the text, reviews and booking blocks', function () {
 });
 
 it('opens the page edit form with the new blocks', function () {
-    $page = corePage([
+    $page = alignedPage([
         ['hero', ['heading' => 'Kop', 'height' => 'compact']],
         ['text', ['heading' => 'Tekst', 'body' => '<p>Inhoud</p>']],
         ['reviews', ['items' => [['quote' => 'Q', 'name' => 'N']]]],
@@ -75,7 +75,7 @@ it('opens the page edit form with the new blocks', function () {
 it('migrates old section types to the core standard and back', function () {
     $migration = require database_path('migrations/2026_10_07_120000_align_section_types_with_core.php');
 
-    $page = corePage([]);
+    $page = alignedPage([]);
     $insert = fn (string $type, array $content) => DB::table('page_sections')->insertGetId([
         'sectionable_type' => Page::class,
         'sectionable_id' => $page->id,

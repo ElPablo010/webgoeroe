@@ -1,11 +1,11 @@
 @props(['section' => null, 'content' => []])
 
 @php
-    $bg       = \App\Filament\Schemas\Sections\SectionBackground::classes($content['background'] ?? null);
+    $bg       = \Webgoeroe\Core\Filament\Schemas\Sections\SectionBackground::classes($content['background'] ?? null);
     $missed   = (float) ($content['default_missed'] ?? 5);
     $value    = (float) ($content['default_value'] ?? 800);
     $rate     = (float) ($content['default_rate'] ?? 30);
-    $ctaHref  = \App\Support\Url::resolveCtaHref($content, '');
+    $ctaHref  = \Webgoeroe\Core\Support\Url::resolveCtaHref($content, '');
     $inputCls = 'mt-2 w-full rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3 text-lg font-semibold text-white outline-none transition focus:border-cyan-400/50';
 @endphp
 

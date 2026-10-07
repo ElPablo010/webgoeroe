@@ -1,7 +1,7 @@
 @props(['section' => null, 'content' => []])
 
 @php
-    $bg      = \App\Filament\Schemas\Sections\SectionBackground::classes($content['background'] ?? null);
+    $bg      = \Webgoeroe\Core\Filament\Schemas\Sections\SectionBackground::classes($content['background'] ?? null);
     $isFirst = $content['is_first'] ?? false;
 
     $query = \App\Models\CaseStudy::query()
@@ -119,7 +119,7 @@
                     @php $variant = $cta['variant'] ?? 'primary'; @endphp
                     @if ($variant === 'primary')
                         <a
-                            href="{{ \App\Support\Url::resolveCtaHref($cta) }}"
+                            href="{{ \Webgoeroe\Core\Support\Url::resolveCtaHref($cta) }}"
                             class="cursor-pointer px-7 py-3.5 text-sm font-semibold transition-all"
                             style="background:#fff; color:#000; border-radius:100px;"
                             onmouseenter="this.style.background='rgba(255,255,255,0.92)'; this.style.boxShadow='0 0 40px rgba(255,255,255,0.2),0 8px 30px rgba(0,0,0,0.4)'; this.style.transform='translateY(-1px)'"
@@ -127,7 +127,7 @@
                         >{{ $cta['label'] ?? '' }}</a>
                     @else
                         <a
-                            href="{{ \App\Support\Url::resolveCtaHref($cta) }}"
+                            href="{{ \Webgoeroe\Core\Support\Url::resolveCtaHref($cta) }}"
                             class="cursor-pointer px-7 py-3.5 text-sm font-semibold transition-all"
                             style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.7); border-radius:100px;"
                             onmouseenter="this.style.background='rgba(255,255,255,0.1)'; this.style.borderColor='rgba(255,255,255,0.2)'; this.style.color='#fff'; this.style.transform='translateY(-1px)'"

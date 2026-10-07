@@ -2,7 +2,6 @@
 
 namespace App\Providers\Filament;
 
-use App\Support\SiteHeader;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -11,15 +10,15 @@ use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
-use Filament\View\PanelsRenderHook;
 use Filament\Widgets\AccountWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
-use Illuminate\Support\Facades\View;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Webgoeroe\Core\CorePlugin;
+use Webgoeroe\Core\Support\SiteHeader;
 use Webgoeroe\SeoGrowth\SeoGrowthPlugin;
 
 class AdminPanelProvider extends PanelProvider
@@ -49,8 +48,11 @@ class AdminPanelProvider extends PanelProvider
             ->widgets([
                 AccountWidget::class,
             ])
-            // Groei-module (Search Console, Analytics, leads, SEO-advies en acties).
+            // Site-basis (Pagina's, Media, Menu's, Redirects, Header, Footer,
+            // Inzendingen, Algemeen + admin-chrome) en de Groei-module (Search
+            // Console, Analytics, leads, SEO-advies en acties).
             ->plugins([
+                CorePlugin::make(),
                 SeoGrowthPlugin::make(),
             ])
             ->middleware([
@@ -66,22 +68,6 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
-            ])
-            ->renderHook(
-                PanelsRenderHook::HEAD_END,
-                fn (): string => View::make('filament.admin.customizations')->render(),
-            )
-            // Altijd zichtbaar oogje in de topbalk, tussen de zoekbalk en het
-            // accountmenu: opent de publieke site vanaf élke adminpagina.
-            ->renderHook(
-                PanelsRenderHook::GLOBAL_SEARCH_AFTER,
-                fn (): string => View::make('filament.admin.view-site-button')->render(),
-            )
-            // Uitloggen onderaan de zijbalk, waar je het zoekt. Het zat al in het
-            // accountmenu rechtsboven, maar dat moet je eerst openklappen.
-            ->renderHook(
-                PanelsRenderHook::SIDEBAR_FOOTER,
-                fn (): string => View::make('filament.admin.sidebar-logout')->render(),
-            );
+            ]);
     }
 }

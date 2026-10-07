@@ -1,8 +1,8 @@
 @props(['section' => null, 'content' => []])
 
 @php
-    $bg      = \App\Filament\Schemas\Sections\SectionBackground::classes($content['background'] ?? null);
-    $isDark  = \App\Filament\Schemas\Sections\SectionBackground::isDark($content['background'] ?? null);
+    $bg      = \Webgoeroe\Core\Filament\Schemas\Sections\SectionBackground::classes($content['background'] ?? null);
+    $isDark  = \Webgoeroe\Core\Filament\Schemas\Sections\SectionBackground::isDark($content['background'] ?? null);
     $isFirst = $content['is_first'] ?? false;
     $columns = (int) ($content['columns'] ?? 3);
     $colClass = match ($columns) {

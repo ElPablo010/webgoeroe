@@ -6,6 +6,8 @@ use App\Models\CaseStudy;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\TextInput;
+use Webgoeroe\Core\Filament\Schemas\Sections\CtaLinkSchema;
+use Webgoeroe\Core\Filament\Schemas\Sections\HeadingFields;
 
 /**
  * Cases grid — insluitable case studies grid voor pagina's en andere secties.

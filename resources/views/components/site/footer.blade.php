@@ -1,5 +1,5 @@
 @php
-    $footer = \App\Support\SiteFooter::current();
+    $footer = \Webgoeroe\Core\Support\SiteFooter::current();
     $contact = $footer['contact'] ?? [];
     $brand = $footer['brand'] ?? [];
     $social = $footer['social'] ?? [];

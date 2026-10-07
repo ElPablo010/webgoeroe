@@ -3,7 +3,7 @@
 namespace App\Filament\Resources\CaseStudies\Tables;
 
 use App\Filament\Resources\CaseStudies\CaseStudyResource;
-use App\Filament\Tables\Columns\TitleColumn;
+use Webgoeroe\Core\Filament\Tables\Columns\TitleColumn;
 use App\Models\CaseStudy;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;

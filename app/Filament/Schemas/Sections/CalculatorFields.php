@@ -2,9 +2,10 @@
 
 namespace App\Filament\Schemas\Sections;
 
-use App\Filament\Schemas\Components\PageLinkField;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Grid;
+use Webgoeroe\Core\Filament\Schemas\Components\PageLinkField;
+use Webgoeroe\Core\Filament\Schemas\Sections\HeadingFields;
 
 /**
  * Gemiste-omzet-calculator — de bezoeker vult zelf zijn cijfers in (gemiste
