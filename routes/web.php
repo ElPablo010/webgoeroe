@@ -7,6 +7,9 @@ use Illuminate\Support\Facades\Route;
 // Filament is het enige login-systeem; de korte /login redirect ernaartoe.
 Route::redirect('/login', '/admin/login')->name('login');
 
+// De homepage-pagina is ook op /home bereikbaar; één URL voor Google.
+Route::permanentRedirect('/home', '/');
+
 // /sitemap.xml, /robots.txt, /llms.txt en de catch-all paginarouter komen uit
 // de package webgoeroe/core; die registreert ze ná deze routes (catch-all als
 // allerlaatste). Cases en blog vullen de sitemap en llms.txt aan via
