@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "ad99bef1a15f41ad9faeac3fde30fe8f",
+    "content-hash": "b144b719b67f33995ef95c3261bb713c",
     "packages": [
         {
             "name": "blade-ui-kit/blade-heroicons",
@@ -9451,16 +9451,16 @@
         },
         {
             "name": "webgoeroe/core",
-            "version": "v0.2.0",
+            "version": "v0.4.0",
             "source": {
                 "type": "git",
                 "url": "git@github.com:ElPablo010/core.git",
-                "reference": "7df018b95b4bea5bdb13606a2952df140bd82212"
+                "reference": "ae6d5b4d8ce7edd32ac8e1b6deafb573fdc6a8b8"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ElPablo010/core/zipball/7df018b95b4bea5bdb13606a2952df140bd82212",
-                "reference": "7df018b95b4bea5bdb13606a2952df140bd82212",
+                "url": "https://api.github.com/repos/ElPablo010/core/zipball/ae6d5b4d8ce7edd32ac8e1b6deafb573fdc6a8b8",
+                "reference": "ae6d5b4d8ce7edd32ac8e1b6deafb573fdc6a8b8",
                 "shasum": ""
             },
             "require": {
@@ -9489,10 +9489,10 @@
             ],
             "description": "Site-basis van De WebGoeroe: page-builder met blokken, media, menu's, redirects, header/footer, SEO (sitemap, robots, llms.txt, JSON-LD) en formulieren voor Laravel + Filament-sites.",
             "support": {
-                "source": "https://github.com/ElPablo010/core/tree/v0.2.0",
+                "source": "https://github.com/ElPablo010/core/tree/v0.4.0",
                 "issues": "https://github.com/ElPablo010/core/issues"
             },
-            "time": "2026-10-07T12:30:42+00:00"
+            "time": "2026-10-08T06:38:58+00:00"
         },
         {
             "name": "webgoeroe/seo-growth",
