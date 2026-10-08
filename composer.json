@@ -19,7 +19,7 @@
         "laravel/tinker": "^3.0",
         "livewire/livewire": "^4.3",
         "mallardduck/blade-lucide-icons": "^1.26",
-        "webgoeroe/core": "^0.5",
+        "webgoeroe/core": "^0.7",
         "webgoeroe/seo-growth": "^0.5"
     },
     "require-dev": {
