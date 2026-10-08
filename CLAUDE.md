@@ -111,8 +111,17 @@ Hier blijft wat eigen is aan deze site:
   zijn volledig van deze site.
 - De standaardtests van de core draaien mee (`tests/Pest.php`, `phpunit.xml`).
 
-Composer: lokaal staat de core als path-repository (`../../Modules/repo/core`,
-`@dev`). Vóór een deploy: VCS-repository `ElPablo010/core` met `^0.2`.
+- **Eén hoofd-URL** (core 0.5, `RedirectToCanonicalUrl`, globaal): hoofdhost =
+  host van `APP_URL` (`dewebgoeroe.be`). `www.dewebgoeroe.be`, `/index.php(/…)` en een slash achteraan
+  gaan in één 301 naar de canonieke URL (ook `/admin`, 404's; enkel GET/HEAD; niet
+  lokaal/in tests). Daarom géén www- of trailing-slash-regels in `public/.htaccess`
+  en geen statische `public/robots.txt` (robots komt uit de core). http → https
+  doet Combell zelf, vóór PHP.
+  `/home` → `/` blijft een route in `routes/web.php` (op www: twee hops).
+
+Composer: op branch `core-0.5` staat de core als path-repository (`../../Modules/repo/core`,
+`@dev`, core v0.5.0 lokaal getagd). Vóór een deploy: core v0.5.0 pushen en de
+VCS-repository `ElPablo010/core` met `^0.5` zetten.
 
 ## Nieuwe sectietype toevoegen
 

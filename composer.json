@@ -19,7 +19,7 @@
         "laravel/tinker": "^3.0",
         "livewire/livewire": "^4.3",
         "mallardduck/blade-lucide-icons": "^1.26",
-        "webgoeroe/core": "^0.4",
+        "webgoeroe/core": "@dev",
         "webgoeroe/seo-growth": "^0.5"
     },
     "require-dev": {
@@ -101,8 +101,11 @@
     "repositories": [
         {
             "name": "core",
-            "type": "vcs",
-            "url": "https://github.com/ElPablo010/core.git"
+            "type": "path",
+            "url": "../../Modules/repo/core",
+            "options": {
+                "symlink": true
+            }
         },
         {
             "name": "seo-growth",

@@ -12,12 +12,6 @@ return [
         'nl' => 'NL',
     ],
 
-    // Geen host-redirect vanuit de app: dat deed deze site nooit (www/kale host
-    // regelt de hosting). Zet op 'auto' of 'strip_www' als dat ooit moet.
-    'middleware' => [
-        'canonical_host' => false,
-    ],
-
     // Dark-mode design: 'dark' is de standaard. 'light' is een iets lichtere
     // donkere tint (kaarten), 'white' de uitzondering. Alles behalve wit is donker.
     'backgrounds' => [

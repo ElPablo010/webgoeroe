@@ -5,9 +5,9 @@
 
     RewriteEngine On
 
-    # www → zonder www (één canonieke host voor Google)
-    RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
-    RewriteRule ^ https://%1%{REQUEST_URI} [L,R=301]
+    # Hoofdhost (www of niet), /index.php en de slash achteraan regelt
+    # webgoeroe/core (RedirectToCanonicalUrl) in één 301 — geen regels hier,
+    # anders worden het twee of drie hops.
 
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
@@ -16,11 +16,6 @@
     # Handle X-XSRF-Token Header
     RewriteCond %{HTTP:x-xsrf-token} .
     RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
-
-    # Redirect Trailing Slashes If Not A Folder...
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteCond %{REQUEST_URI} (.+)/$
-    RewriteRule ^ %1 [L,R=301]
 
     # Send Requests To Front Controller...
     RewriteCond %{REQUEST_FILENAME} !-d
