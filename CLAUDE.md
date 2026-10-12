@@ -504,6 +504,9 @@ Body geef je als **Markdown**; wordt server-side via `Str::markdown()` naar HTML
 omgezet (h2-id's voor de TOC voegt de blade-view zelf toe). Helpers in
 [InteractsWithPosts](app/Mcp/Concerns/InteractsWithPosts.php).
 
+Deelafbeelding: `create_post`/`update_post` nemen ook `seo_image_url` +
+`seo_image_alt` (og:image). Optioneel: leeg = `ContentSeo` valt terug op de cover.
+
 ### Cases
 
 Let op: een case werkt **anders dan een post**. `CaseStudy::$content` is een

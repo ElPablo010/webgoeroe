@@ -89,6 +89,29 @@ it('updates only the provided fields', function () {
         ->and($post->body)->toBe('<p>oud</p>');
 });
 
+it('sets the seo image on create and update', function () {
+    CmsServer::actingAs($this->admin)
+        ->tool(CreatePost::class, [
+            'title' => 'Met deelbeeld',
+            'body' => 'x',
+            'seo_image_url' => '/storage/website-media/deel.webp',
+            'seo_image_alt' => 'Deelbeeld',
+        ])
+        ->assertOk();
+
+    $post = Post::firstWhere('title', 'Met deelbeeld');
+
+    expect($post->seo_image_url)->toBe('/storage/website-media/deel.webp')
+        ->and($post->seo_image_alt)->toBe('Deelbeeld');
+
+    CmsServer::actingAs($this->admin)
+        ->tool(UpdatePost::class, ['id' => $post->id, 'seo_image_url' => null])
+        ->assertOk();
+
+    expect($post->refresh()->seo_image_url)->toBeNull()
+        ->and($post->seo_image_alt)->toBe('Deelbeeld');
+});
+
 it('publishes and unpublishes an existing post', function () {
     $post = Post::create(['title' => 'Schakel', 'slug' => 'schakel', 'published' => false]);
 

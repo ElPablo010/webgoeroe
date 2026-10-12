@@ -39,6 +39,8 @@ class CreatePost extends Tool
             // volledige URL moet ook zo'n pad door de validatie komen.
             'cover_url' => ['nullable', 'string', 'max:255', new MediaUrl],
             'cover_alt' => ['nullable', 'string', 'max:255'],
+            'seo_image_url' => ['nullable', 'string', 'max:255', new MediaUrl],
+            'seo_image_alt' => ['nullable', 'string', 'max:255'],
             'author_name' => ['nullable', 'string', 'max:100'],
             'meta_title' => ['nullable', 'string', 'max:255'],
             'meta_description' => ['nullable', 'string', 'max:1000'],
@@ -56,6 +58,8 @@ class CreatePost extends Tool
             'tags' => $validated['tags'] ?? null,
             'cover_url' => $validated['cover_url'] ?? null,
             'cover_alt' => $validated['cover_alt'] ?? null,
+            'seo_image_url' => $validated['seo_image_url'] ?? null,
+            'seo_image_alt' => $validated['seo_image_alt'] ?? null,
             'author_name' => $validated['author_name'] ?? 'De Webgoeroe',
             'meta_title' => $validated['meta_title'] ?? null,
             'meta_description' => $validated['meta_description'] ?? null,
@@ -95,6 +99,10 @@ class CreatePost extends Tool
                 ->description('Coverafbeelding bovenaan het artikel. Gebruik de "url" die upload_media_from_url teruggaf (bv. /storage/website-media/...), niet een externe link.'),
             'cover_alt' => $schema->string()
                 ->description('Alt-tekst voor de coverafbeelding.'),
+            'seo_image_url' => $schema->string()
+                ->description('Optioneel. Aparte deelafbeelding (og:image) voor sociale media. Leeg = de cover wordt gebruikt. Gebruik een "url" van upload_media_from_url.'),
+            'seo_image_alt' => $schema->string()
+                ->description('Alt-tekst voor de deelafbeelding.'),
             'author_name' => $schema->string()
                 ->description('Naam van de auteur. Standaard “De Webgoeroe”.'),
             'meta_title' => $schema->string()

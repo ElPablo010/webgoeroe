@@ -40,6 +40,8 @@ class UpdatePost extends Tool
             'tags.*' => ['string', 'max:50'],
             'cover_url' => ['sometimes', 'nullable', 'string', 'max:255', new MediaUrl],
             'cover_alt' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'seo_image_url' => ['sometimes', 'nullable', 'string', 'max:255', new MediaUrl],
+            'seo_image_alt' => ['sometimes', 'nullable', 'string', 'max:255'],
             'meta_title' => ['sometimes', 'nullable', 'string', 'max:255'],
             'meta_description' => ['sometimes', 'nullable', 'string', 'max:1000'],
             'featured' => ['sometimes', 'boolean'],
@@ -51,7 +53,7 @@ class UpdatePost extends Tool
             return Response::error("Geen blogartikel gevonden met id {$validated['id']}.");
         }
 
-        foreach (['title', 'excerpt', 'cover_url', 'cover_alt', 'meta_title', 'meta_description', 'featured'] as $field) {
+        foreach (['title', 'excerpt', 'cover_url', 'cover_alt', 'seo_image_url', 'seo_image_alt', 'meta_title', 'meta_description', 'featured'] as $field) {
             if (array_key_exists($field, $validated)) {
                 $post->{$field} = $validated[$field];
             }
@@ -90,6 +92,8 @@ class UpdatePost extends Tool
             'tags' => $schema->array()->description('Vervangende lijst tags.')->items($schema->string()),
             'cover_url' => $schema->string()->description('Nieuwe cover-afbeelding-URL.'),
             'cover_alt' => $schema->string()->description('Nieuwe alt-tekst voor de cover.'),
+            'seo_image_url' => $schema->string()->description('Nieuwe deelafbeelding (og:image). Leeg = de cover wordt gebruikt.'),
+            'seo_image_alt' => $schema->string()->description('Nieuwe alt-tekst voor de deelafbeelding.'),
             'meta_title' => $schema->string()->description('Nieuwe SEO meta-titel (ideaal ~60 tekens).')->max(255),
             'meta_description' => $schema->string()->description('Nieuwe SEO meta-omschrijving (ideaal ~160 tekens).')->max(1000),
             'featured' => $schema->boolean()->description('Uitgelicht aan/uit.'),
