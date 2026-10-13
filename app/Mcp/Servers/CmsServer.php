@@ -12,6 +12,7 @@ use App\Mcp\Tools\UnpublishCase;
 use App\Mcp\Tools\UnpublishPost;
 use App\Mcp\Tools\UpdateCase;
 use App\Mcp\Tools\UpdatePost;
+use App\Mcp\Tools\UploadMediaFile;
 use App\Mcp\Tools\UploadMediaFromUrl;
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Attributes\Instructions;
@@ -76,6 +77,7 @@ class CmsServer extends Server
 
         // Gedeeld
         UploadMediaFromUrl::class,
+        UploadMediaFile::class,
     ];
 
     protected array $resources = [

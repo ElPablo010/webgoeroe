@@ -3,6 +3,7 @@
 use App\Enums\UserRole;
 use App\Mcp\Servers\CmsServer;
 use App\Mcp\Tools\CreatePost;
+use App\Mcp\Tools\UploadMediaFile;
 use App\Mcp\Tools\UploadMediaFromUrl;
 use App\Models\Post;
 use App\Models\User;
@@ -162,5 +163,23 @@ it('still rejects a nonsense cover_url', function () {
             'body' => 'Inhoud.',
             'cover_url' => 'javascript:alert(1)',
         ])
+        ->assertHasErrors();
+});
+
+it('stores a base64 image in the media library', function () {
+    CmsServer::actingAs($this->admin)
+        ->tool(UploadMediaFile::class, [
+            'data' => 'data:image/jpeg;base64,'.base64_encode(fakeImageBytes()),
+            'filename' => 'eigen-foto.jpg',
+        ])
+        ->assertOk()
+        ->assertSee('/storage/');
+
+    expect(WebsiteMedia::count())->toBe(1);
+});
+
+it('rejects invalid base64 for a file upload', function () {
+    CmsServer::actingAs($this->admin)
+        ->tool(UploadMediaFile::class, ['data' => '%%%niet-base64%%%', 'filename' => 'x.jpg'])
         ->assertHasErrors();
 });
