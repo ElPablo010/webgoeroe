@@ -44,6 +44,7 @@
                 <input
                     type="tel"
                     wire:model="phone"
+                    @if ($phoneRequired) required autocomplete="tel" @endif
                     placeholder="+32 478 00 00 00"
                     class="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-3 text-sm text-white placeholder-white/20 focus:border-cyan-400/40 focus:outline-none focus:ring-2 focus:ring-cyan-400/10"
                 >
