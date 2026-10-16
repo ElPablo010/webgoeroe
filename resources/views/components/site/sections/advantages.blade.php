@@ -22,7 +22,7 @@
         @endif
 
         {{-- Voordelen: icoon-links layout, bewust opener dan de kaarten-grids --}}
-        <div class="grid gap-x-10 gap-y-12 md:grid-cols-2">
+        <div class="grid gap-x-10 gap-y-12 {{ count($items) === 3 ? 'md:grid-cols-3' : 'md:grid-cols-2' }}">
             @foreach ($items as $index => $item)
                 <div
                     data-reveal

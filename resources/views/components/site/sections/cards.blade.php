@@ -42,7 +42,7 @@
         {{-- Optionele klantreis boven de kaarten, bv. Lead → Opvolging → Klant --}}
         <x-site.partials.journey :steps="$journey" :spaced="! empty($cards)" />
 
-        <div class="grid gap-5 {{ $colClass }}">
+        <div class="grid auto-rows-fr gap-5 {{ $colClass }}">
             @foreach ($cards as $index => $card)
                 @php $isHidden = $hasMore && $index >= $maxVisible; @endphp
                 <div
