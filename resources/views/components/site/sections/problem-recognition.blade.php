@@ -24,7 +24,7 @@
 
         <x-site.partials.journey :steps="$journey" :spaced="! empty($problems)" />
 
-        <div class="grid gap-5 md:grid-cols-2">
+        <div class="grid auto-rows-fr gap-5 md:grid-cols-2">
             @foreach ($problems as $index => $problem)
                 <div
                     data-reveal
