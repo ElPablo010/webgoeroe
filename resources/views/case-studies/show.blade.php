@@ -207,7 +207,7 @@
                 @endif
 
                 @if (! empty($c['results']['metrics']))
-                    <div class="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-2">
+                    <div class="mt-10 grid gap-4 {{ count($c['results']['metrics']) === 3 ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-2 sm:grid-cols-2' }}">
                         @foreach ($c['results']['metrics'] as $index => $metric)
                             @if (! empty($metric['label']) && ! empty($metric['value']))
                                 <div data-reveal style="animation-delay: {{ min($index, 5) * 80 }}ms" class="rounded-xl border border-white/[0.08] bg-white/[0.03] p-5">
