@@ -4,6 +4,10 @@
     $image    = $content['image'] ?? [];
     $ctas     = $content['ctas'] ?? [];
     $hasImage = ! empty($image['src']);
+    // 'side' = beeld naast de tekst (tekst links). Ontbrekende keuze = achtergrond,
+    // zoals hero's altijd werkten.
+    $side     = $hasImage && ($content['image_layout'] ?? 'background') === 'side';
+    $bgImage  = $hasImage && ! $side;
     // Hoogte: compact = enkel de inhoud, medium = ± 60% van het scherm,
     // tall = bijna schermvullend (met scroll-indicator). Onbekend/leeg = tall.
     $height   = in_array($content['height'] ?? null, ['compact', 'medium', 'tall'], true) ? $content['height'] : 'tall';
@@ -20,7 +24,9 @@
     // Lange titels (± 48+ tekens) passen op 72px niet op twee regels; één maat
     // kleiner op grote schermen houdt ze op twee i.p.v. drie regels.
     $longHeading  = mb_strlen(trim((string) ($content['heading'] ?? ''))) >= 48;
-    $headingSize  = $longHeading ? 'md:text-6xl' : 'md:text-6xl lg:text-7xl';
+    $headingSize  = $side
+        ? 'md:text-5xl lg:text-6xl'
+        : ($longHeading ? 'md:text-6xl' : 'md:text-6xl lg:text-7xl');
 @endphp
 
 <section
@@ -33,7 +39,7 @@
         style="background-image: linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px); background-size: 60px 60px;"
     ></div>
 
-    @if ($hasImage)
+    @if ($bgImage)
         {{-- Achtergrondafbeelding met donker scrim --}}
         <picture>
             <source srcset="{{ $image['src'] }}" type="image/webp">
@@ -56,8 +62,10 @@
     @endif
 
     <div class="relative mx-auto w-full max-w-6xl px-6 {{ $innerPadding }}">
-        {{-- Tekstkolom zo breed als de sectie zelf, zodat een titel op twee regels kan i.p.v. drie --}}
-        <div class="mx-auto max-w-6xl text-center">
+        {{-- Tekstkolom zo breed als de sectie zelf, zodat een titel op twee regels kan i.p.v. drie.
+             Met beeld naast de tekst: twee kolommen, tekst links uitgelijnd. --}}
+        <div class="{{ $side ? 'grid items-center gap-12 lg:grid-cols-[1.1fr_0.9fr]' : 'mx-auto max-w-6xl text-center' }}">
+        <div class="{{ $side ? 'text-left' : '' }}">
 
             @if (! empty($content['eyebrow']))
                 <div class="mb-8 inline-flex animate-hero-enter items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/[0.07] px-4 py-1.5">
@@ -75,13 +83,13 @@
             @endif
 
             @if (! empty($content['subtitle']))
-                <div class="mx-auto mt-6 max-w-2xl animate-hero-enter text-lg leading-relaxed text-white/55 [animation-delay:210ms] [&_a]:underline [&_strong]:font-semibold [&_strong]:text-white/90">
+                <div class="{{ $side ? '' : 'mx-auto ' }}mt-6 max-w-2xl animate-hero-enter text-lg leading-relaxed text-white/55 [animation-delay:210ms] [&_a]:underline [&_strong]:font-semibold [&_strong]:text-white/90">
                     {!! $content['subtitle'] !!}
                 </div>
             @endif
 
             @if (! empty($ctas))
-                <div class="mt-10 flex animate-hero-enter flex-wrap justify-center gap-3 [animation-delay:300ms]">
+                <div class="mt-10 flex animate-hero-enter flex-wrap {{ $side ? 'justify-start' : 'justify-center' }} gap-3 [animation-delay:300ms]">
                     @foreach ($ctas as $cta)
                         @php $variant = $cta['variant'] ?? 'primary'; @endphp
 
@@ -111,6 +119,19 @@
                     @endforeach
                 </div>
             @endif
+        </div>
+
+        @if ($side)
+            <div class="relative animate-hero-enter [animation-delay:250ms]">
+                <div class="pointer-events-none absolute -inset-6 rounded-[2rem] bg-primary-600/20 blur-3xl"></div>
+                <img
+                    src="{{ $image['src'] }}"
+                    alt="{{ $image['alt'] ?? '' }}"
+                    class="relative aspect-[4/3] w-full rounded-2xl border border-white/10 object-cover shadow-2xl shadow-black/50"
+                    fetchpriority="high"
+                >
+            </div>
+        @endif
         </div>
     </div>
 

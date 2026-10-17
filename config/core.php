@@ -30,6 +30,10 @@ return [
     // contactgegevens op het formulierblok staan in AppServiceProvider.
     'blocks' => [
         'options' => [
+            // Beeld naast de tekst of als achtergrond (keuze per hero).
+            'hero' => [
+                'image_layout' => true,
+            ],
             'reviews' => [
                 'columns' => false,
                 'intro' => false,
