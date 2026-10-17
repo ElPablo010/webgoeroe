@@ -30,7 +30,7 @@
 
         {{-- Desktop nav --}}
         @if ($menu)
-            <nav class="hidden items-center gap-1 md:flex">
+            <nav class="hidden items-center gap-1 lg:flex">
                 @foreach ($menu->items as $item)
                     @if ($item->children->isNotEmpty())
                         <div
@@ -104,7 +104,7 @@
                 {{-- btn-primary: exact leadexpert stijl --}}
                 <a
                     href="{{ $cta['href'] ?? '/' }}"
-                    class="hidden cursor-pointer px-5 py-2.5 text-sm font-semibold transition-all md:inline-flex"
+                    class="hidden cursor-pointer px-5 py-2.5 text-sm font-semibold transition-all lg:inline-flex"
                     style="background:#fff; color:#000; border-radius:100px; box-shadow:0 0 rgba(255,255,255,0);"
                     onmouseenter="this.style.background='rgba(255,255,255,0.92)'; this.style.boxShadow='0 0 40px rgba(255,255,255,0.2),0 8px 30px rgba(0,0,0,0.4)'; this.style.transform='translateY(-1px)'"
                     onmouseleave="this.style.background='#fff'; this.style.boxShadow='0 0 rgba(255,255,255,0)'; this.style.transform=''"
@@ -114,7 +114,7 @@
             {{-- Mobile hamburger --}}
             <button
                 @click="open = !open"
-                class="cursor-pointer rounded-lg p-2 transition-colors md:hidden"
+                class="cursor-pointer rounded-lg p-2 transition-colors lg:hidden"
                 style="color:rgba(255,255,255,0.6);"
                 onmouseenter="this.style.background='rgba(255,255,255,0.06)'; this.style.color='#fff'"
                 onmouseleave="this.style.background=''; this.style.color='rgba(255,255,255,0.6)'"
@@ -138,7 +138,7 @@
         x-transition:enter-start="opacity-0 -translate-y-1"
         x-transition:enter-end="opacity-100 translate-y-0"
         style="border-top:1px solid rgba(255,255,255,0.06);"
-        class="md:hidden"
+        class="lg:hidden"
     >
         <div class="space-y-1 px-5 py-3">
             @if ($menu)
