@@ -41,18 +41,25 @@
             @endforeach
         </div>
 
-        @if (! empty($content['closing']))
+        @php
+            $closing = trim(strip_tags((string) ($content['closing'] ?? ''))) !== '' ? $content['closing'] : null;
+            $ctaHref = \Webgoeroe\Core\Support\Url::resolveCtaHref($content, '');
+            $hasCta  = ! empty($content['cta_label']) && $ctaHref !== '';
+        @endphp
+        {{-- De knop hangt niet af van de afsluitende tekst: ook zonder tekst blijft hij staan. --}}
+        @if ($closing || $hasCta)
             <div class="mx-auto mt-16 max-w-4xl text-center md:mt-20" data-reveal>
-                <div class="text-xl leading-snug text-white/50 md:text-2xl [&_strong]:font-bold [&_strong]:text-white">
-                    {!! $content['closing'] !!}
-                </div>
+                @if ($closing)
+                    <div class="text-xl leading-snug text-white/50 md:text-2xl [&_strong]:font-bold [&_strong]:text-white">
+                        {!! $closing !!}
+                    </div>
+                @endif
 
-                @php $ctaHref = \Webgoeroe\Core\Support\Url::resolveCtaHref($content, ''); @endphp
-                @if (! empty($content['cta_label']) && $ctaHref !== '')
+                @if ($hasCta)
                     {{-- Zelfde primaire buttonstijl als de hero-CTA --}}
                     <a
                         href="{{ $ctaHref }}"
-                        class="mt-8 inline-block cursor-pointer px-7 py-3.5 text-sm font-semibold transition-all"
+                        class="{{ $closing ? 'mt-8 ' : '' }}inline-block cursor-pointer px-7 py-3.5 text-sm font-semibold transition-all"
                         style="background:#fff; color:#000; border-radius:100px; box-shadow:0 0 rgba(255,255,255,0);"
                         onmouseenter="this.style.background='rgba(255,255,255,0.92)'; this.style.boxShadow='0 0 40px rgba(255,255,255,0.2),0 8px 30px rgba(0,0,0,0.4)'; this.style.transform='translateY(-1px)'"
                         onmouseleave="this.style.background='#fff'; this.style.boxShadow='0 0 rgba(255,255,255,0)'; this.style.transform=''"
