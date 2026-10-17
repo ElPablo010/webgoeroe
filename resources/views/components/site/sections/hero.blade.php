@@ -127,7 +127,7 @@
                 <img
                     src="{{ $image['src'] }}"
                     alt="{{ $image['alt'] ?? '' }}"
-                    class="relative aspect-[4/3] w-full rounded-2xl border border-white/10 object-cover shadow-2xl shadow-black/50"
+                    class="relative h-auto max-h-[75vh] w-full rounded-2xl border border-white/10 object-cover shadow-2xl shadow-black/50"
                     fetchpriority="high"
                 >
             </div>
