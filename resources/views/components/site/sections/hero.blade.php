@@ -18,7 +18,7 @@
     };
     $innerPadding = match ($height) {
         'compact' => 'pt-28 pb-16 md:pt-32 md:pb-20',
-        'medium'  => 'pt-28 pb-20 md:pt-32 md:pb-28',
+        'medium'  => 'pt-32 pb-20 md:pt-40 md:pb-28',
         default   => 'py-28 md:py-36',
     };
     // Lange titels (± 48+ tekens) passen op 72px niet op twee regels; één maat
