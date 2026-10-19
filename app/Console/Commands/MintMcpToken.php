@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Enums\UserRole;
+use Webgoeroe\Core\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Console\Command;
 
@@ -20,7 +20,7 @@ class MintMcpToken extends Command
 
         $user = $email
             ? User::where('email', $email)->first()
-            : User::where('role', UserRole::Admin)->orderBy('id')->first();
+            : User::whereIn('role', [UserRole::SuperAdmin, UserRole::Admin])->orderBy('id')->first();
 
         if (! $user) {
             $this->error($email

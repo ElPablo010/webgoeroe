@@ -105,7 +105,7 @@ it('saves the CTA from the general settings page', function () {
         'published' => true,
     ]);
 
-    Livewire::actingAs(User::factory()->create())
+    Livewire::actingAs(User::factory()->create(['role' => 'super_admin']))
         ->test(GeneralSettings::class)
         ->fillForm([
             'cta' => [

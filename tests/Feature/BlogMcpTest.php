@@ -1,6 +1,6 @@
 <?php
 
-use App\Enums\UserRole;
+use Webgoeroe\Core\Enums\UserRole;
 use App\Mcp\Servers\CmsServer;
 use App\Mcp\Tools\CreatePost;
 use App\Mcp\Tools\ListPosts;

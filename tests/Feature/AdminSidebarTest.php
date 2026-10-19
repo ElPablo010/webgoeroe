@@ -1,6 +1,6 @@
 <?php
 
-use App\Enums\UserRole;
+use Webgoeroe\Core\Enums\UserRole;
 use Webgoeroe\SeoGrowth\Filament\Pages\SeoSettings;
 use App\Models\User;
 use Filament\Facades\Filament;
@@ -25,7 +25,7 @@ it('zet de groepen in een vaste volgorde, met Instellingen onderaan', function (
 });
 
 it('toont een uitlogknop onderaan de zijbalk', function () {
-    actingAs(User::factory()->create(['role' => UserRole::Admin]));
+    actingAs(User::factory()->create(['role' => UserRole::SuperAdmin]));
 
     get(SeoSettings::getUrl())
         ->assertOk()
@@ -34,7 +34,7 @@ it('toont een uitlogknop onderaan de zijbalk', function () {
 });
 
 it('rendert de groepen in volgorde, met uitloggen als laatste', function () {
-    actingAs(User::factory()->create(['role' => UserRole::Admin]));
+    actingAs(User::factory()->create(['role' => UserRole::SuperAdmin]));
 
     $html = get(SeoSettings::getUrl())->assertOk()->getContent();
 

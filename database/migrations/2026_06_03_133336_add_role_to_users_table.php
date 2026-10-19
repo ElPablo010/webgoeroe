@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\UserRole;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -10,19 +9,28 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Idempotent: bestaande sites hebben de kolom al.
+        if (! Schema::hasTable('users') || Schema::hasColumn('users', 'role')) {
+            return;
+        }
+
+        // Waarden = Webgoeroe\Core\Enums\UserRole (staff/admin). Bewust als string, zodat
+        // de migratie niet van een klasse in het project afhangt.
         Schema::table('users', function (Blueprint $table) {
-            $table->string('role')->default(UserRole::Staff->value)->after('email');
+            $table->string('role')->default('staff')->after('email');
         });
 
-        // Every existing user is staff/admin at this point, so promote them all
-        // to Beheerder; new users default to Personeel and must be promoted.
-        DB::table('users')->update(['role' => UserRole::Admin->value]);
+        // Wie op dit moment al een account heeft, is beheerder; nieuwe
+        // gebruikers zijn standaard personeel en moeten gepromoveerd worden.
+        DB::table('users')->update(['role' => 'admin']);
     }
 
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('role');
-        });
+        if (Schema::hasColumn('users', 'role')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->dropColumn('role');
+            });
+        }
     }
 };
