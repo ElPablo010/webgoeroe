@@ -142,3 +142,12 @@ it('vult de GHL-agenda voor met de query-parameters van de pagina', function () 
 
     expect($html)->toContain('widget/booking/abc?first_name=Jan&amp;email=jan%40voorbeeld.be');
 });
+
+it('laat de publieke leadvorm en de GHL-webhook buiten de CSRF-controle', function () {
+    // Laravel 13 zet PreventRequestForgery in de web-groep; ValidateCsrfToken
+    // uitsluiten werkt niet (live gaf 419). Tests slaan CSRF over, dus check de route.
+    foreach (['omzetcheck.store', 'webhooks.ghl.quote-signed'] as $name) {
+        expect(Illuminate\Support\Facades\Route::getRoutes()->getByName($name)->excludedMiddleware())
+            ->toContain(Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class);
+    }
+});
