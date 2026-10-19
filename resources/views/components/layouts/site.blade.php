@@ -17,6 +17,9 @@
     // Site-brede structured data (LocalBusiness + WebSite) + pagina-specifieke nodes
     // in één @graph.
     $graph = array_merge(\Webgoeroe\Core\Support\Seo::globalGraph(), $schema ?? []);
+
+    // Landingspagina (Instellingen → Algemeen): geen menu en footer, de bezoeker blijft op de pagina.
+    $isLanding = \App\Support\LandingPages::contains($page);
 @endphp
 
 <!DOCTYPE html>
@@ -45,7 +48,11 @@
     <x-seo-growth::site.analytics />
 </head>
 <body class="min-h-screen bg-[#050507] text-white antialiased">
-    <x-site.header />
+    @if ($isLanding)
+        <x-site.landing-header />
+    @else
+        <x-site.header />
+    @endif
 
     {{-- Snelkoppeling naar het bewerkscherm: pagina's geven $page mee, blog en
          cases hun eigen editUrl — zo wissel je heen en weer zonder van pagina
@@ -67,7 +74,11 @@
         {{ $slot }}
     </main>
 
-    <x-site.footer />
+    @if ($isLanding)
+        <x-site.landing-footer />
+    @else
+        <x-site.footer />
+    @endif
     <x-site.cookie-consent />
 </body>
 </html>

@@ -98,10 +98,13 @@ Hier blijft wat eigen is aan deze site:
   probleemherkenning, reviews zonder kolommen/intro, cards zonder badge,
   tekst-en-media zonder beeldvorm, editor met tabellen op het tekstblok),
   favicon op de Header-pagina, geen LinkedIn in de footer, pixelbudget 12 MP.
-- **`AppServiceProvider`**: de eigen blokken `calculator`, `case_results`,
-  `cases_grid`, de contactvelden (e-mail/telefoon/adres) op het form-blok, de
-  sectie "Call-to-action" op Instellingen → Algemeen (`Core::generalSettings()`)
-  en `App\Support\ContentSeo::register()`.
+- **`AppServiceProvider`**: de eigen blokken `calculator` (gemiste oproepen),
+  `conversion_calculator` (website-conversie, sectorkeuze + `?sector=` uit de URL),
+  `case_results`, `cases_grid`, de contactvelden (e-mail/telefoon/adres) op het form-blok, de
+  secties "Call-to-action" en "Landingspagina's" op Instellingen → Algemeen (`Core::generalSettings()`;
+  landingspagina's = zonder menu en footer, via `App\Support\LandingPages` in de layout),
+  op de paginatabel een kolom "Landingspagina" en een filter "Type" (`Core::pageTable()`,
+  `registerPageTable()`) en `App\Support\ContentSeo::register()`.
 - **`App\Support\ContentSeo`**: cases en blog in sitemap.xml en llms.txt
   (`Core::seo()`), en de meta/JSON-LD als Seo-macro's: `Seo::fromCaseStudy()`,
   `Seo::fromPost()`, `Seo::fromBlogIndex()`, `Seo::fromCaseStudiesIndex()`.

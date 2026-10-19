@@ -3,15 +3,22 @@
 namespace App\Providers;
 
 use App\Filament\Schemas\Sections\CalculatorFields;
+use App\Filament\Schemas\Sections\ConversionCalculatorFields;
 use App\Filament\Schemas\Sections\CaseResultsFields;
 use App\Filament\Schemas\Sections\CasesGridFields;
+use App\Models\Page;
 use App\Support\ContentSeo;
+use App\Support\LandingPages;
 use App\Support\SiteCta;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Filters\SelectFilter;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Passport\Passport;
 use Webgoeroe\Core\Core;
@@ -37,6 +44,7 @@ class AppServiceProvider extends ServiceProvider
 
         $this->registerBlocks();
         $this->registerGeneralSettings();
+        $this->registerPageTable();
 
         // Cases en blog in sitemap.xml, llms.txt en de meta/JSON-LD (Seo::fromPost, …).
         ContentSeo::register();
@@ -50,6 +58,7 @@ class AppServiceProvider extends ServiceProvider
     {
         Core::blocks()
             ->register('calculator', 'Calculator (gemiste omzet)', CalculatorFields::class)
+            ->register('conversion_calculator', 'Calculator (website-conversie)', ConversionCalculatorFields::class)
             ->register('case_results', 'Case-resultaten', CaseResultsFields::class)
             ->register('cases_grid', 'Case studies grid', CasesGridFields::class)
             // Contactgegevens naast het formulier (e-mail, telefoon, adres), net
@@ -104,5 +113,48 @@ class AppServiceProvider extends ServiceProvider
             keys: [SiteCta::KEY],
             fill: fn (): array => [SiteCta::KEY => SiteCta::current()],
         );
+
+        Core::generalSettings()->section(
+            fn () => Section::make('Landingspagina\'s')
+                ->description('Pagina\'s voor advertenties: zonder menu en footer, zodat de bezoeker op de pagina blijft. Onderaan blijven enkel de juridische links staan.')
+                ->schema([
+                    Select::make(LandingPages::KEY)
+                        ->label('Pagina\'s zonder menu en footer')
+                        ->multiple()
+                        ->options(fn (): array => Page::query()->orderBy('title')->pluck('title', 'id')->all())
+                        ->searchable(),
+                ]),
+            keys: [LandingPages::KEY],
+            fill: fn (): array => [LandingPages::KEY => LandingPages::ids()],
+        );
+    }
+
+    /**
+     * Paginatabel: vinkje "Landingspagina" naast "Gepubliceerd", en een filter
+     * op type (gewone pagina of landingspagina). Welke pagina's landingspagina's
+     * zijn, staat in Instellingen → Algemeen (LandingPages).
+     */
+    protected function registerPageTable(): void
+    {
+        Core::pageTable()
+            ->columns(fn (): array => [
+                IconColumn::make('landing_page')
+                    ->label('Landingspagina')
+                    ->state(fn (Page $record): bool => LandingPages::contains($record))
+                    ->boolean(),
+            ])
+            ->filters(fn (): array => [
+                SelectFilter::make('type')
+                    ->label('Type')
+                    ->options([
+                        'page' => 'Gewone pagina',
+                        'landing' => 'Landingspagina',
+                    ])
+                    ->query(fn (Builder $query, array $data): Builder => match ($data['value'] ?? null) {
+                        'page' => $query->whereKeyNot(LandingPages::ids()),
+                        'landing' => $query->whereKey(LandingPages::ids()),
+                        default => $query,
+                    }),
+            ]);
     }
 }
