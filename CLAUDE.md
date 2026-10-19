@@ -245,7 +245,9 @@ upsert in GoHighLevel met de velden bedrag/extra aanvragen/sector en tag
 "Omzetcheck ingevuld" start (zo kent mail 1 het bedrag al). GHL-fouten blokkeren de
 bezoeker nooit; ze komen in de log. `.env`: `GHL_API_TOKEN` (Private Integration,
 scope contacts.write) en `GHL_LOCATION_ID`. Veld-ID's staan in `config/services.php`.
-De route is zonder CSRF (publieke leadvorm, pagina kan gecachet zijn): honeypot
+De route is zonder CSRF (publieke leadvorm, pagina kan gecachet zijn; uitsluiten via
+`withoutMiddleware(PreventRequestForgery::class)`, niet `ValidateCsrfToken`: in Laravel 13 gaf dat live
+een 419 terwijl de tests slaagden): honeypot
 `website` + throttle. `bootstrap/app.php` rendert JSON-fouten voor `/omzetcheck`,
 anders wordt een validatiefout een redirect (de gate zou dan ten onrechte openen).
 Een tweede inzending met hetzelfde e-mailadres zet de tag niet opnieuw, dus de
