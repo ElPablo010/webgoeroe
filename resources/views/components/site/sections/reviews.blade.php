@@ -36,7 +36,9 @@
                 >
 
                     {{-- Sterren --}}
+                    {{-- Leeg = 5 (oude items); 0 = geen sterren (quote zonder echte score). --}}
                     @php $stars = (int) ($item['rating'] ?? 5); @endphp
+                    @if ($stars > 0)
                     <div class="mb-5 flex gap-0.5">
                         @for ($i = 0; $i < $stars; $i++)
                             <svg class="h-4 w-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
@@ -44,6 +46,7 @@
                             </svg>
                         @endfor
                     </div>
+                    @endif
 
                     {{-- Stat-titel: zet het resultaat in de kijker vóór de quote --}}
                     @if (! empty($item['highlight']))

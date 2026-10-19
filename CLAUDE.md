@@ -231,6 +231,28 @@ gerenderde HTML controleert. Let op bij het schrijven van zo'n test: "Uitloggen"
 staat twee keer op de pagina, want het accountmenu heeft het ook. De zijbalk-knop
 is de láátste.
 
+## Omzetcheck-gate (website-conversiecalculator)
+
+Het blok `conversion_calculator` vraagt eerst voornaam + e-mail vóór het resultaat
+(schakelaar "require_contact" in de blokvelden, standaard aan). Flow:
+`POST /omzetcheck` ([`OmzetcheckController`](app/Http/Controllers/OmzetcheckController.php))
+rekent het resultaat server-side opnieuw uit (zelfde formule als de Alpine-code in
+`conversion-calculator.blade.php`; houd ze gelijk), bewaart een `FormSubmission`
+van type `omzetcheck` (telt automatisch als lead) en roept
+[`OmzetcheckContact`](app/Services/GoHighLevel/OmzetcheckContact.php) aan: contact
+upsert in GoHighLevel met de velden bedrag/extra aanvragen/sector en tag
+`campagne-websites`, daarna pas de tag `omzetcheck-ingevuld` die de GHL-workflow
+"Omzetcheck ingevuld" start (zo kent mail 1 het bedrag al). GHL-fouten blokkeren de
+bezoeker nooit; ze komen in de log. `.env`: `GHL_API_TOKEN` (Private Integration,
+scope contacts.write) en `GHL_LOCATION_ID`. Veld-ID's staan in `config/services.php`.
+De route is zonder CSRF (publieke leadvorm, pagina kan gecachet zijn): honeypot
+`website` + throttle. `bootstrap/app.php` rendert JSON-fouten voor `/omzetcheck`,
+anders wordt een validatiefout een redirect (de gate zou dan ten onrechte openen).
+Een tweede inzending met hetzelfde e-mailadres zet de tag niet opnieuw, dus de
+workflow start dan niet nog eens. Tests: `tests/Feature/OmzetcheckGateTest.php`.
+
+---
+
 ## Harde regels (overerfd van new-website-skill)
 
 - **Media-velden**: altijd `MediaPickerField`, nooit kaal URL-veld.

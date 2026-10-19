@@ -21,6 +21,10 @@
         'value'    => $first['value'] ?? 2000,
         'target'   => (float) ($content['target_rate'] ?? 3),
     ];
+    // Gate: eerst voornaam + e-mail, dan pas het resultaat (aan te passen per blok).
+    $requireContact = (bool) ($content['require_contact'] ?? true);
+    $config['unlocked'] = ! $requireContact;
+    $config['endpoint'] = route('omzetcheck.store');
     $ctaHref  = \Webgoeroe\Core\Support\Url::resolveCtaHref($content, '');
     $numCls   = 'w-20 sm:w-24 rounded-lg border border-white/10 bg-white/[0.05] px-3 py-2 text-right text-lg font-semibold text-white outline-none transition focus:border-cyan-400/50 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none';
     $inputCls = 'mt-2 block w-full min-w-0 rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3 text-lg font-semibold text-white outline-none transition focus:border-cyan-400/50';
@@ -46,6 +50,33 @@
             data-reveal
             x-data="{
                 ...@js($config),
+                first_name: '', email: '', website: '', sending: false, error: '',
+                // Naam en e-mail uit de gate meegeven aan de agenda (voorinvullen).
+                ctaUrl(base) {
+                    if (! this.unlocked || ! this.email) return base;
+                    const p = new URLSearchParams({ first_name: this.first_name, email: this.email });
+                    return base + (base.includes('?') ? '&' : '?') + p.toString();
+                },
+                get sectorLabel() { return this.sectors.find(s => s.key === this.sector)?.label ?? this.sector },
+                async submit() {
+                    this.error = ''; this.sending = true;
+                    try {
+                        const r = await fetch(this.endpoint, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                            body: JSON.stringify({
+                                first_name: this.first_name, email: this.email, website: this.website,
+                                sector: this.sectorLabel, visitors: this.visitors, leads: this.leads,
+                                close: this.close, value: this.value, target: this.target
+                            })
+                        });
+                        if (r.ok && ! r.redirected) { this.unlocked = true; return; }
+                        const j = await r.json().catch(() => ({}));
+                        this.error = Object.values(j.errors ?? {}).flat()[0] ?? 'Er ging iets mis. Probeer het opnieuw.';
+                    } catch (e) {
+                        this.error = 'Er ging iets mis. Probeer het opnieuw.';
+                    } finally { this.sending = false }
+                },
                 init() {
                     // ?sector=<sleutel> (Meta-ads per sector) kiest meteen die sector.
                     const fromUrl = new URLSearchParams(window.location.search).get('sector');
@@ -115,7 +146,28 @@
                 </div>
             </div>
 
-            <div class="flex min-w-0 flex-col justify-center rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-400/10 to-primary-600/10 p-6 text-center sm:p-8">
+            <div class="min-w-0">
+            @if ($requireContact)
+                <form x-show="! unlocked" @submit.prevent="submit()" class="flex h-full min-w-0 flex-col justify-center rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-400/10 to-primary-600/10 p-6 sm:p-8">
+                    <p class="text-lg font-bold text-white">Je resultaat is klaar</p>
+                    <p class="mt-1 text-sm text-white/60">Waar mogen we het naartoe sturen? Je ziet het meteen op het scherm en krijgt het ook per mail.</p>
+                    <label class="mt-5 block min-w-0 text-sm font-medium text-white/60">Voornaam
+                        <input type="text" x-model="first_name" required maxlength="80" autocomplete="given-name" class="{{ $inputCls }}">
+                    </label>
+                    <label class="mt-4 block min-w-0 text-sm font-medium text-white/60">E-mail
+                        <input type="email" x-model="email" required maxlength="191" autocomplete="email" class="{{ $inputCls }}">
+                    </label>
+                    <input type="text" x-model="website" tabindex="-1" autocomplete="off" aria-hidden="true" class="absolute -left-[9999px] h-0 w-0 opacity-0">
+                    <p x-show="error" x-text="error" class="mt-3 text-sm text-red-400" role="alert"></p>
+                    <button type="submit" :disabled="sending"
+                            class="mt-6 cursor-pointer px-7 py-3.5 text-sm font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-60"
+                            style="background:#fff; color:#000; border-radius:100px;">
+                        <span x-show="! sending">Toon mijn resultaat</span><span x-show="sending">Even geduld...</span>
+                    </button>
+                    <p class="mt-3 text-center text-xs text-white/30">Geen spam. Afmelden kan altijd.</p>
+                </form>
+            @endif
+            <div x-show="unlocked" @if ($requireContact) style="display:none" @endif class="flex h-full min-w-0 flex-col justify-center rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-400/10 to-primary-600/10 p-6 text-center sm:p-8">
                 <p class="text-sm font-medium text-white/60">Met dezelfde bezoekers loop je naar schatting mis</p>
                 <p class="mt-2 text-4xl font-black tracking-tight text-white sm:text-5xl" x-text="fmt(yearly)" aria-live="polite"></p>
                 <p class="mt-1 text-sm text-white/60">per jaar</p>
@@ -125,10 +177,11 @@
                 </p>
 
                 @if (! empty($content['cta_label']) && $ctaHref !== '')
-                    <a href="{{ $ctaHref }}"
+                    <a href="{{ $ctaHref }}" :href="ctaUrl(@js($ctaHref))"
                        class="mx-auto mt-8 inline-block cursor-pointer px-7 py-3.5 text-sm font-semibold transition-all"
                        style="background:#fff; color:#000; border-radius:100px;">{{ $content['cta_label'] }}</a>
                 @endif
+            </div>
             </div>
         </div>
 

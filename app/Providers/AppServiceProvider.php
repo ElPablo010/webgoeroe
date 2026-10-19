@@ -57,6 +57,13 @@ class AppServiceProvider extends ServiceProvider
     protected function registerBlocks(): void
     {
         Core::blocks()
+            // Agenda (boeking): naast Cal.com en Calendly ook de GoHighLevel-agenda,
+            // zodat een boeking onder hetzelfde contact in GHL landt (workflows
+            // stoppen dan de opvolging). URL = de iframe-URL van de agenda.
+            ->configure('booking', [
+                'providers' => ['calcom' => 'Cal.com', 'calendly' => 'Calendly', 'ghl' => 'GoHighLevel-agenda'],
+                'url_providers' => ['calcom', 'calendly', 'ghl'],
+            ])
             ->register('calculator', 'Calculator (gemiste omzet)', CalculatorFields::class)
             ->register('conversion_calculator', 'Calculator (website-conversie)', ConversionCalculatorFields::class)
             ->register('case_results', 'Case-resultaten', CaseResultsFields::class)

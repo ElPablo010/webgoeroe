@@ -3,6 +3,7 @@
 namespace App\Filament\Schemas\Sections;
 
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Grid;
 use Webgoeroe\Core\Filament\Schemas\Components\PageLinkField;
@@ -57,6 +58,11 @@ class ConversionCalculatorFields
                 ->columns(4)
                 ->defaultItems(0)
                 ->collapsible(),
+
+            Toggle::make('require_contact')
+                ->label('Eerst voornaam en e-mail vragen vóór het resultaat')
+                ->helperText('De inzending wordt een lead en gaat naar GoHighLevel (tag omzetcheck-ingevuld).')
+                ->default(true),
 
             TextInput::make('disclaimer')
                 ->label('Voetnoot')

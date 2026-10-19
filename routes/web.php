@@ -1,8 +1,25 @@
 <?php
 
 use App\Http\Controllers\CaseStudyController;
+use App\Http\Controllers\GoHighLevelWebhookController;
+use App\Http\Controllers\OmzetcheckController;
 use App\Http\Controllers\PostController;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Route;
+
+// GoHighLevel-workflow: offerte getekend → voorschotfactuur in Billit.
+Route::post('/webhooks/ghl/offerte-getekend', [GoHighLevelWebhookController::class, 'quoteSigned'])
+    ->withoutMiddleware(ValidateCsrfToken::class)
+    ->middleware('throttle:30,1')
+    ->name('webhooks.ghl.quote-signed');
+
+// Omzetcheck (website-conversiecalculator): gate met voornaam + e-mail.
+// Zonder CSRF-token (publieke leadvorm, pagina kan gecachet zijn); beschermd
+// met honeypot en throttle.
+Route::post('/omzetcheck', [OmzetcheckController::class, 'store'])
+    ->withoutMiddleware(ValidateCsrfToken::class)
+    ->middleware('throttle:20,1')
+    ->name('omzetcheck.store');
 
 // Filament is het enige login-systeem; de korte /login redirect ernaartoe.
 Route::redirect('/login', '/admin/login')->name('login');

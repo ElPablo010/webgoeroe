@@ -16,5 +16,6 @@ class FormSubmission extends CoreModel
      */
     public const TYPE_LABELS = [
         'contact' => 'Contactformulier',
+        'omzetcheck' => 'Omzetcheck',
     ];
 }

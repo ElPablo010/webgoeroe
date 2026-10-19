@@ -106,6 +106,30 @@
 
                     @if (! $url)
                         <p class="text-center text-sm text-red-500">Geen URL ingesteld.</p>
+                    @elseif ($provider === 'ghl')
+                        {{-- GoHighLevel-agenda (iframe). Naam en e-mail uit de omzetcheck
+                             (?first_name=…&email=… op de pagina-URL) vullen het formulier
+                             voor, zodat niemand ze twee keer typt. --}}
+                        @php
+                            $ghlParams = array_filter([
+                                'first_name' => mb_substr((string) request()->query('first_name', ''), 0, 80),
+                                'email' => filter_var(request()->query('email'), FILTER_VALIDATE_EMAIL) ?: null,
+                            ]);
+                            $ghlSrc = $url.($ghlParams ? (str_contains($url, '?') ? '&' : '?').http_build_query($ghlParams) : '');
+                        @endphp
+                        <link rel="preconnect" href="https://api.leadconnectorhq.com">
+                        <div class="relative overflow-hidden rounded-2xl bg-white" style="min-height:{{ $height }}px;">
+                            <div class="absolute inset-0 flex flex-col items-center justify-center gap-3">
+                                <svg class="h-6 w-6 animate-spin text-slate-300" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/>
+                                </svg>
+                                <span class="text-sm font-medium text-slate-400">Kalender laden…</span>
+                            </div>
+                            <iframe src="{{ $ghlSrc }}" title="Kies een moment voor je gesprek" class="relative w-full border-0"
+                                    style="min-width:320px; height:{{ $height }}px;" loading="lazy"></iframe>
+                        </div>
+                        <script src="https://link.msgsndr.com/js/form_embed.js" async></script>
                     @elseif ($provider === 'calcom' && $calLink)
                         {{-- Cal.com inline embed --}}
                         <div id="{{ $uid }}" class="w-full overflow-hidden rounded-2xl" style="height:{{ $height }}px;"></div>

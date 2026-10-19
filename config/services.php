@@ -42,6 +42,46 @@ return [
         ],
     ],
 
+    /*
+     * Billit (El Pablo BV): voorschotfacturen na een getekende offerte in
+     * GoHighLevel. API-sleutel = persoonlijke sleutel uit MyBillit → Mijn
+     * profiel → API; PartyID = het bedrijfsnummer in de URL van Instellingen →
+     * Mijn bedrijf.
+     */
+    'billit' => [
+        'api_key' => env('BILLIT_API_KEY'),
+        'party_id' => env('BILLIT_PARTY_ID'),
+        'base_url' => env('BILLIT_BASE_URL', 'https://api.billit.be'),
+        'deposit_percentage' => 50,
+        'vat_percentage' => 21,
+        'payment_days' => 14,
+        // Wie een mail krijgt als een voorschotfactuur niet lukt.
+        'notify' => env('BILLIT_NOTIFY_EMAIL', 'pieter@dewebgoeroe.be'),
+    ],
+
+    // Gedeeld geheim in de header X-Webhook-Secret van de GoHighLevel-webhooks.
+    'gohighlevel' => [
+        'webhook_secret' => env('GHL_WEBHOOK_SECRET'),
+
+        // Omzetcheck (website-conversiecalculator) → contact in GoHighLevel.
+        // Token: Private Integration met scopes contacts.write + contacts.readonly.
+        'api_token' => env('GHL_API_TOKEN'),
+        'location_id' => env('GHL_LOCATION_ID', 'JJ446huNYhVtsrONFbVO'),
+        'base_url' => env('GHL_BASE_URL', 'https://services.leadconnectorhq.com'),
+        'omzetcheck' => [
+            // Tag die de workflow "Omzetcheck ingevuld" start; wordt pas gezet
+            // nadat de velden bewaard zijn, zodat de mail het bedrag al kent.
+            'trigger_tag' => 'omzetcheck-ingevuld',
+            'campaign_tag' => 'campagne-websites',
+            // Aangepaste contactvelden in GHL (Instellingen → Aangepaste velden).
+            'fields' => [
+                'amount' => env('GHL_FIELD_OMZETCHECK_AMOUNT', 'pTNAaeGjLM6rvWfEsPgb'),
+                'extra_leads' => env('GHL_FIELD_OMZETCHECK_EXTRA', 'HaBaw5mnNLpjVKmOCa3f'),
+                'sector' => env('GHL_FIELD_OMZETCHECK_SECTOR', 'erEowVlDBPvqgg0wKrBR'),
+            ],
+        ],
+    ],
+
     'resend' => [
         'key' => env('RESEND_API_KEY'),
     ],
