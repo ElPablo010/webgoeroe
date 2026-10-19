@@ -19,6 +19,7 @@ use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Webgoeroe\Core\CorePlugin;
 use Webgoeroe\Core\Support\SiteHeader;
+use Webgoeroe\Reviews\ReviewsPlugin;
 use Webgoeroe\SeoGrowth\SeoGrowthPlugin;
 
 class AdminPanelProvider extends PanelProvider
@@ -54,6 +55,7 @@ class AdminPanelProvider extends PanelProvider
             ->plugins([
                 CorePlugin::make(),
                 SeoGrowthPlugin::make(),
+                ReviewsPlugin::make(),
             ])
             ->middleware([
                 EncryptCookies::class,

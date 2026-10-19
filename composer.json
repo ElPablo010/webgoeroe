@@ -19,8 +19,9 @@
         "laravel/tinker": "^3.0",
         "livewire/livewire": "^4.3",
         "mallardduck/blade-lucide-icons": "^1.26",
-        "webgoeroe/core": "^0.10",
-        "webgoeroe/seo-growth": "^0.5.3"
+        "webgoeroe/core": "^0.11.1",
+        "webgoeroe/seo-growth": "^0.5.3",
+        "webgoeroe/reviews": "^0.1"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
@@ -111,6 +112,11 @@
             "name": "seo-growth",
             "type": "vcs",
             "url": "https://github.com/ElPablo010/seo-growth.git"
+        },
+        {
+            "name": "reviews",
+            "type": "vcs",
+            "url": "https://github.com/ElPablo010/reviews.git"
         }
     ]
 }

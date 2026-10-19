@@ -18,7 +18,7 @@ pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
     // De standaardtests van de site-basis en de Groei-module draaien vanuit
     // de packages mee.
-    ->in('Feature', '../vendor/webgoeroe/core/tests/Feature', '../vendor/webgoeroe/seo-growth/tests/Feature');
+    ->in('Feature', '../vendor/webgoeroe/core/tests/Feature', '../vendor/webgoeroe/seo-growth/tests/Feature', '../vendor/webgoeroe/reviews/tests/Feature');
 
 /*
 |--------------------------------------------------------------------------
