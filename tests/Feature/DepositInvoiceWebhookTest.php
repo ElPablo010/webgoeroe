@@ -165,3 +165,11 @@ it('rejects a missing deal value', function () {
 
     Http::assertNothingSent();
 });
+
+it('answers with JSON instead of a redirect when GoHighLevel sends no Accept header', function () {
+    Http::fake();
+
+    test()->post('/webhooks/ghl/offerte-getekend', ['contact' => []], ['X-Webhook-Secret' => 'geheim'])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors(['amount_excl', 'contact']);
+});

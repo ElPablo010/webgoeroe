@@ -6,6 +6,8 @@ use App\Models\DepositInvoice;
 use App\Services\Billit\DepositInvoiceService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Webhooks uit GoHighLevel-workflows ("Custom Webhook"-actie). Beveiligd met
@@ -24,23 +26,18 @@ class GoHighLevelWebhookController extends Controller
         abort_if($secret === '', 503, 'Webhook niet ingesteld.');
         abort_unless(hash_equals($secret, (string) $request->header('X-Webhook-Secret')), 401);
 
-        $data = $request->validate([
-            'document_id' => ['nullable', 'string', 'max:191', 'required_without:opportunity_id'],
-            'opportunity_id' => ['nullable', 'string', 'max:191'],
-            'project' => ['nullable', 'string', 'max:191'],
-            'amount_excl' => ['required'],
-            'contact' => ['required', 'array'],
-            'contact.email' => ['nullable', 'email'],
-            'contact.company' => ['nullable', 'string', 'max:191'],
-            'contact.first_name' => ['nullable', 'string', 'max:191'],
-            'contact.last_name' => ['nullable', 'string', 'max:191'],
-            'contact.phone' => ['nullable', 'string', 'max:50'],
-            'contact.vat_number' => ['nullable', 'string', 'max:50'],
-            'contact.street' => ['nullable', 'string', 'max:191'],
-            'contact.postal_code' => ['nullable', 'string', 'max:20'],
-            'contact.city' => ['nullable', 'string', 'max:191'],
-            'contact.country' => ['nullable', 'string', 'max:100'],
-        ]);
+        try {
+            $data = $this->validated($request);
+        } catch (ValidationException $e) {
+            // Als error: op Combell staat LOG_LEVEL=error.
+            Log::error('GoHighLevel webhook offerte-getekend: ongeldige body', [
+                'errors' => $e->errors(),
+                'content_type' => $request->header('Content-Type'),
+                'payload' => $request->except('contact.vat_number'),
+            ]);
+
+            throw $e;
+        }
 
         $amount = $this->amount($data['amount_excl']);
 
@@ -59,6 +56,27 @@ class GoHighLevelWebhookController extends Controller
             'billit_order_id' => $invoice->billit_order_id,
             'error' => $invoice->error,
         ], $invoice->status === DepositInvoice::STATUS_FAILED ? 502 : 200);
+    }
+
+    private function validated(Request $request): array
+    {
+        return $request->validate([
+            'document_id' => ['nullable', 'string', 'max:191', 'required_without:opportunity_id'],
+            'opportunity_id' => ['nullable', 'string', 'max:191'],
+            'project' => ['nullable', 'string', 'max:191'],
+            'amount_excl' => ['required'],
+            'contact' => ['required', 'array'],
+            'contact.email' => ['nullable', 'email'],
+            'contact.company' => ['nullable', 'string', 'max:191'],
+            'contact.first_name' => ['nullable', 'string', 'max:191'],
+            'contact.last_name' => ['nullable', 'string', 'max:191'],
+            'contact.phone' => ['nullable', 'string', 'max:50'],
+            'contact.vat_number' => ['nullable', 'string', 'max:50'],
+            'contact.street' => ['nullable', 'string', 'max:191'],
+            'contact.postal_code' => ['nullable', 'string', 'max:20'],
+            'contact.city' => ['nullable', 'string', 'max:191'],
+            'contact.country' => ['nullable', 'string', 'max:100'],
+        ]);
     }
 
     /** "5000", "5000.00", "5.000,00" of "€ 5 000" → 5000.0 */
