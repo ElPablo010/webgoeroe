@@ -164,3 +164,35 @@ it('zet de boekknoppen van de landingspagina om naar /bottleneck-scan', function
     expect($calc->fresh()->content['href'])->toBe('/bottleneck-scan')
         ->and($cta->fresh()->content['ctas'][0]['href'])->toBe('/bottleneck-scan');
 });
+
+it('scrolt terug naar de bovenkant van de GHL-agenda als de hoogte sterk verandert', function () {
+    $html = Blade::render('<x-site.sections.booking :content="$content" />', [
+        'content' => ['provider' => 'ghl', 'url' => 'https://api.leadconnectorhq.com/widget/booking/abc', 'height' => 700],
+    ]);
+
+    expect($html)->toContain('ResizeObserver')->toContain('x-ref="frame"')->toContain('scroll-margin-top');
+});
+
+it('zet de boeking van de landingspagina op de pagina zelf, in de agenda van de campagne', function () {
+    $page = App\Models\Page::create(['title' => 'Website die verkoopt', 'slug' => 'website-die-verkoopt', 'locale' => 'nl', 'published' => true]);
+    $calc = $page->sections()->create(['section_type' => 'conversion_calculator', 'position' => 0, 'locale' => 'nl',
+        'content' => ['link_type' => 'url', 'href' => '/bottleneck-scan']]);
+    $scan = $page->sections()->create(['section_type' => 'cta', 'position' => 1, 'locale' => 'nl',
+        'content' => ['section_id' => 'scan', 'background' => 'light', 'heading' => 'Ontdek waar jouw website klanten verliest']]);
+
+    (require database_path('migrations/2026_10_20_140000_landing_page_booking_on_page.php'))->up();
+
+    expect($calc->fresh()->content['href'])->toBe('#scan')
+        ->and($scan->fresh()->section_type)->toBe('booking')
+        ->and($scan->fresh()->content['provider'])->toBe('ghl')
+        ->and($scan->fresh()->content['url'])->toContain('knxGUwQTCwM1iGpZ5Sgz')
+        ->and($scan->fresh()->content['section_id'])->toBe('scan');
+});
+
+it('vult de agenda voor zodra de omzetcheck op dezelfde pagina wordt ingevuld', function () {
+    $html = Blade::render('<x-site.sections.booking :content="$content" />', [
+        'content' => ['provider' => 'ghl', 'url' => 'https://api.leadconnectorhq.com/widget/booking/abc', 'height' => 700],
+    ]);
+
+    expect($html)->toContain('omzetcheck-unlocked.window')->toContain(':src="src"');
+});

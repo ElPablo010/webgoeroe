@@ -118,7 +118,34 @@
                             $ghlSrc = $url.($ghlParams ? (str_contains($url, '?') ? '&' : '?').http_build_query($ghlParams) : '');
                         @endphp
                         <link rel="preconnect" href="https://api.leadconnectorhq.com">
-                        <div class="relative overflow-hidden rounded-2xl bg-white" style="min-height:{{ $height }}px;">
+                        {{-- De agenda groeit en krimpt per stap (kalender, tijdstip, formulier,
+                             bevestiging). Verandert de hoogte sterk terwijl de bovenkant achter
+                             de vaste header zit, dan scrollen we terug naar de bovenkant. --}}
+                        <div x-data="{
+                                last: 0,
+                                src: @js($ghlSrc),
+                                // De omzetcheck op dezelfde pagina meldt naam en e-mail via dit event, zodat het
+                                // formulier in de agenda voorgevuld is (zonder de pagina te herladen).
+                                prefill(d) {
+                                    const u = new URL(this.src, window.location.href);
+                                    if (d?.first_name) u.searchParams.set('first_name', d.first_name);
+                                    if (d?.email) u.searchParams.set('email', d.email);
+                                    this.src = u.toString();
+                                },
+                                init() {
+                                    const f = this.$refs.frame;
+                                    this.last = f.offsetHeight;
+                                    new ResizeObserver(() => {
+                                        const h = f.offsetHeight;
+                                        if (Math.abs(h - this.last) > 100 && this.$el.getBoundingClientRect().top < 110) {
+                                            this.$el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                        }
+                                        this.last = h;
+                                    }).observe(f);
+                                }
+                            }"
+                            @omzetcheck-unlocked.window="prefill($event.detail)"
+                            class="relative overflow-hidden rounded-2xl bg-white" style="min-height:{{ $height }}px; scroll-margin-top:120px;">
                             <div class="absolute inset-0 flex flex-col items-center justify-center gap-3">
                                 <svg class="h-6 w-6 animate-spin text-slate-300" fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
@@ -126,7 +153,7 @@
                                 </svg>
                                 <span class="text-sm font-medium text-slate-400">Kalender laden…</span>
                             </div>
-                            <iframe src="{{ $ghlSrc }}" title="Kies een moment voor je gesprek" class="relative w-full border-0"
+                            <iframe x-ref="frame" src="{{ $ghlSrc }}" :src="src" title="Kies een moment voor je gesprek" class="relative w-full border-0"
                                     style="min-width:320px; height:{{ $height }}px;" loading="lazy"></iframe>
                         </div>
                         <script src="https://link.msgsndr.com/js/form_embed.js" async></script>

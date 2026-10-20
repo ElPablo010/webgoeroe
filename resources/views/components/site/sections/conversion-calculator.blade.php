@@ -71,7 +71,11 @@
                                 close: this.close, value: this.value, target: this.target
                             })
                         });
-                        if (r.ok && ! r.redirected) { this.unlocked = true; return; }
+                        if (r.ok && ! r.redirected) {
+                            this.unlocked = true;
+                            this.$dispatch('omzetcheck-unlocked', { first_name: this.first_name, email: this.email });
+                            return;
+                        }
                         const j = await r.json().catch(() => ({}));
                         this.error = Object.values(j.errors ?? {}).flat()[0] ?? 'Er ging iets mis. Probeer het opnieuw.';
                     } catch (e) {
