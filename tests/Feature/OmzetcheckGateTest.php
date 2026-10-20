@@ -165,12 +165,12 @@ it('zet de boekknoppen van de landingspagina om naar /bottleneck-scan', function
         ->and($cta->fresh()->content['ctas'][0]['href'])->toBe('/bottleneck-scan');
 });
 
-it('scrolt terug naar de bovenkant van de GHL-agenda als de hoogte sterk verandert', function () {
+it('scrolt de GHL-agenda in beeld als de agenda een geslaagde boeking meldt', function () {
     $html = Blade::render('<x-site.sections.booking :content="$content" />', [
         'content' => ['provider' => 'ghl', 'url' => 'https://api.leadconnectorhq.com/widget/booking/abc', 'height' => 700],
     ]);
 
-    expect($html)->toContain('ResizeObserver')->toContain('x-ref="frame"')->toContain('scroll-margin-top');
+    expect($html)->toContain('onMessage')->toContain('scroll-margin-top')->not->toContain('form_embed.js');
 });
 
 it('zet de boeking van de landingspagina op de pagina zelf, in de agenda van de campagne', function () {
@@ -195,4 +195,12 @@ it('vult de agenda voor zodra de omzetcheck op dezelfde pagina wordt ingevuld', 
     ]);
 
     expect($html)->toContain('omzetcheck-unlocked.window')->toContain(':src="src"');
+});
+
+it('laadt de GHL-iframe als gewone iframe, zonder form_embed.js (dat verborg en lui-laadde hem)', function () {
+    $html = Blade::render('<x-site.sections.booking :content="$content" />', [
+        'content' => ['provider' => 'ghl', 'url' => 'https://api.leadconnectorhq.com/widget/booking/abc', 'height' => 700],
+    ]);
+
+    expect($html)->toContain('<iframe')->not->toContain('loading="lazy"');
 });

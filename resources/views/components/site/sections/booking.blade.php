@@ -107,9 +107,12 @@
                     @if (! $url)
                         <p class="text-center text-sm text-red-500">Geen URL ingesteld.</p>
                     @elseif ($provider === 'ghl')
-                        {{-- GoHighLevel-agenda (iframe). Naam en e-mail uit de omzetcheck
-                             (?first_name=…&email=… op de pagina-URL) vullen het formulier
-                             voor, zodat niemand ze twee keer typt. --}}
+                        {{-- GoHighLevel-agenda (iframe). Naam en e-mail uit de omzetcheck vullen het
+                             formulier voor: via ?first_name=…&email=… op de pagina-URL, of (zelfde
+                             pagina) via het event omzetcheck-unlocked, zonder te herladen.
+                             Bewust zonder GHL's form_embed.js: dat script verbergt de iframe en laat
+                             hem lui laden, waardoor hij onderaan een pagina nooit laadde (eeuwig
+                             "Kalender laden…"). Een gewone iframe met vaste hoogte laadt altijd. --}}
                         @php
                             $ghlParams = array_filter([
                                 'first_name' => mb_substr((string) request()->query('first_name', ''), 0, 80),
@@ -118,33 +121,26 @@
                             $ghlSrc = $url.($ghlParams ? (str_contains($url, '?') ? '&' : '?').http_build_query($ghlParams) : '');
                         @endphp
                         <link rel="preconnect" href="https://api.leadconnectorhq.com">
-                        {{-- De agenda groeit en krimpt per stap (kalender, tijdstip, formulier,
-                             bevestiging). Verandert de hoogte sterk terwijl de bovenkant achter
-                             de vaste header zit, dan scrollen we terug naar de bovenkant. --}}
                         <div x-data="{
-                                last: 0,
                                 src: @js($ghlSrc),
-                                // De omzetcheck op dezelfde pagina meldt naam en e-mail via dit event, zodat het
-                                // formulier in de agenda voorgevuld is (zonder de pagina te herladen).
                                 prefill(d) {
                                     const u = new URL(this.src, window.location.href);
                                     if (d?.first_name) u.searchParams.set('first_name', d.first_name);
                                     if (d?.email) u.searchParams.set('email', d.email);
                                     this.src = u.toString();
                                 },
-                                init() {
-                                    const f = this.$refs.frame;
-                                    this.last = f.offsetHeight;
-                                    new ResizeObserver(() => {
-                                        const h = f.offsetHeight;
-                                        if (Math.abs(h - this.last) > 100 && this.$el.getBoundingClientRect().top < 110) {
-                                            this.$el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                        }
-                                        this.last = h;
-                                    }).observe(f);
+                                // Meldt de agenda dat de boeking gelukt is, dan staat de bevestiging bovenaan
+                                // de iframe en scrollen we de pagina daarheen (anders zit ze achter de header).
+                                onMessage(e) {
+                                    if (! /(^|\.)(leadconnectorhq\.com|msgsndr\.com)$/.test(new URL(e.origin).hostname)) return;
+                                    const text = typeof e.data === 'string' ? e.data : JSON.stringify(e.data ?? '');
+                                    if (/book|schedul|confirm|success/i.test(text) && this.$el.getBoundingClientRect().top < 110) {
+                                        this.$el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                    }
                                 }
                             }"
                             @omzetcheck-unlocked.window="prefill($event.detail)"
+                            @message.window="onMessage($event)"
                             class="relative overflow-hidden rounded-2xl bg-white" style="min-height:{{ $height }}px; scroll-margin-top:120px;">
                             <div class="absolute inset-0 flex flex-col items-center justify-center gap-3">
                                 <svg class="h-6 w-6 animate-spin text-slate-300" fill="none" viewBox="0 0 24 24">
@@ -153,10 +149,9 @@
                                 </svg>
                                 <span class="text-sm font-medium text-slate-400">Kalender laden…</span>
                             </div>
-                            <iframe x-ref="frame" src="{{ $ghlSrc }}" :src="src" title="Kies een moment voor je gesprek" class="relative w-full border-0"
-                                    style="min-width:320px; height:{{ $height }}px;" loading="lazy"></iframe>
+                            <iframe src="{{ $ghlSrc }}" :src="src" title="Kies een moment voor je gesprek" class="relative w-full border-0"
+                                    style="min-width:320px; height:{{ $height }}px;"></iframe>
                         </div>
-                        <script src="https://link.msgsndr.com/js/form_embed.js" async></script>
                     @elseif ($provider === 'calcom' && $calLink)
                         {{-- Cal.com inline embed --}}
                         <div id="{{ $uid }}" class="w-full overflow-hidden rounded-2xl" style="height:{{ $height }}px;"></div>
