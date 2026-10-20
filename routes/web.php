@@ -13,6 +13,12 @@ Route::post('/webhooks/ghl/offerte-getekend', [GoHighLevelWebhookController::cla
     ->middleware('throttle:30,1')
     ->name('webhooks.ghl.quote-signed');
 
+// GoHighLevel-workflow: offerte verstuurd → deal naar "Proposal Sent".
+Route::post('/webhooks/ghl/offerte-verstuurd', [GoHighLevelWebhookController::class, 'quoteSent'])
+    ->withoutMiddleware(PreventRequestForgery::class)
+    ->middleware('throttle:30,1')
+    ->name('webhooks.ghl.quote-sent');
+
 // Omzetcheck (website-conversiecalculator): gate met voornaam + e-mail.
 // Zonder CSRF-token (publieke leadvorm, pagina kan gecachet zijn); beschermd
 // met honeypot en throttle.

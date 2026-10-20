@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\DepositInvoice;
 use App\Services\Billit\DepositInvoiceService;
+use App\Services\GoHighLevel\OpportunityStage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -19,12 +20,9 @@ class GoHighLevelWebhookController extends Controller
      * Offerte getekend → voorschotfactuur in Billit. De body stellen we zelf
      * samen in de workflow (zie wiki WebGoeroe "offerte-flow").
      */
-    public function quoteSigned(Request $request, DepositInvoiceService $service): JsonResponse
+    public function quoteSigned(Request $request, DepositInvoiceService $service, OpportunityStage $stage): JsonResponse
     {
-        $secret = (string) config('services.gohighlevel.webhook_secret');
-
-        abort_if($secret === '', 503, 'Webhook niet ingesteld.');
-        abort_unless(hash_equals($secret, (string) $request->header('X-Webhook-Secret')), 401);
+        $this->authorizeWebhook($request);
 
         try {
             $data = $this->validated($request);
@@ -51,11 +49,41 @@ class GoHighLevelWebhookController extends Controller
             'amount_excl' => $amount,
         ]);
 
+        // Getekend is getekend: de deal schuift door, ook als de factuur faalt.
+        $movedTo = filled($data['opportunity_id'] ?? null)
+            ? $stage->moveTo($data['opportunity_id'], OpportunityStage::DEPOSIT)
+            : null;
+
         return response()->json([
             'status' => $invoice->status,
             'billit_order_id' => $invoice->billit_order_id,
             'error' => $invoice->error,
+            'stage' => $movedTo,
         ], $invoice->status === DepositInvoice::STATUS_FAILED ? 502 : 200);
+    }
+
+    /**
+     * Offerte verstuurd → deal naar de stap "Proposal Sent" van zijn pijplijn.
+     */
+    public function quoteSent(Request $request, OpportunityStage $stage): JsonResponse
+    {
+        $this->authorizeWebhook($request);
+
+        $data = $request->validate([
+            'opportunity_id' => ['required', 'string', 'max:191'],
+        ]);
+
+        return response()->json([
+            'stage' => $stage->moveTo($data['opportunity_id'], OpportunityStage::PROPOSAL_SENT),
+        ]);
+    }
+
+    private function authorizeWebhook(Request $request): void
+    {
+        $secret = (string) config('services.gohighlevel.webhook_secret');
+
+        abort_if($secret === '', 503, 'Webhook niet ingesteld.');
+        abort_unless(hash_equals($secret, (string) $request->header('X-Webhook-Secret')), 401);
     }
 
     private function validated(Request $request): array
