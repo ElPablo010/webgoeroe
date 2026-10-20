@@ -151,3 +151,16 @@ it('laat de publieke leadvorm en de GHL-webhook buiten de CSRF-controle', functi
             ->toContain(Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class);
     }
 });
+
+it('zet de boekknoppen van de landingspagina om naar /bottleneck-scan', function () {
+    $page = App\Models\Page::create(['title' => 'Website die verkoopt', 'slug' => 'website-die-verkoopt', 'locale' => 'nl', 'published' => true]);
+    $calc = $page->sections()->create(['section_type' => 'conversion_calculator', 'position' => 0, 'locale' => 'nl',
+        'content' => ['link_type' => 'url', 'href' => '#scan', 'cta_label' => 'Ontdek waar jouw website lekt']]);
+    $cta = $page->sections()->create(['section_type' => 'cta', 'position' => 1, 'locale' => 'nl',
+        'content' => ['ctas' => [['label' => 'Kies een moment', 'href' => 'https://calendly.com/dewebgoeroe/bottleneck-scan']]]]);
+
+    (require database_path('migrations/2026_10_20_090000_landing_page_book_via_bottleneck_scan.php'))->up();
+
+    expect($calc->fresh()->content['href'])->toBe('/bottleneck-scan')
+        ->and($cta->fresh()->content['ctas'][0]['href'])->toBe('/bottleneck-scan');
+});

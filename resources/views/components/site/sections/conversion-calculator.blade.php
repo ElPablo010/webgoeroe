@@ -53,7 +53,8 @@
                 first_name: '', email: '', website: '', sending: false, error: '',
                 // Naam en e-mail uit de gate meegeven aan de agenda (voorinvullen).
                 ctaUrl(base) {
-                    if (! this.unlocked || ! this.email) return base;
+                    // Een anker op de pagina zelf (#scan) laten we ongemoeid: een query erachter breekt de sprong.
+                    if (! this.unlocked || ! this.email || base.startsWith('#')) return base;
                     const p = new URLSearchParams({ first_name: this.first_name, email: this.email });
                     return base + (base.includes('?') ? '&' : '?') + p.toString();
                 },
