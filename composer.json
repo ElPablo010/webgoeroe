@@ -20,7 +20,7 @@
         "livewire/livewire": "^4.3",
         "mallardduck/blade-lucide-icons": "^1.26",
         "webgoeroe/core": "^0.12",
-        "webgoeroe/seo-growth": "^0.6",
+        "webgoeroe/seo-growth": "^0.7",
         "webgoeroe/reviews": "^0.1.1"
     },
     "require-dev": {
