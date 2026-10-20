@@ -21,7 +21,7 @@ it('zet de groepen in een vaste volgorde, met Instellingen onderaan', function (
         Filament::getPanel('admin')->getNavigationGroups(),
     );
 
-    expect($groups)->toBe(['Website', 'Groei', 'Instellingen']);
+    expect($groups)->toBe(['Website', 'Leads', 'Vindbaarheid', 'Reviews', 'Instellingen']);
 });
 
 it('toont een uitlogknop onderaan de zijbalk', function () {
@@ -46,8 +46,13 @@ it('rendert de groepen in volgorde, met uitloggen als laatste', function () {
     // boven. De zijbalk-knop is de laatste, dus strrpos in plaats van strpos.
     $logout = strrpos($html, 'Uitloggen');
 
-    expect($at('Website'))->toBeLessThan($at('Groei'))
-        ->and($at('Groei'))->toBeLessThan($at('Instellingen'))
+    // Groepen uit de navigatie zelf: die woorden staan ook elders in de HTML.
+    $groups = array_values(array_filter(array_map(
+        fn ($group) => $group->getLabel(),
+        filament()->getNavigation(),
+    )));
+
+    expect($groups)->toBe(['Website', 'Leads', 'Vindbaarheid', 'Reviews', 'Instellingen'])
         ->and($at('Instellingen'))->toBeLessThan($logout);
 });
 

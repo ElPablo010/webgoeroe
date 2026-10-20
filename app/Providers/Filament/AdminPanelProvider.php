@@ -18,6 +18,7 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Webgoeroe\Core\CorePlugin;
+use Webgoeroe\Core\Filament\NavigationOrder;
 use Webgoeroe\Core\Support\SiteHeader;
 use Webgoeroe\Reviews\ReviewsPlugin;
 use Webgoeroe\SeoGrowth\SeoGrowthPlugin;
@@ -39,7 +40,8 @@ class AdminPanelProvider extends PanelProvider
             // waarin hij de pagina's ontdekt, en dan wandelt "Instellingen" naar
             // boven zodra er een pagina bijkomt. Instellingen hoort onderaan:
             // dat open je zelden, in tegenstelling tot content en cijfers.
-            ->navigationGroups(['Website', 'Groei', 'Instellingen'])
+            // Vaste volgorde op elke site: Website, Leads, Vindbaarheid, Reviews, ..., Instellingen.
+            ->navigationGroups(NavigationOrder::groups())
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([
@@ -50,7 +52,7 @@ class AdminPanelProvider extends PanelProvider
                 AccountWidget::class,
             ])
             // Site-basis (Pagina's, Media, Menu's, Redirects, Header, Footer,
-            // Inzendingen, Algemeen + admin-chrome) en de Groei-module (Search
+            // Aanvragen, Contacten, Algemeen + admin-chrome) en de Groei-module (Search
             // Console, Analytics, leads, SEO-advies en acties).
             ->plugins([
                 CorePlugin::make(),
