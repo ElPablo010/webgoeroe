@@ -177,8 +177,8 @@
                 <p class="mt-2 text-4xl font-black tracking-tight text-white sm:text-5xl" x-text="fmt(yearly)" aria-live="polite"></p>
                 <p class="mt-1 text-sm text-white/60">per jaar</p>
                 <p class="mt-4 text-sm text-white/50">
-                    Dat zijn <span class="font-semibold text-white" x-text="num(extraLeads, 1)"></span> extra aanvragen per maand
-                    (<span x-text="num(current, 1)"></span>% → <span x-text="num(goal, 1)"></span>% conversie).
+                    Dat zijn <span class="font-semibold text-white" x-text="num(extraLeads, 1)"></span> extra aanvragen per maand.<br>
+                    Waar ze blijven hangen, ontdek je in een gratis Bottleneck Scan.
                 </p>
 
                 @if (! empty($content['cta_label']) && $ctaHref !== '')
