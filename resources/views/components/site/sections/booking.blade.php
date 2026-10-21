@@ -10,6 +10,8 @@
     $provider = $content['provider'] ?? 'calendly';
     $url      = trim($content['url'] ?? '');
     $privacy  = trim((string) ($content['privacy_note'] ?? ''));
+    // Vinkjes (✓) in de intro in de accentkleur: een vinkje = voordeel, zoals op de rest van de site.
+    $intro    = str_replace('✓', '<span class="'.($isDark ? 'text-cyan-400' : 'text-cyan-600').'">✓</span>', (string) ($content['intro'] ?? ''));
 
     // Hero: de linkerkolom vertelt al wat de afspraak is — de widget toont
     // enkel de kalender. Voeg de embed-parameters zelf toe zodat een kale
@@ -62,7 +64,7 @@
                     @endif
 
                     @if (! empty($content['intro']))
-                        <div class="prose prose-invert mt-5 max-w-lg prose-p:text-white/55">{!! $content['intro'] !!}</div>
+                        <div class="prose prose-invert mt-5 max-w-lg prose-p:text-white/55">{!! $intro !!}</div>
                     @endif
 
                     @if (! empty($benefits))
@@ -98,7 +100,7 @@
                 @endif
                 @if (! empty($content['intro']))
                     <div class="prose mx-auto mt-4 max-w-2xl {{ $isDark ? 'prose-invert prose-p:text-white/50' : '' }}">
-                        {!! $content['intro'] !!}
+                        {!! $intro !!}
                     </div>
                 @endif
             </div>

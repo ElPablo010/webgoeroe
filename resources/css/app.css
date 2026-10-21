@@ -113,3 +113,11 @@ html { scroll-behavior: smooth; }
 
 /* Verberg Alpine.js x-cloak elementen tot Alpine initialiseert */
 [x-cloak] { display: none !important; }
+
+/* Opsommingen: overal een bolletje in de accentkleur (cyaan), iets groter dan
+   standaard, zodat lijsten op de donkere achtergrond leesbaar zijn. Bewust een
+   bolletje en geen vinkje: een vinkje betekent "goed/voordeel" en hoort enkel
+   bij lijsten met voordelen (zoals bij de boeking). Op wit een donkerdere tint. */
+.prose { --tw-prose-bullets: var(--color-cyan-600); }
+.prose.prose-invert { --tw-prose-bullets: var(--color-cyan-400); }
+.prose ul > li::marker { font-size: 1.25em; }
