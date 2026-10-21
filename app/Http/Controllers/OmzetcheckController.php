@@ -42,7 +42,7 @@ class OmzetcheckController extends Controller
         );
 
         $amount = '€ '.number_format($result['yearly'], 0, ',', '.');
-        $extra = number_format($result['extra_leads'], 1, ',', '.');
+        $extra = preg_replace('/,0$/', '', number_format($result['extra_leads'], 1, ',', '.'));
 
         FormSubmission::create([
             'type' => 'omzetcheck',

@@ -71,7 +71,7 @@ it('bewaart de inzending en zet het contact met velden en daarna de starttag in 
         ->and($upsert['email'])->toBe('jan@voorbeeld.be')
         ->and($upsert['tags'])->toBe(['campagne-websites'])
         ->and(collect($upsert['customFields'])->pluck('field_value')->all())
-        ->toBe(['€ 72.000', '10,0', 'Bouw & renovatie']);
+        ->toBe(['€ 72.000', '10', 'Bouw & renovatie']);
 
     // De starttag komt pas ná de velden, zodat de eerste mail het bedrag kent.
     expect($sent[1]->url())->toBe('https://ghl.test/contacts/c-1/tags')
