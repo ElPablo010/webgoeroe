@@ -82,7 +82,10 @@
     <x-site.cookie-consent />
 
     {{-- Chat-widget van GoHighLevel (All-in-one chat): gesprekken komen binnen
-         in GHL Conversations, naast Facebook en Instagram. --}}
-    <script src="https://widgets.leadconnectorhq.com/loader.js" data-resources-url="https://widgets.leadconnectorhq.com/chat-widget/loader.js" data-widget-id="6a7c4e21b4079d569a93631e" defer></script>
+         in GHL Conversations, naast Facebook en Instagram. Niet op landingspagina's:
+         die hebben één doel en de widget zou ervan afleiden of de boeking afdekken. --}}
+    @unless ($isLanding)
+        <script src="https://widgets.leadconnectorhq.com/loader.js" data-resources-url="https://widgets.leadconnectorhq.com/chat-widget/loader.js" data-widget-id="6a7c4e21b4079d569a93631e" defer></script>
+    @endunless
 </body>
 </html>
