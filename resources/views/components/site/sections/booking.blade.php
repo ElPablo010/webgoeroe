@@ -141,7 +141,7 @@
                             }"
                             @omzetcheck-unlocked.window="prefill($event.detail)"
                             @message.window="onMessage($event)"
-                            class="relative overflow-hidden rounded-2xl bg-white" style="min-height:{{ $height }}px; scroll-margin-top:120px;">
+                            class="relative overflow-hidden rounded-2xl bg-white px-3 sm:px-8" style="min-height:{{ $height }}px; scroll-margin-top:120px;">
                             <div class="absolute inset-0 flex flex-col items-center justify-center gap-3">
                                 <svg class="h-6 w-6 animate-spin text-slate-300" fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
