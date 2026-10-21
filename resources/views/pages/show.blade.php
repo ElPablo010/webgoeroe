@@ -34,6 +34,8 @@
 
     <div>
     @foreach ($page->sections as $section)
+        {{-- Verborgen blok (schakelaar "Verbergen op de site"): bewaard, niet getoond. --}}
+        @continue (! empty($section->content['hidden']))
         @php
             // Sectieview uit dit project (components/site/sections/<type>), anders
             // de standaardview van webgoeroe/core.
@@ -42,6 +44,11 @@
             $anchorId = $content['section_id'] ?? null;
 
             $content['is_first'] = $loop->first;
+            // Zelfde achtergrond als het vorige blok? Dan kan een blok zijn
+            // bovenmarge inkorten, anders stapelen twee paddings zich op.
+            $bgKey = $content['background'] ?? null ?: \Webgoeroe\Core\Filament\Schemas\Sections\SectionBackground::default();
+            $content['same_bg_as_previous'] = isset($previousBg) && $previousBg === $bgKey;
+            $previousBg = $bgKey;
 
             if ($section->section_type === 'hero') {
                 unset($content['number']);

@@ -13,6 +13,7 @@ use App\Support\SiteCta;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
@@ -22,6 +23,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Passport\Passport;
 use Webgoeroe\Core\Core;
+use Webgoeroe\Core\Filament\Schemas\Components\MediaPickerField;
 use Webgoeroe\Core\Filament\Schemas\Components\PageLinkField;
 
 class AppServiceProvider extends ServiceProvider
@@ -43,6 +45,8 @@ class AppServiceProvider extends ServiceProvider
         Passport::authorizationView('oauth.authorize');
 
         $this->registerBlocks();
+        // Startformulier van de landingspagina "Speed to lead elektriciens".
+        Core::formTypes()->register('speed_to_lead_start', 'Speed to lead: starten', 'forms.speed-to-lead-start-form', [], 'Speed to lead: starten');
         $this->registerGeneralSettings();
         $this->registerPageTable();
 
@@ -87,6 +91,36 @@ class AppServiceProvider extends ServiceProvider
                                 ->maxLength(255),
                         ]),
                 ]);
+
+                return $fields;
+            })
+            // Video naast de tekst (YouTube/Vimeo of mp4), in de plaats van de
+            // afbeelding. Enkel bij "Beeld naast de tekst"; leeg = de afbeelding.
+            ->extend('hero', function (array $fields): array {
+                $fields[] = TextInput::make('video_url')
+                    ->label('Video naast de tekst (optioneel)')
+                    ->helperText('YouTube-, Vimeo- of mp4-link. Toont de video in plaats van de afbeelding, enkel bij "Beeld naast de tekst". De afbeelding blijft de terugval en de SEO-afbeelding.')
+                    ->url()
+                    ->maxLength(255);
+
+                return $fields;
+            })
+            // Optionele afbeelding in de call-to-action: tekst links, beeld rechts.
+            // Leeg = het blok blijft gecentreerd zoals voorheen.
+            ->extend('cta', function (array $fields): array {
+                $fields[] = MediaPickerField::make('image.src', 'Afbeelding (optioneel)', required: false);
+                $fields[] = TextInput::make('image.alt')
+                    ->label('Afbeelding: alt-tekst')
+                    ->maxLength(255);
+
+                return $fields;
+            })
+            // Reviews klaarzetten zonder ze te tonen, bv. voorbeeldgetuigenissen
+            // tot er echte zijn. pages/show slaat een verborgen blok over.
+            ->extend('reviews', function (array $fields): array {
+                $fields[] = Toggle::make('hidden')
+                    ->label('Verbergen op de site')
+                    ->helperText('Het blok blijft bewaard maar verschijnt niet op de pagina.');
 
                 return $fields;
             });

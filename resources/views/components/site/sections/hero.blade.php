@@ -8,6 +8,19 @@
     // zoals hero's altijd werkten.
     $side     = $hasImage && ($content['image_layout'] ?? 'background') === 'side';
     $bgImage  = $hasImage && ! $side;
+    // Video naast de tekst: YouTube/Vimeo als embed, een ander bestand als <video>.
+    $videoUrl   = $side ? trim((string) ($content['video_url'] ?? '')) : '';
+    $videoEmbed = null;
+    $videoFile  = null;
+    if ($videoUrl !== '') {
+        if (preg_match('/(?:youtu\.be\/|youtube\.com\/(?:embed\/|shorts\/|watch\?(?:.*&)?v=))([\w-]{6,})/', $videoUrl, $m)) {
+            $videoEmbed = 'https://www.youtube-nocookie.com/embed/'.$m[1].'?rel=0';
+        } elseif (preg_match('/vimeo\.com\/(?:video\/)?(\d+)/', $videoUrl, $m)) {
+            $videoEmbed = 'https://player.vimeo.com/video/'.$m[1].'?dnt=1';
+        } else {
+            $videoFile = $videoUrl;
+        }
+    }
     // Hoogte: compact = enkel de inhoud, medium = ± 60% van het scherm,
     // tall = bijna schermvullend (met scroll-indicator). Onbekend/leeg = tall.
     $height   = in_array($content['height'] ?? null, ['compact', 'medium', 'tall'], true) ? $content['height'] : 'tall';
@@ -124,12 +137,20 @@
         @if ($side)
             <div class="relative animate-hero-enter [animation-delay:250ms]">
                 <div class="pointer-events-none absolute -inset-6 rounded-[2rem] bg-primary-600/20 blur-3xl"></div>
+                @if ($videoEmbed)
+                    <div class="relative aspect-video w-full overflow-hidden rounded-2xl border border-white/10 shadow-2xl shadow-black/50">
+                        <iframe src="{{ $videoEmbed }}" title="{{ $image['alt'] ?? 'Video' }}" class="absolute inset-0 h-full w-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe>
+                    </div>
+                @elseif ($videoFile)
+                    <video src="{{ $videoFile }}" controls playsinline poster="{{ $image['src'] }}" class="relative w-full rounded-2xl border border-white/10 shadow-2xl shadow-black/50"></video>
+                @else
                 <img
                     src="{{ $image['src'] }}"
                     alt="{{ $image['alt'] ?? '' }}"
                     class="relative h-auto max-h-[75vh] w-full rounded-2xl border border-white/10 object-cover shadow-2xl shadow-black/50"
                     fetchpriority="high"
                 >
+                @endif
             </div>
         @endif
         </div>

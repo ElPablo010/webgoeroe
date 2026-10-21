@@ -67,6 +67,12 @@ return [
         // Token: Private Integration met scopes contacts.write + contacts.readonly.
         'api_token' => env('GHL_API_TOKEN'),
         'location_id' => env('GHL_LOCATION_ID', 'JJ446huNYhVtsrONFbVO'),
+        // Startformulier landingspagina "Speed to lead elektriciens": de tag start
+        // de GHL-workflow 1.3 (bevestigingsmail en melding).
+        'speed_to_lead' => [
+            'tag' => env('GHL_SPEED_TO_LEAD_TAG', 'lp-elektriciens-start'),
+            'source' => 'Landingspagina speed to lead elektriciens',
+        ],
         'base_url' => env('GHL_BASE_URL', 'https://services.leadconnectorhq.com'),
         'omzetcheck' => [
             // Tag die de workflow "Omzetcheck ingevuld" start; wordt pas gezet

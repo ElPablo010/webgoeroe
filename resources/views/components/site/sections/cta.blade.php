@@ -7,10 +7,14 @@
     $isFirst = $content['is_first'] ?? false;
     $ctas    = $content['ctas'] ?? [];
     $note    = $content['note'] ?? '';
+    // Optionele afbeelding: tekst links, beeld rechts (op gsm erboven).
+    // Zonder afbeelding blijft het blok gecentreerd zoals altijd.
+    $image    = $content['image'] ?? [];
+    $hasImage = ! empty($image['src']);
 @endphp
 
 <x-site.sections.wrapper :content="$content" class="{{ $bg }}">
-    <div class="mx-auto max-w-5xl px-6 py-16 md:py-24">
+    <div class="mx-auto max-w-5xl px-6 {{ ! empty($content['same_bg_as_previous']) ? 'pt-0 pb-16 md:pb-24' : 'py-16 md:py-24' }}">
 
         {{--
             Glass-card container — exact leadexpert CTA-stijl:
@@ -18,14 +22,16 @@
             zit op de donkere paginaachtergrond.
         --}}
         <div
-            class="relative overflow-hidden rounded-3xl px-8 py-16 text-center md:px-16 md:py-20"
+            class="relative overflow-hidden rounded-3xl {{ $hasImage ? 'px-8 py-12 text-center md:px-12 md:py-14 md:text-left' : 'px-8 py-16 text-center md:px-16 md:py-20' }}"
             style="background:#0c0c10; border:1px solid rgba(255,255,255,0.07);"
         >
             {{-- Decoratieve verticale lijn bovenaan (leadexpert-detail) --}}
+            @unless ($hasImage)
             <div
                 class="absolute left-1/2 top-0 h-20 w-px -translate-x-1/2"
                 style="background:linear-gradient(to bottom, transparent, rgba(34,211,238,0.4), transparent);"
             ></div>
+            @endunless
 
             {{-- Subtiele orbs in de kaart --}}
             <div class="pointer-events-none absolute -right-24 -top-24 h-80 w-80 animate-glow-drift-slow rounded-full blur-[80px]"
@@ -33,6 +39,8 @@
             <div class="pointer-events-none absolute -bottom-24 -left-24 h-64 w-64 animate-glow-drift rounded-full blur-[80px]"
                  style="background:rgba(34,211,238,0.06);"></div>
 
+            <div class="{{ $hasImage ? 'relative grid items-center gap-10 md:grid-cols-[1.1fr_0.9fr]' : '' }}">
+            <div>
             {{-- Eyebrow --}}
             @if (! empty($content['eyebrow']))
                 <div class="mb-6 inline-flex items-center gap-2 rounded-full px-4 py-1.5"
@@ -60,14 +68,14 @@
 
             {{-- Intro --}}
             @if (! empty($content['intro']))
-                <div class="prose prose-invert mx-auto mt-5 max-w-2xl prose-p:text-white/50 prose-p:leading-relaxed">
+                <div class="prose prose-invert mt-5 max-w-2xl {{ $hasImage ? 'mx-auto md:mx-0' : 'mx-auto' }} prose-p:text-white/50 prose-p:leading-relaxed">
                     {!! $content['intro'] !!}
                 </div>
             @endif
 
             {{-- Knoppen --}}
             @if (! empty($ctas))
-                <div class="relative mt-10 flex flex-wrap justify-center gap-3">
+                <div class="relative mt-10 flex flex-wrap justify-center gap-3 {{ $hasImage ? 'md:justify-start' : '' }}">
                     @foreach ($ctas as $cta)
                         @php $variant = $cta['variant'] ?? 'primary'; @endphp
 
@@ -104,6 +112,20 @@
             @if (! empty($note))
                 <p class="relative mt-5 text-sm" style="color:rgba(255,255,255,0.25);">{{ $note }}</p>
             @endif
+            </div>
+
+            @if ($hasImage)
+                <div class="relative order-first md:order-last">
+                    <div class="pointer-events-none absolute -inset-4 rounded-[2rem] bg-primary-600/15 blur-3xl"></div>
+                    <img
+                        src="{{ $image['src'] }}"
+                        alt="{{ $image['alt'] ?? '' }}"
+                        class="relative aspect-[4/3] w-full rounded-2xl border border-white/10 object-cover shadow-2xl shadow-black/50"
+                        loading="lazy"
+                    >
+                </div>
+            @endif
+            </div>
         </div>
     </div>
 </x-site.sections.wrapper>

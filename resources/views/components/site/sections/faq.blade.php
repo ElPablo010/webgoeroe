@@ -28,7 +28,7 @@
             </div>
         @endif
 
-        <div class="space-y-3" x-data="{ open: null }">
+        <div class="space-y-3" x-data="{ open: [] }">
             @foreach ($items as $index => $item)
                 <div
                     data-reveal
@@ -36,28 +36,31 @@
                     class="overflow-hidden rounded-xl"
                 >
                     <button
-                        @click="open = open === {{ $index }} ? null : {{ $index }}"
+                        @click="open.includes({{ $index }}) ? open = open.filter(i => i !== {{ $index }}) : open.push({{ $index }})"
                         class="flex w-full cursor-pointer items-center justify-between gap-4 px-6 py-4 text-left text-sm font-semibold transition-colors {{ $isDark ? 'text-white/80 hover:text-white' : 'text-slate-900 hover:text-primary-700' }}"
                     >
                         <span>{{ $item['question'] ?? '' }}</span>
                         <svg
-                            :class="open === {{ $index }} ? 'rotate-180' : ''"
+                            :class="open.includes({{ $index }}) ? 'rotate-180' : ''"
                             class="h-4 w-4 shrink-0 transition-transform duration-200 {{ $isDark ? 'text-white/30' : 'text-slate-400' }}"
-                            :style="open === {{ $index }} ? 'color:#22d3ee' : ''"
+                            :style="open.includes({{ $index }}) ? 'color:#22d3ee' : ''"
                             fill="none" viewBox="0 0 24 24" stroke="currentColor"
                         >
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                         </svg>
                     </button>
-                    {{-- x-collapse animeert de hoogte: geen dubbele-hoogte-flits
-                         wanneer het ene item sluit terwijl het andere opent. --}}
+                    {{-- Elk item opent en sluit los: een open antwoord blijft staan
+                         als je een ander aanklikt. x-collapse animeert enkel de hoogte,
+                         dus de padding zit op de binnenste div: op het element zelf
+                         schoot die op het einde van de animatie in één keer weg. --}}
                     <div
-                        x-show="open === {{ $index }}"
+                        x-show="open.includes({{ $index }})"
                         x-cloak
-                        x-collapse.duration.200ms
-                        class="px-6 pb-5"
+                        x-collapse.duration.300ms
                     >
-                        <div class="prose text-sm {{ $isDark ? 'prose-invert prose-p:text-white/50' : '' }}">{!! $item['answer'] ?? '' !!}</div>
+                        <div class="px-6 pb-5">
+                            <div class="prose text-sm {{ $isDark ? 'prose-invert prose-p:text-white/50' : '' }}">{!! $item['answer'] ?? '' !!}</div>
+                        </div>
                     </div>
                 </div>
             @endforeach

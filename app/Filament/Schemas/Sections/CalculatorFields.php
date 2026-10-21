@@ -32,6 +32,11 @@ class CalculatorFields
                         ->numeric()->minValue(0)->maxValue(100)->default(30),
                 ]),
 
+            TextInput::make('monthly_price')
+                ->label('Vergelijk met maandprijs (€, optioneel)')
+                ->helperText('Ingevuld = naast de gemiste omzet staat wat de oplossing per maand kost en hoe vaak die zich terugverdient. Leeg = geen vergelijking.')
+                ->numeric()->minValue(0),
+
             TextInput::make('disclaimer')
                 ->label('Voetnoot')
                 ->maxLength(255)

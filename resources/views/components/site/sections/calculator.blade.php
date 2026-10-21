@@ -5,6 +5,7 @@
     $missed   = (float) ($content['default_missed'] ?? 5);
     $value    = (float) ($content['default_value'] ?? 800);
     $rate     = (float) ($content['default_rate'] ?? 30);
+    $price    = (float) ($content['monthly_price'] ?? 0);
     $ctaHref  = \Webgoeroe\Core\Support\Url::resolveCtaHref($content, '');
     $inputCls = 'mt-2 w-full rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3 text-lg font-semibold text-white outline-none transition focus:border-cyan-400/50';
 @endphp
@@ -28,7 +29,8 @@
         <div
             data-reveal
             x-data="{
-                missed: {{ $missed }}, value: {{ $value }}, rate: {{ $rate }},
+                missed: {{ $missed }}, value: {{ $value }}, rate: {{ $rate }}, price: {{ $price }},
+                get payback() { return this.price > 0 ? this.monthly / this.price : 0 },
                 get weekly() { return Math.max(0, this.missed) * Math.max(0, this.value) * Math.min(100, Math.max(0, this.rate)) / 100 },
                 get monthly() { return this.weekly * 52 / 12 },
                 get yearly() { return this.weekly * 52 },
@@ -52,6 +54,14 @@
                 <p class="text-sm font-medium text-white/60">Je laat ongeveer liggen per maand</p>
                 <p class="mt-2 text-5xl font-black tracking-tight text-white" x-text="fmt(monthly)" aria-live="polite"></p>
                 <p class="mt-4 text-sm text-white/50">Per jaar: <span class="font-semibold text-white" x-text="fmt(yearly)"></span></p>
+
+                @if ($price > 0)
+                    <div class="mt-6 border-t border-white/10 pt-6">
+                        <p class="text-sm text-white/60">Tegenover <span class="font-semibold text-white" x-text="fmt(price)"></span> per maand voor onze assistent</p>
+                        <p class="mt-2 text-lg font-bold text-cyan-300" x-show="payback >= 1" x-text="'Dat is ' + payback.toLocaleString('nl-BE', { maximumFractionDigits: 1 }) + ' keer terugverdiend'"></p>
+                        <p class="mt-2 text-sm text-white/50" x-show="payback < 1">Levert één opdracht je meer op dan <span x-text="fmt(price)"></span>? Dan verdien je het terug met één klant per maand.</p>
+                    </div>
+                @endif
 
                 @if (! empty($content['cta_label']) && $ctaHref !== '')
                     <a href="{{ $ctaHref }}"

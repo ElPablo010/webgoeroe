@@ -7,10 +7,9 @@
     $layout    = $content['form_layout'] ?? 'right';
     $formType  = $content['form_type'] ?? 'contact';
 
-    $formComponent = match ($formType) {
-        'contact' => 'forms.contact-form',
-        default   => null,
-    };
+    // Het formuliertype-register beslist welk Livewire-component erbij hoort
+    // (contact uit de core, speed_to_lead_start van deze site, …).
+    $formComponent = \Webgoeroe\Core\Core::formTypes()->component($formType);
 
     $isStacked  = $layout === 'below';
     $textOrder  = $layout === 'left' ? 'md:order-2' : 'md:order-1';
