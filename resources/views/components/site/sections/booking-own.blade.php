@@ -86,7 +86,8 @@
                             <textarea x-model="answers[@js($field['key'])]" rows="3" maxlength="2000" @required($field['required'])
                                       placeholder="{{ $field['placeholder'] }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200"></textarea>
                         @else
-                            <input type="{{ $field['type'] }}" x-model="answers[@js($field['key'])]" @required($field['required'])
+                            {{-- Website-adres als tekstveld: type="url" weigert "www.voorbeeld.be" zonder https://. --}}
+                            <input type="{{ $field['type'] === 'url' ? 'text' : $field['type'] }}" @if ($field['type'] === 'url') inputmode="url" @endif x-model="answers[@js($field['key'])]" @required($field['required'])
                                    maxlength="255" placeholder="{{ $field['placeholder'] }}"
                                    autocomplete="{{ ['first_name' => 'given-name', 'last_name' => 'family-name', 'email' => 'email', 'phone' => 'tel', 'website' => 'url'][$field['target']] ?? 'off' }}"
                                    class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200">

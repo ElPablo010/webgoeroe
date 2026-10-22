@@ -206,3 +206,15 @@ it('toont in de admin de formuliervelden met de GHL-velden als keuze', function 
         ->assertSee('Opslaan in (GoHighLevel)')
         ->assertSee('Grootste uitdaging?');
 });
+
+it('laat een website zonder https:// toe (geen type="url" in de browser)', function () {
+    $html = Blade::render('<x-site.sections.booking :content="$content" />', ['content' => [
+        'provider' => 'ghl',
+        'ghl_display' => 'own',
+        'url' => 'https://api.leadconnectorhq.com/widget/booking/cal123',
+        'layout' => 'section',
+    ]]);
+
+    expect($html)->not->toContain('type="url"')
+        ->and($html)->toContain('inputmode="url"');
+});
