@@ -83,7 +83,7 @@ it('maakt het contact en de afspraak met Google Meet en bewaart de inzending', f
         && $r['firstName'] === 'Jan' && $r['lastName'] === 'Peeters' && $r['email'] === 'jan@voorbeeld.be');
 
     Http::assertSent(fn (Request $r) => str_ends_with($r->url(), '/calendars/events/appointments')
-        && $r['contactId'] === 'c1' && $r['calendarId'] === 'cal123' && $r['assignedUserId'] === 'u1'
+        && $r['locationId'] === 'loc-1' && $r['contactId'] === 'c1' && $r['calendarId'] === 'cal123' && $r['assignedUserId'] === 'u1'
         && $r['meetingLocationType'] === 'gmeet' && $r['meetingLocationId'] === 'google_conference_0'
         && $r['overrideLocationConfig'] === false && $r['appointmentStatus'] === 'confirmed'
         && str_contains($r['title'], 'Jan Peeters') && str_contains($r['description'], 'www.voorbeeld.be'));

@@ -98,6 +98,7 @@ class CalendarBooking
             $location = collect($calendar['teamMembers'][0]['locationConfigurations'] ?? [])->first();
 
             $appointment = $this->request()->post('/calendars/events/appointments', array_filter([
+                'locationId' => config('services.gohighlevel.location_id'),
                 'calendarId' => $data['calendar_id'],
                 'contactId' => $contactId,
                 'assignedUserId' => $calendar['teamMembers'][0]['userId'] ?? null,
