@@ -114,7 +114,7 @@ class CalendarBooking
                 'startTime' => $start->toIso8601String(),
                 'endTime' => $start->addMinutes((int) ($calendar['slotDuration'] ?? 30))->toIso8601String(),
                 'appointmentStatus' => 'confirmed',
-                'meetingLocationType' => $member['meetingLocationType'] ?? null,
+                'meetingLocationType' => $member['meetingLocationType'] ?? self::locationType($location['kind'] ?? null),
                 'meetingLocationId' => $location['meetingId'] ?? null,
                 'overrideLocationConfig' => false,
             ], fn ($value) => $value !== null));
@@ -132,6 +132,19 @@ class CalendarBooking
 
             return ['ok' => false, 'reason' => 'error'];
         }
+    }
+
+    /**
+     * Sommige agenda's geven geen meetingLocationType terug, enkel de locatielijst
+     * (kind google_conference …). Leid het type dan daaruit af, anders komt er geen Meet-link.
+     */
+    private static function locationType(?string $kind): ?string
+    {
+        return [
+            'google_conference' => 'gmeet',
+            'zoom_conference' => 'zoom',
+            'ms_teams_conference' => 'ms_teams',
+        ][$kind] ?? null;
     }
 
     /** Agenda-instellingen (teamlid, duur, Meet-locatie), een uur in de cache. */

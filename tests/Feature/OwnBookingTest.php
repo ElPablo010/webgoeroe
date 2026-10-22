@@ -218,3 +218,18 @@ it('laat een website zonder https:// toe (geen type="url" in de browser)', funct
     expect($html)->not->toContain('type="url"')
         ->and($html)->toContain('inputmode="url"');
 });
+
+it('leidt Google Meet af uit de locatielijst als de agenda geen meetingLocationType heeft', function () {
+    Http::fake([
+        'ghl.test/contacts/upsert' => Http::response(['contact' => ['id' => 'c1']]),
+        'ghl.test/calendars/cal123' => Http::response(['calendar' => [
+            'teamMembers' => [['userId' => 'u1', 'locationConfigurations' => [['kind' => 'google_conference', 'meetingId' => 'google_conference_0']]]],
+        ]]),
+        'ghl.test/calendars/events/appointments' => Http::response(['id' => 'a1'], 201),
+    ]);
+
+    $this->postJson(route('booking.store'), bookingPayload())->assertOk();
+
+    Http::assertSent(fn (Request $r) => str_ends_with($r->url(), '/calendars/events/appointments')
+        && $r['meetingLocationType'] === 'gmeet' && $r['meetingLocationId'] === 'google_conference_0');
+});
