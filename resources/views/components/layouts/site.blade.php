@@ -23,7 +23,9 @@
 @endphp
 
 <!DOCTYPE html>
-<html lang="nl">
+{{-- Ankerlinks (#sectie-id) landen net onder de vaste menubalk. De ID staat op
+     de sectie zelf; de landingsheader schuift mee, die heeft geen marge nodig. --}}
+<html lang="nl" @class(['scroll-pt-24' => ! $isLanding])>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">

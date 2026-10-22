@@ -41,7 +41,6 @@
             // de standaardview van webgoeroe/core.
             $componentName = \Webgoeroe\Core\Support\Views::section($section->section_type) ?? 'core::sections.unknown';
             $content = $section->content ?? [];
-            $anchorId = $content['section_id'] ?? null;
 
             $content['is_first'] = $loop->first;
             // Zelfde achtergrond als het vorige blok? Dan kan een blok zijn
@@ -56,11 +55,6 @@
                 $content['number'] = str_pad((string) (++$sectionNumber), 2, '0', STR_PAD_LEFT);
             }
         @endphp
-
-        @if ($anchorId)
-            {{-- Anchor target net vóór de sectie. scroll-mt compenseert de fixed header. --}}
-            <div id="{{ $anchorId }}" class="scroll-mt-32"></div>
-        @endif
 
         <x-dynamic-component
             :component="$componentName"
