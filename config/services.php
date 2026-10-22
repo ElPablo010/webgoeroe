@@ -64,7 +64,8 @@ return [
         'webhook_secret' => env('GHL_WEBHOOK_SECRET'),
 
         // Omzetcheck (website-conversiecalculator) → contact in GoHighLevel.
-        // Token: Private Integration met scopes contacts.write + contacts.readonly.
+        // Token: Private Integration met scopes contacts.write + contacts.readonly,
+        // en voor het eigen boekingsscherm calendars.readonly + calendars/events.write.
         'api_token' => env('GHL_API_TOKEN'),
         'location_id' => env('GHL_LOCATION_ID', 'JJ446huNYhVtsrONFbVO'),
         // Startformulier landingspagina "Speed to lead elektriciens": de tag start
@@ -74,6 +75,10 @@ return [
             'source' => 'Landingspagina speed to lead elektriciens',
         ],
         'base_url' => env('GHL_BASE_URL', 'https://services.leadconnectorhq.com'),
+        // Eigen boekingsscherm (weergave "Eigen kalender"): inleiding in de Google-uitnodiging.
+        'booking' => [
+            'description' => env('GHL_BOOKING_DESCRIPTION', 'Dit is je gratis gesprek van 30 minuten met Pieter van De WebGoeroe. Je ontvangt ook een bevestiging per e-mail.'),
+        ],
         'omzetcheck' => [
             // Tag die de workflow "Omzetcheck ingevuld" start; wordt pas gezet
             // nadat de velden bewaard zijn, zodat de mail het bedrag al kent.

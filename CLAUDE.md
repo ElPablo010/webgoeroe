@@ -253,6 +253,23 @@ anders wordt een validatiefout een redirect (de gate zou dan ten onrechte openen
 Een tweede inzending met hetzelfde e-mailadres zet de tag niet opnieuw, dus de
 workflow start dan niet nog eens. Tests: `tests/Feature/OmzetcheckGateTest.php`.
 
+## Eigen kalender (boeking-blok, GoHighLevel)
+
+Het boeking-blok met aanbieder GoHighLevel heeft drie weergaven (`ghl_display`):
+`iframe` (standaard), `popup` (knop, GHL-agenda in een venster) en `own` (eigen
+kalender zonder iframe, [`booking-own.blade.php`](resources/views/components/site/sections/booking-own.blade.php)).
+`own` haalt vrije momenten via `GET /boeking/tijdstippen` en boekt via `POST /boeking`
+([`BookingController`](app/Http/Controllers/BookingController.php) →
+[`CalendarBooking`](app/Services/GoHighLevel/CalendarBooking.php)): contact upsert +
+afspraak met `meetingLocationType` uit de agenda (Google Meet), dus de workflows op
+"Appointment status" draaien mee en de mail krijgt Meet- en verplaats-link. Alleen
+agenda's die in een boeking-sectie staan zijn bereikbaar (agenda-ID = laatste deel van de URL).
+Token (`GHL_API_TOKEN`) heeft naast contacts ook `calendars.readonly` en
+`calendars/events.write` nodig; zonder die rechten mislukt boeken (502, in de log).
+`bootstrap/app.php` rendert JSON-fouten voor `boeking`. Nieuwe Tailwind-klassen in een
+nieuwe view: lokaal `npm run build` (en `public/hot` weg als er geen Vite draait).
+Tests: `tests/Feature/OwnBookingTest.php`.
+
 ---
 
 ## Harde regels (overerfd van new-website-skill)

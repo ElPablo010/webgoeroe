@@ -68,8 +68,8 @@ class AppServiceProvider extends ServiceProvider
                 'providers' => ['calcom' => 'Cal.com', 'calendly' => 'Calendly', 'ghl' => 'GoHighLevel'],
                 'url_providers' => ['calcom', 'calendly', 'ghl'],
             ])
-            // GoHighLevel kan als iframe in de pagina (standaard) of achter een knop in een
-            // pop-up: dan breekt de GHL-agenda de paginalayout niet en is er geen scroll-in-scroll.
+            // GoHighLevel kan als iframe in de pagina (standaard), achter een knop in een
+            // pop-up, of als eigen kalender op de site (vrije momenten via de GHL-API): dan breekt de GHL-agenda de paginalayout niet en is er geen scroll-in-scroll.
             ->extend('booking', function (array $fields): array {
                 $fields[] = Grid::make(['default' => 1, 'md' => 2])
                     ->schema([
@@ -78,6 +78,7 @@ class AppServiceProvider extends ServiceProvider
                             ->options([
                                 'iframe' => 'Iframe in de pagina',
                                 'popup' => 'Pop-up achter een knop',
+                                'own' => 'Eigen kalender (zonder iframe)',
                             ])
                             ->default('iframe')
                             ->selectablePlaceholder(false)

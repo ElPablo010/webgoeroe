@@ -15,6 +15,7 @@ class FormSubmission extends CoreModel
      * seo-growth). Alfabetisch.
      */
     public const TYPE_LABELS = [
+        'booking' => 'Boeking (eigen kalender)',
         'contact' => 'Contactformulier',
         'omzetcheck' => 'Omzetcheck',
         'speed_to_lead_start' => 'Speed to lead: starten',

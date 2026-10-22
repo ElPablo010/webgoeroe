@@ -33,7 +33,9 @@
         ? ltrim(parse_url($url, PHP_URL_PATH), '/')
         : null;
 
-    $ghlPopup = $provider === 'ghl' && ($content['ghl_display'] ?? 'iframe') === 'popup';
+    $ghlDisplay = $provider === 'ghl' ? ($content['ghl_display'] ?? 'iframe') : null;
+    $ghlPopup = $ghlDisplay === 'popup';
+    $ghlOwn = $ghlDisplay === 'own';
     $popupLabel = trim((string) ($content['popup_button_label'] ?? '')) ?: 'Kies een moment';
 
     $uid = 'cal-' . ($section?->id ?? uniqid());
@@ -126,7 +128,10 @@
                             $ghlSrc = $url.($ghlParams ? (str_contains($url, '?') ? '&' : '?').http_build_query($ghlParams) : '');
                         @endphp
                         <link rel="preconnect" href="https://api.leadconnectorhq.com">
-                        @if ($ghlPopup)
+                        @if ($ghlOwn)
+                            {{-- Eigen kalender: geen iframe, de site toont zelf de vrije momenten (BookingController). --}}
+                            <x-site.sections.booking-own :calendar-id="basename((string) parse_url($url, PHP_URL_PATH))" :prefill="$ghlParams" />
+                        @elseif ($ghlPopup)
                             {{-- Pop-up: de iframe laadt pas bij het openen en heeft zijn eigen scroll
                                  binnen het venster, dus de pagina zelf blijft rustig. Andere knoppen op
                                  de pagina kunnen hem openen met window.dispatchEvent(new Event('open-booking')). --}}
@@ -148,7 +153,8 @@
                                 @keydown.escape.window="open && close()"
                                 class="text-center">
                                 <button type="button" @click="show()"
-                                        class="inline-flex cursor-pointer items-center justify-center rounded-xl bg-violet-600 px-8 py-4 text-base font-bold text-white shadow-lg transition hover:bg-violet-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-300">
+                                        class="inline-flex cursor-pointer items-center justify-center px-8 py-4 text-base font-semibold transition-all hover:-translate-y-px focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 bg-violet-600 text-white hover:bg-violet-500 hover:shadow-lg"
+                                        style="border-radius:100px;">
                                     {{ $popupLabel }}
                                 </button>
 

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CaseStudyController;
 use App\Http\Controllers\GoHighLevelWebhookController;
+use App\Http\Controllers\BookingController;
 use App\Http\Controllers\OmzetcheckController;
 use App\Http\Controllers\PostController;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
@@ -26,6 +27,16 @@ Route::post('/omzetcheck', [OmzetcheckController::class, 'store'])
     ->withoutMiddleware(PreventRequestForgery::class)
     ->middleware('throttle:20,1')
     ->name('omzetcheck.store');
+
+// Eigen boekingsscherm op een GoHighLevel-agenda: vrije tijdstippen en boeken.
+// Zonder CSRF-token (publiek, pagina kan gecachet zijn); honeypot en throttle.
+Route::get('/boeking/tijdstippen', [BookingController::class, 'slots'])
+    ->middleware('throttle:60,1')
+    ->name('booking.slots');
+Route::post('/boeking', [BookingController::class, 'store'])
+    ->withoutMiddleware(PreventRequestForgery::class)
+    ->middleware('throttle:10,1')
+    ->name('booking.store');
 
 // Filament is het enige login-systeem; de korte /login redirect ernaartoe.
 Route::redirect('/login', '/admin/login')->name('login');
