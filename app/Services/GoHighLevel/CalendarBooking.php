@@ -42,7 +42,7 @@ class CalendarBooking
         ]);
 
         if (! $response->successful()) {
-            Log::warning('Boeking: vrije tijdstippen ophalen mislukt.', ['status' => $response->status(), 'body' => $response->body()]);
+            Log::error('Boeking: vrije tijdstippen ophalen mislukt.', ['status' => $response->status(), 'body' => $response->body()]);
 
             return [];
         }
@@ -61,53 +61,60 @@ class CalendarBooking
     }
 
     /**
-     * @param  array{calendar_id: string, start: string, first_name: string, last_name: string, email: string, phone?: ?string, website?: ?string, message?: ?string}  $data
+     * @param  array{first_name?: ?string, last_name?: ?string, email: string, phone?: ?string, website?: ?string}  $contact  standaardvelden
+     * @param  array<string, string>  $customFields  [GHL-veld-ID => antwoord]
+     * @param  array<string, string>  $notes  [vraag => antwoord], enkel in de afspraakbeschrijving
      * @return array{ok: bool, reason?: string, start?: string}  reason: 'taken' (tijdstip net bezet) of 'error'
      */
-    public function book(array $data): array
+    public function book(string $calendarId, string $start, array $contact, array $customFields = [], array $notes = []): array
     {
         if (! $this->isConfigured()) {
-            Log::warning('Boeking: GHL niet ingesteld (GHL_API_TOKEN), afspraak niet gemaakt.');
+            Log::error('Boeking: GHL niet ingesteld (GHL_API_TOKEN), afspraak niet gemaakt.');
 
             return ['ok' => false, 'reason' => 'error'];
         }
 
         try {
-            $start = CarbonImmutable::parse($data['start'])->setTimezone(self::TIMEZONE);
-            $calendar = $this->calendar($data['calendar_id']);
-            $name = trim($data['first_name'].' '.$data['last_name']);
+            $start = CarbonImmutable::parse($start)->setTimezone(self::TIMEZONE);
+            $calendar = $this->calendar($calendarId);
+            $name = trim(($contact['first_name'] ?? '').' '.($contact['last_name'] ?? '')) ?: $contact['email'];
 
-            $contact = $this->request()->post('/contacts/upsert', array_filter([
+            $upsert = $this->request()->post('/contacts/upsert', array_filter([
                 'locationId' => config('services.gohighlevel.location_id'),
-                'firstName' => $data['first_name'],
-                'lastName' => $data['last_name'],
-                'email' => $data['email'],
-                'phone' => $data['phone'] ?? null,
-                'website' => $data['website'] ?? null,
+                'firstName' => $contact['first_name'] ?? null,
+                'lastName' => $contact['last_name'] ?? null,
+                'email' => $contact['email'],
+                'phone' => $contact['phone'] ?? null,
+                'website' => $contact['website'] ?? null,
                 'source' => 'Boeking website',
+                'customFields' => collect($customFields)
+                    ->map(fn ($value, $id) => ['id' => $id, 'field_value' => $value])
+                    ->values()
+                    ->all() ?: null,
             ]));
 
-            $contactId = $contact->json('contact.id');
+            $contactId = $upsert->json('contact.id');
 
-            if (! $contact->successful() || blank($contactId)) {
-                Log::warning('Boeking: contact aanmaken in GHL mislukt.', ['status' => $contact->status(), 'body' => $contact->body()]);
+            if (! $upsert->successful() || blank($contactId)) {
+                Log::error('Boeking: contact aanmaken in GHL mislukt.', ['status' => $upsert->status(), 'body' => $upsert->body()]);
 
                 return ['ok' => false, 'reason' => 'error'];
             }
 
-            $location = collect($calendar['teamMembers'][0]['locationConfigurations'] ?? [])->first();
+            $member = $calendar['teamMembers'][0] ?? [];
+            $location = collect($member['locationConfigurations'] ?? [])->first();
 
             $appointment = $this->request()->post('/calendars/events/appointments', array_filter([
                 'locationId' => config('services.gohighlevel.location_id'),
-                'calendarId' => $data['calendar_id'],
+                'calendarId' => $calendarId,
                 'contactId' => $contactId,
-                'assignedUserId' => $calendar['teamMembers'][0]['userId'] ?? null,
+                'assignedUserId' => $member['userId'] ?? null,
                 'title' => trim(($calendar['name'] ?? 'Gesprek').' – '.$name),
-                'description' => $this->description($data),
+                'description' => $this->description($notes),
                 'startTime' => $start->toIso8601String(),
                 'endTime' => $start->addMinutes((int) ($calendar['slotDuration'] ?? 30))->toIso8601String(),
                 'appointmentStatus' => 'confirmed',
-                'meetingLocationType' => $calendar['teamMembers'][0]['meetingLocationType'] ?? null,
+                'meetingLocationType' => $member['meetingLocationType'] ?? null,
                 'meetingLocationId' => $location['meetingId'] ?? null,
                 'overrideLocationConfig' => false,
             ], fn ($value) => $value !== null));
@@ -116,12 +123,12 @@ class CalendarBooking
                 return ['ok' => true, 'start' => $start->toIso8601String()];
             }
 
-            Log::warning('Boeking: afspraak maken in GHL mislukt.', ['status' => $appointment->status(), 'body' => $appointment->body()]);
+            Log::error('Boeking: afspraak maken in GHL mislukt.', ['status' => $appointment->status(), 'body' => $appointment->body()]);
 
             // GHL meldt een bezet of ongeldig tijdstip als 4xx met "slot" in de tekst.
             return ['ok' => false, 'reason' => preg_match('/slot|available|beschikbaar/i', $appointment->body()) ? 'taken' : 'error'];
         } catch (\Throwable $e) {
-            Log::warning('Boeking: GHL niet bereikbaar.', ['error' => $e->getMessage()]);
+            Log::error('Boeking: GHL niet bereikbaar.', ['error' => $e->getMessage()]);
 
             return ['ok' => false, 'reason' => 'error'];
         }
@@ -137,16 +144,13 @@ class CalendarBooking
         });
     }
 
-    private function description(array $data): string
+    /** Inleiding + de antwoorden ("vraag: antwoord"), zichtbaar in de agenda en de Google-uitnodiging. */
+    private function description(array $notes): string
     {
         $lines = [(string) config('services.gohighlevel.booking.description')];
 
-        if (filled($data['website'] ?? null)) {
-            $lines[] = 'Website: '.$data['website'];
-        }
-
-        if (filled($data['message'] ?? null)) {
-            $lines[] = 'Wat je uit het gesprek hoopt te halen: '.$data['message'];
+        foreach ($notes as $question => $answer) {
+            $lines[] = $question."\n".$answer;
         }
 
         return implode("\n\n", array_filter($lines));

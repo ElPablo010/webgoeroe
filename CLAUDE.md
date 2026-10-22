@@ -266,6 +266,15 @@ afspraak met `meetingLocationType` uit de agenda (Google Meet), dus de workflows
 agenda's die in een boeking-sectie staan zijn bereikbaar (agenda-ID = laatste deel van de URL).
 Token (`GHL_API_TOKEN`) heeft naast contacts ook `calendars.readonly` en
 `calendars/events.write` nodig; zonder die rechten mislukt boeken (502, in de log).
+Formuliervelden staan per boeking-sectie in `content.form_fields` (admin: "Formuliervelden"),
+elk met `target`: een standaardveld (`first_name`, `last_name`, `email`, `phone`, `website`),
+`custom:<id>` (eigen GHL-contactveld) of `appointment` (enkel in de afspraak). De keuzelijst komt
+uit GHL ([`ContactFields`](app/Services/GoHighLevel/ContactFields.php), 15 min cache, knop
+"Lijst vernieuwen"); via "+" maak je een nieuw GHL-veld aan (bestaande naam = hergebruiken).
+De velden komen bij het boeken uit de sectie zelf, nooit uit de browser; zonder velden gelden
+`BookingForm::defaults()`, en een e-mailveld is er altijd. Token-scopes daarvoor:
+`locations/customFields.readonly` + `.write`. Op Combell staat `LOG_LEVEL=error`, dus
+GHL-fouten loggen als error.
 `bootstrap/app.php` rendert JSON-fouten voor `boeking`. Nieuwe Tailwind-klassen in een
 nieuwe view: lokaal `npm run build` (en `public/hot` weg als er geen Vite draait).
 Tests: `tests/Feature/OwnBookingTest.php`.

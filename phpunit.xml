@@ -40,6 +40,8 @@
         <env name="DB_USERNAME" value="root"/>
         <env name="DB_PASSWORD" value=""/>
         <env name="CORE_SPAM_MIN_SECONDS" value="0"/>
+        <!-- Tests praten nooit met de echte GoHighLevel, ook niet als .env een token heeft. -->
+        <env name="GHL_API_TOKEN" value="" force="true"/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>

@@ -8,6 +8,7 @@ use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Pages\Dashboard;
 use Filament\Panel;
+use Filament\View\PanelsRenderHook;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
 use Filament\Widgets\AccountWidget;
@@ -72,6 +73,8 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
-            ]);
+            ])
+            // Geen sprong naar boven na "toevoegen" in een repeater binnen tabbladen.
+            ->renderHook(PanelsRenderHook::BODY_END, fn (): string => view('filament.admin.tab-focus-no-scroll')->render());
     }
 }

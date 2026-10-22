@@ -5,10 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\FormSubmission;
 use App\Models\PageSection;
 use App\Services\GoHighLevel\CalendarBooking;
+use App\Services\GoHighLevel\ContactFields;
+use App\Support\BookingForm;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 
 /**
  * Eigen boekingsscherm ("Eigen kalender" in het boeking-blok) op een GoHighLevel-agenda.
@@ -49,40 +52,70 @@ class BookingController extends Controller
             return response()->json(['ok' => true]);
         }
 
-        $data = $request->validate([
-            'calendar' => ['required', 'string', 'max:64'],
+        $request->validate([
+            'section' => ['required', 'integer'],
             'start' => ['required', 'date'],
-            'first_name' => ['required', 'string', 'max:80'],
-            'last_name' => ['required', 'string', 'max:80'],
-            'email' => ['required', 'email:rfc', 'max:191'],
-            'phone' => ['nullable', 'string', 'max:40'],
-            'website' => ['nullable', 'string', 'max:255'],
-            'message' => ['nullable', 'string', 'max:1000'],
+            'answers' => ['nullable', 'array'],
         ]);
 
-        if (! $this->isAllowedCalendar($data['calendar'])) {
+        // De velden komen uit de sectie zelf, nooit uit de browser: wat de bezoeker
+        // instuurt bepaalt enkel de antwoorden.
+        $section = PageSection::query()->whereKey($request->integer('section'))->where('section_type', 'booking')->first();
+        $content = $section?->content ?? [];
+
+        if (! $section || ($content['provider'] ?? null) !== 'ghl') {
             abort(404);
         }
 
-        $start = CarbonImmutable::parse($data['start']);
+        $calendarId = self::calendarId($content);
+        $fields = BookingForm::fields($content);
+
+        $answers = $request->validate(
+            collect($fields)->mapWithKeys(fn (array $field) => ['answers.'.$field['key'] => array_filter([
+                $field['required'] ? 'required' : 'nullable',
+                'string',
+                $field['type'] === 'textarea' ? 'max:2000' : 'max:255',
+                $field['type'] === 'email' ? 'email:rfc' : null,
+            ])])->all(),
+            [],
+            collect($fields)->mapWithKeys(fn (array $field) => ['answers.'.$field['key'] => Str::lower($field['label'])])->all(),
+        )['answers'] ?? [];
+
+        $start = CarbonImmutable::parse($request->input('start'));
 
         if ($start->lt(self::earliest())) {
             return response()->json(['ok' => false, 'reason' => 'taken'], 409);
         }
 
-        $result = $booking->book([
-            'calendar_id' => $data['calendar'],
-            'start' => $data['start'],
-            'first_name' => $data['first_name'],
-            'last_name' => $data['last_name'],
-            'email' => $data['email'],
-            'phone' => $data['phone'] ?? null,
-            'website' => $data['website'] ?? null,
-            'message' => $data['message'] ?? null,
-        ]);
+        $contact = [];
+        $customFields = [];
+        $notes = [];
+
+        foreach ($fields as $field) {
+            $value = trim((string) ($answers[$field['key']] ?? ''));
+
+            if ($value === '') {
+                continue;
+            }
+
+            $target = $field['target'];
+
+            if (array_key_exists($target, ContactFields::STANDARD)) {
+                $contact[$target] = $value;
+            } elseif (str_starts_with($target, 'custom:')) {
+                $customFields[substr($target, 7)] = $value;
+            }
+
+            // Alles behalve naam, e-mail en telefoon komt ook in de afspraak (Google-uitnodiging).
+            if (! in_array($target, ['first_name', 'last_name', 'email', 'phone'], true)) {
+                $notes[$field['label']] = $value;
+            }
+        }
+
+        $result = $booking->book($calendarId, $start->toIso8601String(), $contact, $customFields, $notes);
 
         if (! $result['ok']) {
-            Cache::forget("booking.slots.{$data['calendar']}.".self::earliest()->toDateString());
+            Cache::forget("booking.slots.{$calendarId}.".self::earliest()->toDateString());
 
             return response()->json($result, $result['reason'] === 'taken' ? 409 : 502);
         }
@@ -90,11 +123,7 @@ class BookingController extends Controller
         FormSubmission::create([
             'type' => 'booking',
             'data' => [
-                'first_name' => $data['first_name'],
-                'last_name' => $data['last_name'],
-                'email' => $data['email'],
-                'phone' => $data['phone'] ?? null,
-                'website' => $data['website'] ?? null,
+                ...collect($fields)->mapWithKeys(fn (array $field) => [$field['label'] => $answers[$field['key']] ?? null])->filter()->all(),
                 'start' => $result['start'],
             ],
             'page_url' => $request->headers->get('referer'),
@@ -102,6 +131,12 @@ class BookingController extends Controller
         ]);
 
         return response()->json($result);
+    }
+
+    /** De agenda-ID is het laatste deel van de agenda-URL in de boeking-sectie. */
+    public static function calendarId(array $content): string
+    {
+        return basename((string) parse_url((string) ($content['url'] ?? ''), PHP_URL_PATH));
     }
 
     /** Begin van morgen (Brusselse tijd): vroeger dan dat is niet te boeken. */
@@ -120,8 +155,7 @@ class BookingController extends Controller
                 ->contains(function (PageSection $section) use ($calendarId): bool {
                     $content = $section->content ?? [];
 
-                    return ($content['provider'] ?? null) === 'ghl'
-                        && basename((string) parse_url((string) ($content['url'] ?? ''), PHP_URL_PATH)) === $calendarId;
+                    return ($content['provider'] ?? null) === 'ghl' && self::calendarId($content) === $calendarId;
                 });
         });
     }

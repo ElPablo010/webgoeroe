@@ -1,9 +1,9 @@
-@props(['calendarId', 'prefill' => [], 'buttonClass' => ''])
+@props(['calendarId', 'sectionId' => null, 'fields' => [], 'prefill' => [], 'buttonClass' => ''])
 
 {{-- Eigen boekingsscherm op een GoHighLevel-agenda: maandkalender, tijdstippen als
      knoppen (geen scrollbalk) en een kort formulier. Tijdstippen en boeking lopen
      via /boeking/tijdstippen en /boeking (BookingController). Alle tijden zijn Brusselse tijd. --}}
-<div x-data="ownBooking({ calendar: @js($calendarId), prefill: @js($prefill), urls: { slots: @js(route('booking.slots')), store: @js(route('booking.store')) } })"
+<div x-data="ownBooking({ calendar: @js($calendarId), section: @js($sectionId), fields: @js(collect($fields)->map(fn ($f) => ['key' => $f['key'], 'target' => $f['target']])->values()), prefill: @js($prefill), urls: { slots: @js(route('booking.slots')), store: @js(route('booking.store')) } })"
      @omzetcheck-unlocked.window="applyPrefill($event.detail)"
      class="mx-auto w-full max-w-3xl rounded-2xl bg-white p-5 text-left text-slate-900 shadow-xl sm:p-8">
 
@@ -76,34 +76,26 @@
                 <button type="button" @click="chosen = null; formError = ''" class="cursor-pointer text-sm font-semibold text-violet-700 hover:underline">Ander moment</button>
             </div>
 
+            {{-- Velden uit de admin (boeking-blok → Formuliervelden), elk gekoppeld aan een GHL-veld. --}}
             <div class="grid gap-4 sm:grid-cols-2">
-                <label class="block text-sm font-semibold">Voornaam
-                    <input type="text" x-model="form.first_name" required maxlength="80" autocomplete="given-name"
-                           class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200">
-                </label>
-                <label class="block text-sm font-semibold">Achternaam
-                    <input type="text" x-model="form.last_name" required maxlength="80" autocomplete="family-name"
-                           class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200">
-                </label>
-                <label class="block text-sm font-semibold">E-mailadres
-                    <input type="email" x-model="form.email" required maxlength="191" autocomplete="email"
-                           class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200">
-                </label>
-                <label class="block text-sm font-semibold">Telefoon <span class="font-normal text-slate-400">(optioneel)</span>
-                    <input type="tel" x-model="form.phone" maxlength="40" autocomplete="tel"
-                           class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200">
-                </label>
+                @foreach ($fields as $field)
+                    <label class="block text-sm font-semibold {{ $field['type'] === 'textarea' ? 'sm:col-span-2' : '' }}">
+                        {{ $field['label'] }}
+                        @unless ($field['required'])<span class="font-normal text-slate-400">(optioneel)</span>@endunless
+                        @if ($field['type'] === 'textarea')
+                            <textarea x-model="answers[@js($field['key'])]" rows="3" maxlength="2000" @required($field['required'])
+                                      placeholder="{{ $field['placeholder'] }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200"></textarea>
+                        @else
+                            <input type="{{ $field['type'] }}" x-model="answers[@js($field['key'])]" @required($field['required'])
+                                   maxlength="255" placeholder="{{ $field['placeholder'] }}"
+                                   autocomplete="{{ ['first_name' => 'given-name', 'last_name' => 'family-name', 'email' => 'email', 'phone' => 'tel', 'website' => 'url'][$field['target']] ?? 'off' }}"
+                                   class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200">
+                        @endif
+                    </label>
+                @endforeach
             </div>
-            <label class="block text-sm font-semibold">Website <span class="font-normal text-slate-400">(optioneel)</span>
-                <input type="text" x-model="form.website" maxlength="255" placeholder="www.jouwbedrijf.be" autocomplete="url"
-                       class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200">
-            </label>
-            <label class="block text-sm font-semibold">Wat hoop je uit dit gesprek te halen? <span class="font-normal text-slate-400">(optioneel)</span>
-                <textarea x-model="form.message" rows="3" maxlength="1000"
-                          class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200"></textarea>
-            </label>
             {{-- Honeypot --}}
-            <input type="text" x-model="form.hp" tabindex="-1" autocomplete="off" aria-hidden="true" class="absolute -left-[9999px] h-0 w-0 opacity-0">
+            <input type="text" x-model="hp" tabindex="-1" autocomplete="off" aria-hidden="true" class="absolute -left-[9999px] h-0 w-0 opacity-0">
 
             <p x-show="formError" x-cloak class="text-sm font-semibold text-red-600" x-text="formError" role="alert"></p>
 
@@ -133,13 +125,18 @@
                 // Eerste dag van de getoonde maand.
                 cursor: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
                 today: new Date(),
-                form: { first_name: cfg.prefill.first_name || '', last_name: '', email: cfg.prefill.email || '', phone: '', website: '', message: '', hp: '' },
+                section: cfg.section,
+                fields: cfg.fields,
+                answers: Object.fromEntries(cfg.fields.map(f => [f.key, ''])),
+                hp: '',
 
-                init() { this.load(); },
+                init() { this.applyPrefill(cfg.prefill); this.load(); },
 
+                // Voornaam en e-mail uit de omzetcheck vullen het overeenkomstige veld in.
                 applyPrefill(d) {
-                    if (d?.first_name && ! this.form.first_name) this.form.first_name = d.first_name;
-                    if (d?.email && ! this.form.email) this.form.email = d.email;
+                    for (const f of this.fields) {
+                        if (['first_name', 'email'].includes(f.target) && d?.[f.target] && ! this.answers[f.key]) this.answers[f.key] = d[f.target];
+                    }
                 },
 
                 pad(n) { return String(n).padStart(2, '0'); },
@@ -201,7 +198,7 @@
                         const r = await fetch(this.urls.store, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-                            body: JSON.stringify({ ...this.form, calendar: this.calendar, start: this.chosen }),
+                            body: JSON.stringify({ section: this.section, start: this.chosen, answers: this.answers, hp: this.hp }),
                         });
                         if (r.ok) { this.done = true; this.sending = false; return; }
                         if (r.status === 409) {
@@ -211,7 +208,7 @@
                             this.day = null;
                             await this.load();
                         } else if (r.status === 422) {
-                            this.formError = 'Controleer je gegevens (naam en e-mailadres zijn verplicht).';
+                            this.formError = 'Controleer je gegevens: vul de verplichte velden in en een geldig e-mailadres.';
                         } else {
                             this.formError = 'Het boeken is niet gelukt. Probeer het opnieuw of mail naar pieter@dewebgoeroe.be.';
                         }
