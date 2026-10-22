@@ -148,7 +148,7 @@
                                 @keydown.escape.window="open && close()"
                                 class="text-center">
                                 <button type="button" @click="show()"
-                                        class="inline-flex items-center justify-center rounded-xl bg-violet-600 px-8 py-4 text-base font-bold text-white shadow-lg transition hover:bg-violet-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-300">
+                                        class="inline-flex cursor-pointer items-center justify-center rounded-xl bg-violet-600 px-8 py-4 text-base font-bold text-white shadow-lg transition hover:bg-violet-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-300">
                                     {{ $popupLabel }}
                                 </button>
 
@@ -159,7 +159,7 @@
                                          @click.self="close()">
                                         <div class="relative flex max-h-full w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
                                             <button type="button" @click="close()" aria-label="Sluiten"
-                                                    class="absolute right-3 top-3 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200">
+                                                    class="absolute right-3 top-3 z-10 inline-flex cursor-pointer h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200">
                                                 <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                                             </button>
                                             <div class="relative min-h-[70vh] flex-1">
