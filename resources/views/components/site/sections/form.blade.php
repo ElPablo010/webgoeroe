@@ -20,7 +20,9 @@
     <div class="mx-auto max-w-6xl px-6 py-20 md:py-28">
         <div class="grid gap-12 @unless ($isStacked) md:grid-cols-2 md:items-start @endunless">
 
-            <div @unless ($isStacked) class="{{ $textOrder }}" @endunless>
+            {{-- Onder de tekst: tekst gecentreerd en het formulier smaller, zodat het
+                 niet over de volle breedte van de pagina loopt. --}}
+            <div class="{{ $isStacked ? 'mx-auto max-w-2xl text-center' : $textOrder }}">
                 @if (! empty($content['eyebrow']))
                     <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/[0.07] px-3 py-1">
                         <span class="text-xs font-semibold tracking-wider text-cyan-400">{{ $content['eyebrow'] }}</span>
@@ -34,7 +36,7 @@
                     @endif
                 @endif
                 @if (! empty($content['intro']))
-                    <div class="prose mt-4 max-w-none {{ $isDark ? 'prose-invert prose-p:text-white/50' : '' }}">{!! $content['intro'] !!}</div>
+                    <div class="prose mt-4 {{ $isStacked ? 'mx-auto max-w-2xl' : 'max-w-none' }} {{ $isDark ? 'prose-invert prose-p:text-white/50' : '' }}">{!! $content['intro'] !!}</div>
                 @endif
 
                 @php
@@ -61,7 +63,7 @@
                 @endphp
 
                 @if (! empty($contactItems))
-                    <div class="mt-8 flex flex-col gap-6">
+                    <div class="mt-8 flex {{ $isStacked ? 'flex-wrap justify-center gap-x-10 gap-y-6 text-left' : 'flex-col gap-6' }}">
                         @foreach ($contactItems as $item)
                             <div class="flex items-start gap-3">
                                 <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full {{ $isDark ? 'bg-white/[0.07]' : 'bg-cyan-50' }}">
@@ -87,7 +89,7 @@
                 @endif
             </div>
 
-            <div @unless ($isStacked) class="{{ $formOrder }}" @endunless>
+            <div class="{{ $isStacked ? 'mx-auto w-full max-w-2xl' : $formOrder }}">
                 @if ($formComponent)
                     {{-- Parameters uit het register (o.a. "Telefoonnummer verplicht"). --}}
                     @livewire($formComponent, \Webgoeroe\Core\Core::formTypes()->params($formType, $content, $section))

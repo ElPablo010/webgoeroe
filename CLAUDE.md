@@ -275,7 +275,20 @@ De velden komen bij het boeken uit de sectie zelf, nooit uit de browser; zonder 
 `BookingForm::defaults()`, en een e-mailveld is er altijd. Token-scopes daarvoor:
 `locations/customFields.readonly` + `.write`. Op Combell staat `LOG_LEVEL=error`, dus
 GHL-fouten loggen als error.
-`bootstrap/app.php` rendert JSON-fouten voor `boeking`. Nieuwe Tailwind-klassen in een
+De tekst onder "Kies een dag en uur" is per sectie instelbaar (`calendar_note`, leeg = "30 minuten, online.").
+`bootstrap/app.php` rendert JSON-fouten voor `boeking`.
+
+## Wisselen met een ander blok
+
+Elk bloktype heeft onderaan "Wisselen met een ander blok" (`swap_with`, `swap_label`,
+`swap_hidden`, toegevoegd in `AppServiceProvider::sectionSwapFields()`). Twee blokken
+met een anker die direct onder elkaar staan en naar elkaar verwijzen, worden in
+`pages/show.blade.php` één groep met twee knoppen erboven; er is altijd één blok
+zichtbaar (Alpine, `#anker` in de URL opent het juiste). Logica in
+[`SectionSwap`](app/Support/SectionSwap.php): een onbekend anker of blokken die niet
+naast elkaar staan vormen geen paar, er verdwijnt dus nooit inhoud.
+Voorbeeld: startformulier + agenda op `/speed-to-lead-elektriciens`.
+Tests: `tests/Feature/SectionSwapTest.php`. Nieuwe Tailwind-klassen in een
 nieuwe view: lokaal `npm run build` (en `public/hot` weg als er geen Vite draait).
 Tests: `tests/Feature/OwnBookingTest.php`.
 

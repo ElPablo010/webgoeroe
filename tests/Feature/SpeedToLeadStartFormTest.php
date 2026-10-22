@@ -4,6 +4,7 @@ use App\Livewire\Forms\SpeedToLeadStartForm;
 use App\Models\FormSubmission;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
 use Livewire\Livewire;
 
 /**
@@ -29,6 +30,7 @@ function speedToLeadForm(): \Livewire\Features\SupportTesting\Testable
 }
 
 it('bewaart de inzending en zet het contact met tag in GoHighLevel', function () {
+    Mail::fake();
     Http::fake(['ghl.test/*' => Http::response(['contact' => ['id' => 'c-1']])]);
 
     speedToLeadForm()->call('submit')->assertSet('sent', true);
@@ -42,6 +44,9 @@ it('bewaart de inzending en zet het contact met tag in GoHighLevel', function ()
         && $r['companyName'] === 'Elektro Janssen'
         && $r['phone'] === '+32 478 00 00 00'
         && $r['tags'] === ['lp-elektriciens-start']);
+
+    // De melding komt dan uit GoHighLevel, niet van de site.
+    Mail::assertNothingSent();
 });
 
 it('vraagt naam, bedrijf, e-mail en gsm', function () {
@@ -54,10 +59,13 @@ it('vraagt naam, bedrijf, e-mail en gsm', function () {
     Http::assertNothingSent();
 });
 
-it('toont de bedankboodschap ook als GoHighLevel faalt', function () {
+it('toont de bedankboodschap en mailt zelf als GoHighLevel faalt', function () {
+    Mail::fake();
+    config(['mail.notify_to' => 'pieter@voorbeeld.be']);
     Http::fake(['ghl.test/*' => Http::response('fout', 500)]);
 
     speedToLeadForm()->call('submit')->assertSet('sent', true);
 
     expect(FormSubmission::where('type', 'speed_to_lead_start')->count())->toBe(1);
+    Mail::assertSentCount(1);
 });

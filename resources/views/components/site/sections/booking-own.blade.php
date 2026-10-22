@@ -1,4 +1,4 @@
-@props(['calendarId', 'sectionId' => null, 'fields' => [], 'prefill' => [], 'buttonClass' => ''])
+@props(['calendarId', 'sectionId' => null, 'fields' => [], 'prefill' => [], 'buttonClass' => '', 'note' => null])
 
 {{-- Eigen boekingsscherm op een GoHighLevel-agenda: maandkalender, tijdstippen als
      knoppen (geen scrollbalk) en een kort formulier. Tijdstippen en boeking lopen
@@ -20,7 +20,7 @@
     <div x-show="! done">
         <div x-show="! chosen">
             <h3 class="text-lg font-extrabold">Kies een dag en uur</h3>
-            <p class="mt-1 text-sm text-slate-500">30 minuten, online.</p>
+            <p class="mt-1 text-sm text-slate-500">{{ filled($note) ? $note : '30 minuten, online.' }}</p>
 
             <div class="mt-5 grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,14rem)]">
                 {{-- Maandkalender --}}

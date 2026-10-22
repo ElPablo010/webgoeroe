@@ -71,8 +71,11 @@ class SpeedToLeadStartForm extends Component
             'ip' => request()->ip(),
         ]);
 
-        ContactForm::notifyOwner($submission);
-        $ghl->send($data);
+        // De melding naar Pieter komt uit GoHighLevel (workflow 1.3). Enkel als het
+        // contact daar niet aankomt, mailt de site zelf, zodat geen aanvraag verloren gaat.
+        if (! $ghl->send($data)) {
+            ContactForm::notifyOwner($submission);
+        }
 
         $this->sent = true;
         $this->reset(['name', 'company', 'email', 'phone']);

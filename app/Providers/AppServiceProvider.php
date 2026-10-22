@@ -80,6 +80,29 @@ class AppServiceProvider extends ServiceProvider
             // GoHighLevel kan als iframe in de pagina (standaard), achter een knop in een
             // pop-up, of als eigen kalender op de site (vrije momenten via de GHL-API): dan breekt de GHL-agenda de paginalayout niet en is er geen scroll-in-scroll.
             ->extend('booking', function (array $fields): array {
+                // Opmaak in dezelfde woorden en op dezelfde plek als bij het formulierblok:
+                // na de tekstvelden, net vóór de agenda-instellingen. Badge en vinkjes
+                // gelden voor beide opmaken (de core toont ze enkel bij "hero").
+                $layout = null;
+                foreach ($fields as $i => $field) {
+                    if ($field instanceof Select && $field->getName() === 'layout') {
+                        $layout = $field->label('Layout (op brede schermen)')->options([
+                            'hero' => 'Naast de tekst (kalender rechts)',
+                            'section' => 'Onder de tekst (gecentreerd)',
+                        ]);
+                        unset($fields[$i]);
+                    }
+                    if (is_object($field) && method_exists($field, 'getName') && in_array($field->getName(), ['badge', 'benefits'], true)) {
+                        $field->visible(true);
+                    }
+                }
+                $fields = array_values($fields);
+                if ($layout) {
+                    $providerGrid = collect($fields)->search(fn ($f) => $f instanceof Grid
+                        && collect($f->getDefaultChildComponents())->contains(fn ($c) => is_object($c) && method_exists($c, 'getName') && $c->getName() === 'provider'));
+                    array_splice($fields, $providerGrid === false ? count($fields) : $providerGrid, 0, [$layout]);
+                }
+
                 $fields[] = Grid::make(['default' => 1, 'md' => 2])
                     ->schema([
                         Select::make('ghl_display')
@@ -97,6 +120,12 @@ class AppServiceProvider extends ServiceProvider
                             ->default('Kies een moment')
                             ->maxLength(80)
                             ->visible(fn (\Filament\Schemas\Components\Utilities\Get $get): bool => $get('ghl_display') === 'popup'),
+                        TextInput::make('calendar_note')
+                            ->label('Tekst onder "Kies een dag en uur"')
+                            ->placeholder('30 minuten, online.')
+                            ->helperText('Leeg = "30 minuten, online."')
+                            ->maxLength(80)
+                            ->visible(fn (\Filament\Schemas\Components\Utilities\Get $get): bool => $get('ghl_display') === 'own'),
                     ])
                     ->visible(fn (\Filament\Schemas\Components\Utilities\Get $get): bool => $get('provider') === 'ghl');
 
@@ -218,7 +247,7 @@ class AppServiceProvider extends ServiceProvider
                         ]),
                 ]);
 
-                return $fields;
+                return self::formTypeAndLayoutSideBySide($fields);
             })
             // Video naast de tekst (YouTube/Vimeo of mp4), in de plaats van de
             // afbeelding. Enkel bij "Beeld naast de tekst"; leeg = de afbeelding.
@@ -250,6 +279,82 @@ class AppServiceProvider extends ServiceProvider
 
                 return $fields;
             });
+
+        // Op elk bloktype: twee blokken die op dezelfde plek afwisselen, met twee
+        // knoppen erboven (App\Support\SectionSwap). Bv. startformulier en agenda.
+        foreach (Core::blocks()->types() as $type) {
+            Core::blocks()->extend($type, fn (array $fields): array => [...$fields, self::sectionSwapFields()]);
+        }
+    }
+
+    /**
+     * Formulierblok: "Formulier" en "Layout (op brede schermen)" naast elkaar. In de core
+     * staan ze elk in een eigen raster (naast "Telefoonnummer verplicht"); hier zetten we
+     * de twee keuzes samen en de schakelaar eronder. Vindt het die velden niet (andere
+     * core-versie), dan blijft alles zoals het was.
+     *
+     * @param  array<int, mixed>  $fields
+     * @return array<int, mixed>
+     */
+    protected static function formTypeAndLayoutSideBySide(array $fields): array
+    {
+        $children = fn (mixed $c): array => $c instanceof Grid && is_array($c->getDefaultChildComponents()) ? $c->getDefaultChildComponents() : [];
+        $named = fn (array $list, string $name): ?object => collect($list)->first(fn ($f) => is_object($f) && method_exists($f, 'getName') && $f->getName() === $name);
+
+        $typeIndex = $layoutIndex = null;
+        foreach ($fields as $i => $field) {
+            if ($named($children($field), 'form_type')) {
+                $typeIndex = $i;
+            }
+            if ($named($children($field), 'form_layout')) {
+                $layoutIndex = $i;
+            }
+        }
+
+        if ($typeIndex === null || $layoutIndex === null || $typeIndex === $layoutIndex) {
+            return $fields;
+        }
+
+        $typeChildren = $children($fields[$typeIndex]);
+        $type = $named($typeChildren, 'form_type');
+        $layout = $named($children($fields[$layoutIndex]), 'form_layout');
+        $rest = array_values(array_filter($typeChildren, fn ($f) => $f !== $type));
+
+        $fields[$typeIndex] = Grid::make(['default' => 1, 'md' => 2])->schema([$type, $layout]);
+        $fields[$layoutIndex] = $rest ? Grid::make(['default' => 1, 'md' => 2])->schema($rest) : null;
+
+        return array_values(array_filter($fields));
+    }
+
+    /**
+     * Velden "Wisselen met een ander blok". Het andere blok moet een anker hebben en
+     * direct voor of na dit blok staan; anders gebeurt er niets (geen verborgen inhoud).
+     */
+    protected static function sectionSwapFields(): Section
+    {
+        return Section::make('Wisselen met een ander blok')
+            ->description('Twee blokken op dezelfde plek, met twee knoppen erboven om te wisselen. Geef beide blokken een anker-ID en zet ze direct onder elkaar.')
+            ->collapsible()
+            ->collapsed()
+            ->schema([
+                Grid::make(['default' => 1, 'md' => 2])
+                    ->schema([
+                        TextInput::make('swap_with')
+                            ->label('Wisselen met (anker-ID van het andere blok)')
+                            ->placeholder('bv. afspraak')
+                            ->maxLength(64)
+                            ->regex('/^[a-z0-9\-]*$/i')
+                            ->validationMessages(['regex' => 'Enkel letters, cijfers en streepjes.']),
+                        TextInput::make('swap_label')
+                            ->label('Knoptekst voor dit blok')
+                            ->placeholder('bv. Ik wil starten')
+                            ->helperText('Leeg = de titel van het blok.')
+                            ->maxLength(60),
+                    ]),
+                Toggle::make('swap_hidden')
+                    ->label('Eerst verborgen')
+                    ->helperText('Aan = dit blok verschijnt pas na een klik op zijn knop.'),
+            ]);
     }
 
     /**

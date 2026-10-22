@@ -89,8 +89,14 @@
                 </div>
 
                 <div>
-        @elseif (! empty($content['eyebrow']) || ! empty($content['heading']) || ! empty($content['intro']))
+        @elseif (! empty($content['eyebrow']) || ! empty($content['heading']) || ! empty($content['intro']) || ! empty($content['badge']) || ! empty($benefits))
             <div class="mb-10 text-center">
+                @if (! empty($content['badge']))
+                    <div class="mb-6 inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/[0.07] px-4 py-1.5">
+                        <span class="h-1.5 w-1.5 rounded-full bg-cyan-400"></span>
+                        <span class="text-xs font-semibold uppercase tracking-wider text-cyan-400">{{ $content['badge'] }}</span>
+                    </div>
+                @endif
                 @if (! empty($content['eyebrow']))
                     <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/[0.07] px-3 py-1">
                         <span class="text-xs font-semibold tracking-wider text-cyan-400">{{ $content['eyebrow'] }}</span>
@@ -107,6 +113,20 @@
                     <div class="prose mx-auto mt-4 max-w-2xl {{ $isDark ? 'prose-invert prose-p:text-white/50' : '' }}">
                         {!! $intro !!}
                     </div>
+                @endif
+                @if (! empty($benefits))
+                    <ul class="mt-6 flex flex-wrap justify-center gap-x-6 gap-y-3">
+                        @foreach ($benefits as $benefit)
+                            <li class="flex items-center gap-2 {{ $isDark ? 'text-white/70' : 'text-slate-700' }}">
+                                <span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-cyan-400/20 bg-cyan-400/[0.08]">
+                                    <svg class="h-3.5 w-3.5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                </span>
+                                <span class="text-sm font-medium">{{ $benefit }}</span>
+                            </li>
+                        @endforeach
+                    </ul>
                 @endif
             </div>
         @endif
@@ -130,7 +150,7 @@
                         <link rel="preconnect" href="https://api.leadconnectorhq.com">
                         @if ($ghlOwn)
                             {{-- Eigen kalender: geen iframe, de site toont zelf de vrije momenten (BookingController). --}}
-                            <x-site.sections.booking-own :calendar-id="\App\Http\Controllers\BookingController::calendarId($content)" :section-id="$section?->id" :fields="\App\Support\BookingForm::fields($content)" :prefill="$ghlParams" />
+                            <x-site.sections.booking-own :calendar-id="\App\Http\Controllers\BookingController::calendarId($content)" :section-id="$section?->id" :fields="\App\Support\BookingForm::fields($content)" :prefill="$ghlParams" :note="$content['calendar_note'] ?? null" />
                         @elseif ($ghlPopup)
                             {{-- Pop-up: de iframe laadt pas bij het openen en heeft zijn eigen scroll
                                  binnen het venster, dus de pagina zelf blijft rustig. Andere knoppen op
