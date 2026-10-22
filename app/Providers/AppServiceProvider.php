@@ -65,9 +65,33 @@ class AppServiceProvider extends ServiceProvider
             // zodat een boeking onder hetzelfde contact in GHL landt (workflows
             // stoppen dan de opvolging). URL = de iframe-URL van de agenda.
             ->configure('booking', [
-                'providers' => ['calcom' => 'Cal.com', 'calendly' => 'Calendly', 'ghl' => 'GoHighLevel-agenda'],
+                'providers' => ['calcom' => 'Cal.com', 'calendly' => 'Calendly', 'ghl' => 'GoHighLevel'],
                 'url_providers' => ['calcom', 'calendly', 'ghl'],
             ])
+            // GoHighLevel kan als iframe in de pagina (standaard) of achter een knop in een
+            // pop-up: dan breekt de GHL-agenda de paginalayout niet en is er geen scroll-in-scroll.
+            ->extend('booking', function (array $fields): array {
+                $fields[] = Grid::make(['default' => 1, 'md' => 2])
+                    ->schema([
+                        Select::make('ghl_display')
+                            ->label('Weergave (GoHighLevel)')
+                            ->options([
+                                'iframe' => 'Iframe in de pagina',
+                                'popup' => 'Pop-up achter een knop',
+                            ])
+                            ->default('iframe')
+                            ->selectablePlaceholder(false)
+                            ->live(),
+                        TextInput::make('popup_button_label')
+                            ->label('Knoptekst pop-up')
+                            ->default('Kies een moment')
+                            ->maxLength(80)
+                            ->visible(fn (\Filament\Schemas\Components\Utilities\Get $get): bool => $get('ghl_display') === 'popup'),
+                    ])
+                    ->visible(fn (\Filament\Schemas\Components\Utilities\Get $get): bool => $get('provider') === 'ghl');
+
+                return $fields;
+            })
             ->register('calculator', 'Calculator (gemiste omzet)', CalculatorFields::class)
             ->register('conversion_calculator', 'Calculator (website-conversie)', ConversionCalculatorFields::class)
             ->register('case_results', 'Case-resultaten', CaseResultsFields::class)

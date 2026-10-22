@@ -33,6 +33,9 @@
         ? ltrim(parse_url($url, PHP_URL_PATH), '/')
         : null;
 
+    $ghlPopup = $provider === 'ghl' && ($content['ghl_display'] ?? 'iframe') === 'popup';
+    $popupLabel = trim((string) ($content['popup_button_label'] ?? '')) ?: 'Kies een moment';
+
     $uid = 'cal-' . ($section?->id ?? uniqid());
 @endphp
 
@@ -123,6 +126,60 @@
                             $ghlSrc = $url.($ghlParams ? (str_contains($url, '?') ? '&' : '?').http_build_query($ghlParams) : '');
                         @endphp
                         <link rel="preconnect" href="https://api.leadconnectorhq.com">
+                        @if ($ghlPopup)
+                            {{-- Pop-up: de iframe laadt pas bij het openen en heeft zijn eigen scroll
+                                 binnen het venster, dus de pagina zelf blijft rustig. Andere knoppen op
+                                 de pagina kunnen hem openen met window.dispatchEvent(new Event('open-booking')). --}}
+                            <div x-data="{
+                                    open: false,
+                                    src: @js($ghlSrc),
+                                    loaded: false,
+                                    prefill(d) {
+                                        const u = new URL(this.src, window.location.href);
+                                        if (d?.first_name) u.searchParams.set('first_name', d.first_name);
+                                        if (d?.email) u.searchParams.set('email', d.email);
+                                        this.src = u.toString();
+                                    },
+                                    show() { this.open = true; document.body.classList.add('overflow-hidden'); },
+                                    close() { this.open = false; document.body.classList.remove('overflow-hidden'); }
+                                }"
+                                @omzetcheck-unlocked.window="prefill($event.detail)"
+                                @open-booking.window="show()"
+                                @keydown.escape.window="open && close()"
+                                class="text-center">
+                                <button type="button" @click="show()"
+                                        class="inline-flex items-center justify-center rounded-xl bg-violet-600 px-8 py-4 text-base font-bold text-white shadow-lg transition hover:bg-violet-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-300">
+                                    {{ $popupLabel }}
+                                </button>
+
+                                <template x-teleport="body">
+                                    <div x-show="open" x-cloak x-transition.opacity
+                                         class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 p-3 sm:p-6"
+                                         role="dialog" aria-modal="true" aria-label="Kies een moment voor je gesprek"
+                                         @click.self="close()">
+                                        <div class="relative flex max-h-full w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+                                            <button type="button" @click="close()" aria-label="Sluiten"
+                                                    class="absolute right-3 top-3 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200">
+                                                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                            </button>
+                                            <div class="relative min-h-[70vh] flex-1">
+                                                <div x-show="! loaded" class="absolute inset-0 flex flex-col items-center justify-center gap-3">
+                                                    <svg class="h-6 w-6 animate-spin text-slate-300" fill="none" viewBox="0 0 24 24">
+                                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/>
+                                                    </svg>
+                                                    <span class="text-sm font-medium text-slate-400">Kalender laden…</span>
+                                                </div>
+                                                <template x-if="open">
+                                                    <iframe :src="src" @load="loaded = true" title="Kies een moment voor je gesprek"
+                                                            class="relative h-[85vh] w-full border-0"></iframe>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        @else
                         <div x-data="{
                                 src: @js($ghlSrc),
                                 prefill(d) {
@@ -154,6 +211,7 @@
                             <iframe src="{{ $ghlSrc }}" :src="src" title="Kies een moment voor je gesprek" class="relative w-full border-0"
                                     style="min-width:320px; height:{{ $height }}px;"></iframe>
                         </div>
+                        @endif
                     @elseif ($provider === 'calcom' && $calLink)
                         {{-- Cal.com inline embed --}}
                         <div id="{{ $uid }}" class="w-full overflow-hidden rounded-2xl" style="height:{{ $height }}px;"></div>
