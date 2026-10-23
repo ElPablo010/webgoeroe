@@ -36,7 +36,7 @@
                 get yearly() { return this.weekly * 52 },
                 fmt(n) { return new Intl.NumberFormat('nl-BE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n) }
             }"
-            class="grid gap-8 rounded-3xl border border-white/[0.08] bg-white/[0.04] p-6 backdrop-blur-sm md:grid-cols-2 md:p-10"
+            class="grid gap-8 rounded-3xl border border-white/[0.08] bg-white/[0.04] p-6 md:grid-cols-2 md:p-10"
         >
             <div class="space-y-6">
                 <label class="block text-sm font-medium text-white/60">Gemiste oproepen per week

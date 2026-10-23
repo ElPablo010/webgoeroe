@@ -65,7 +65,7 @@
                 <div
                     data-reveal-scale
                     style="animation-delay: {{ min($index, 5) * 70 }}ms"
-                    class="flex w-full shrink-0 snap-start flex-col sm:w-[calc((100%-1.25rem)/2)] lg:w-[calc((100%-2.5rem)/3)] rounded-2xl border border-white/[0.08] bg-white/[0.04] p-7 backdrop-blur-sm {{ $isDark ? '' : 'border-slate-100 bg-white shadow-sm' }}"
+                    class="flex w-full shrink-0 snap-start flex-col sm:w-[calc((100%-1.25rem)/2)] lg:w-[calc((100%-2.5rem)/3)] rounded-2xl border border-white/[0.08] bg-white/[0.04] p-7 {{ $isDark ? '' : 'border-slate-100 bg-white shadow-sm' }}"
                 >
 
                     {{-- Sterren --}}

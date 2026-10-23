@@ -29,7 +29,7 @@
                 <div
                     data-reveal
                     style="animation-delay: {{ min($index, 5) * 70 }}ms"
-                    class="flex flex-col rounded-2xl border border-white/[0.08] bg-white/[0.04] p-7 backdrop-blur-sm transition-all duration-300 hover:border-white/[0.14] hover:bg-white/[0.06]"
+                    class="flex flex-col rounded-2xl border border-white/[0.08] bg-white/[0.04] p-7 transition-all duration-300 hover:border-white/[0.14] hover:bg-white/[0.06]"
                 >
                     @if (! empty($problem['icon']))
                         @php $iconComponent = 'lucide-' . str_replace(['_', ' '], '-', strtolower($problem['icon'])); @endphp

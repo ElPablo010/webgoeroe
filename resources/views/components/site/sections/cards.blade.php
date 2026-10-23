@@ -49,7 +49,7 @@
                     @if ($isHidden) x-show="expanded" @endif
                     data-reveal
                     style="animation-delay: {{ min($index, 5) * 70 }}ms"
-                    class="group flex flex-col rounded-2xl border border-white/[0.08] bg-white/[0.04] p-7 backdrop-blur-sm transition-all duration-300 hover:border-white/[0.14] hover:bg-white/[0.06] hover:shadow-[0_0_0_1px_rgba(34,211,238,0.1),0_8px_40px_rgba(34,211,238,0.04)]"
+                    class="group flex flex-col rounded-2xl border border-white/[0.08] bg-white/[0.04] p-7 transition-all duration-300 hover:border-white/[0.14] hover:bg-white/[0.06] hover:shadow-[0_0_0_1px_rgba(34,211,238,0.1),0_8px_40px_rgba(34,211,238,0.04)]"
                 >
                     @if (($card['media_type'] ?? 'icon') === 'image' && ! empty($card['image']))
                         <picture>
