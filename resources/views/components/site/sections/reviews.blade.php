@@ -27,12 +27,45 @@
             </div>
         @endif
 
-        <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {{-- Altijd een slider (swipen, met scroll-snap): één review per scherm op
+             een gsm, twee op een tablet, drie op brede schermen. Wat er niet
+             naast past, schuif je erbij; de bolletjes tonen de posities. --}}
+        <div
+            x-data="{
+                active: 0,
+                positions: 1,
+                step() {
+                    const card = this.$refs.track.firstElementChild;
+                    return card ? card.offsetWidth + parseFloat(getComputedStyle(this.$refs.track).columnGap || 0) : 1;
+                },
+                measure() {
+                    const track = this.$refs.track;
+                    const perView = Math.max(1, Math.round((track.clientWidth + parseFloat(getComputedStyle(track).columnGap || 0)) / this.step()));
+                    this.positions = Math.max(1, track.children.length - perView + 1);
+                    this.update();
+                },
+                update() {
+                    const track = this.$refs.track;
+                    const atEnd = track.scrollLeft + track.clientWidth >= track.scrollWidth - 2;
+                    this.active = atEnd ? this.positions - 1 : Math.round(track.scrollLeft / this.step());
+                },
+                go(index) {
+                    this.$refs.track.scrollTo({ left: index * this.step(), behavior: 'smooth' });
+                },
+            }"
+            x-init="measure()"
+            @resize.window.debounce.100ms="measure()"
+        >
+        <div
+            x-ref="track"
+            @scroll.debounce.50ms="update()"
+            class="flex snap-x snap-mandatory gap-5 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
             @foreach ($items as $index => $item)
                 <div
                     data-reveal-scale
                     style="animation-delay: {{ min($index, 5) * 70 }}ms"
-                    class="flex flex-col rounded-2xl border border-white/[0.08] bg-white/[0.04] p-7 backdrop-blur-sm {{ $isDark ? '' : 'border-slate-100 bg-white shadow-sm' }}"
+                    class="flex w-full shrink-0 snap-start flex-col sm:w-[calc((100%-1.25rem)/2)] lg:w-[calc((100%-2.5rem)/3)] rounded-2xl border border-white/[0.08] bg-white/[0.04] p-7 backdrop-blur-sm {{ $isDark ? '' : 'border-slate-100 bg-white shadow-sm' }}"
                 >
 
                     {{-- Sterren --}}
@@ -81,6 +114,39 @@
                     </div>
                 </div>
             @endforeach
+        </div>
+
+        <div x-show="positions > 1" x-cloak class="mt-6 flex items-center justify-center gap-4">
+            <button
+                type="button"
+                @click="go(active - 1)"
+                :disabled="active === 0"
+                class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border transition-colors disabled:cursor-not-allowed disabled:opacity-30 {{ $isDark ? 'border-white/15 text-white hover:bg-white/10' : 'border-slate-300 text-slate-900 hover:bg-slate-100' }}"
+                aria-label="Vorige review"
+            >
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+            </button>
+            <div class="flex items-center gap-2">
+            <template x-for="index in positions" :key="index">
+                <button
+                    type="button"
+                    @click="go(index - 1)"
+                    :class="active === index - 1 ? 'w-6 bg-cyan-400' : 'w-2 {{ $isDark ? 'bg-white/20' : 'bg-slate-300' }}'"
+                    class="h-2 cursor-pointer rounded-full transition-all"
+                    :aria-label="'Toon review ' + index"
+                ></button>
+            </template>
+            </div>
+            <button
+                type="button"
+                @click="go(active + 1)"
+                :disabled="active === positions - 1"
+                class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border transition-colors disabled:cursor-not-allowed disabled:opacity-30 {{ $isDark ? 'border-white/15 text-white hover:bg-white/10' : 'border-slate-300 text-slate-900 hover:bg-slate-100' }}"
+                aria-label="Volgende review"
+            >
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+            </button>
+        </div>
         </div>
     </div>
 </x-site.sections.wrapper>
