@@ -58,7 +58,7 @@
 
         @if (! empty($content['closing']))
             <div class="mx-auto mt-16 max-w-4xl text-center md:mt-20" data-reveal>
-                <div class="text-lg leading-relaxed text-white/60 [&_strong]:font-semibold [&_strong]:text-white/90">
+                <div class="text-xl leading-relaxed text-white/60 [&_strong]:font-semibold [&_strong]:text-white/90">
                     {!! $content['closing'] !!}
                 </div>
 
