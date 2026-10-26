@@ -6,6 +6,7 @@ use App\Mcp\Tools\CreateCase;
 use App\Mcp\Tools\CreatePost;
 use App\Mcp\Tools\ListCases;
 use App\Mcp\Tools\ListPosts;
+use App\Mcp\Tools\PreviewImage;
 use App\Mcp\Tools\PublishCase;
 use App\Mcp\Tools\PublishPost;
 use App\Mcp\Tools\UnpublishCase;
@@ -78,6 +79,7 @@ class CmsServer extends Server
         // Gedeeld
         UploadMediaFromUrl::class,
         UploadMediaFile::class,
+        PreviewImage::class,
     ];
 
     protected array $resources = [
