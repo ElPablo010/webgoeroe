@@ -22,7 +22,7 @@ class OmzetcheckContact
     }
 
     /**
-     * @param  array{first_name: string, email: string, sector: string, amount: string, extra_leads: string}  $data
+     * @param  array{first_name: string, email: string, sector: string, amount: string, extra_leads: string, attribution?: string}  $data
      */
     public function send(array $data): bool
     {
@@ -45,6 +45,9 @@ class OmzetcheckContact
                     ['id' => $cfg['fields']['amount'], 'field_value' => $data['amount']],
                     ['id' => $cfg['fields']['extra_leads'], 'field_value' => $data['extra_leads']],
                     ['id' => $cfg['fields']['sector'], 'field_value' => $data['sector']],
+                    ...(filled(config('services.gohighlevel.attribution_field')) && filled($data['attribution'] ?? null)
+                        ? [['id' => config('services.gohighlevel.attribution_field'), 'field_value' => $data['attribution']]]
+                        : []),
                 ],
             ]);
 

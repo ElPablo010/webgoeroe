@@ -195,13 +195,14 @@
                 async submit() {
                     this.sending = true;
                     this.formError = '';
+                    const tracking = window.wgTracking ? window.wgTracking.payload() : null;
                     try {
                         const r = await fetch(this.urls.store, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-                            body: JSON.stringify({ section: this.section, start: this.chosen, answers: this.answers, hp: this.hp }),
+                            body: JSON.stringify({ section: this.section, start: this.chosen, answers: this.answers, hp: this.hp, tracking: tracking }),
                         });
-                        if (r.ok) { this.done = true; this.sending = false; return; }
+                        if (r.ok) { if (window.wgTracking) window.wgTracking.fire('Schedule', tracking); this.done = true; this.sending = false; return; }
                         if (r.status === 409) {
                             this.formError = 'Dit moment is net bezet. Kies een ander moment.';
                             this.chosen = null;

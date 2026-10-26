@@ -61,6 +61,7 @@
                 get sectorLabel() { return this.sectors.find(s => s.key === this.sector)?.label ?? this.sector },
                 async submit() {
                     this.error = ''; this.sending = true;
+                    const tracking = window.wgTracking ? window.wgTracking.payload() : null;
                     try {
                         const r = await fetch(this.endpoint, {
                             method: 'POST',
@@ -68,11 +69,12 @@
                             body: JSON.stringify({
                                 first_name: this.first_name, email: this.email, website: this.website,
                                 sector: this.sectorLabel, visitors: this.visitors, leads: this.leads,
-                                close: this.close, value: this.value, target: this.target
+                                close: this.close, value: this.value, target: this.target, tracking: tracking
                             })
                         });
                         if (r.ok && ! r.redirected) {
                             this.unlocked = true;
+                            if (window.wgTracking) window.wgTracking.fire('Lead', tracking);
                             this.$dispatch('omzetcheck-unlocked', { first_name: this.first_name, email: this.email });
                             return;
                         }

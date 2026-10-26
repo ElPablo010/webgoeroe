@@ -231,6 +231,13 @@ gerenderde HTML controleert. Let op bij het schrijven van zo'n test: "Uitloggen"
 staat twee keer op de pagina, want het accountmenu heeft het ook. De zijbalk-knop
 is de láátste.
 
+## Meta-pixel en serverevents (advertentiemeting)
+
+- **Pixel** ([`meta-pixel.blade.php`](resources/views/components/site/meta-pixel.blade.php), in `<head>` na de GA4-snippet): pas na marketingtoestemming (`cookieConsent.marketing`), `META_PIXEL_ID` leeg = niets laden. Zet ook `window.wgTracking` (`payload()` = herkomst uit de URL [utm_* + sector], toestemming, `_fbp`/`_fbc`, `event_id`; `fire(naam, payload)` = browserevent met hetzelfde `event_id`).
+- **Serverevents** ([`ConversionsApi`](app/Services/Meta/ConversionsApi.php)): `Lead` bij `POST /omzetcheck`, `Schedule` bij `POST /boeking`, via `app()->terminating` (na het antwoord), gehashte e-mail/voornaam, alleen met toestemming + `META_CAPI_TOKEN`. Zelfde `event_id` als de pixel = Meta ontdubbelt. Fouten komen enkel in de log. `.env`: `META_PIXEL_ID` (dataset "De WebGoeroe", 24465117833184736), `META_CAPI_TOKEN`, optioneel `META_TEST_EVENT_CODE` (Events Manager → Test events) en `GHL_FIELD_ATTRIBUTION`.
+- **Herkomst** (UTM + sector) wordt altijd bewaard in de inzending (`data.attribution`) en, met `GHL_FIELD_ATTRIBUTION`, als "bron | campagne | advertentie | sector" op het GHL-contact. Ads linken met `?sector=<sleutel>&utm_source=meta&utm_campaign=…&utm_content=<adnaam>`.
+- Tests: `tests/Feature/MetaTrackingTest.php`.
+
 ## Omzetcheck-gate (website-conversiecalculator)
 
 Het blok `conversion_calculator` vraagt eerst voornaam + e-mail vóór het resultaat

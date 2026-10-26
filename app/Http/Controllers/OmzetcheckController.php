@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\FormSubmission;
 use App\Services\GoHighLevel\OmzetcheckContact;
+use App\Services\Meta\ConversionsApi;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -15,7 +16,7 @@ use Illuminate\Http\Request;
  */
 class OmzetcheckController extends Controller
 {
-    public function store(Request $request, OmzetcheckContact $ghl): JsonResponse
+    public function store(Request $request, OmzetcheckContact $ghl, ConversionsApi $meta): JsonResponse
     {
         // Honeypot: een bot vult het verborgen veld in. Doe alsof het gelukt is.
         if (filled($request->input('website'))) {
@@ -31,7 +32,10 @@ class OmzetcheckController extends Controller
             'close' => ['required', 'numeric', 'min:0', 'max:100'],
             'value' => ['required', 'numeric', 'min:0', 'max:100000000'],
             'target' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            ...ConversionsApi::RULES,
         ]);
+
+        $attribution = ConversionsApi::attribution($request);
 
         $result = self::calculate(
             (float) $data['visitors'],
@@ -56,6 +60,7 @@ class OmzetcheckController extends Controller
                 'value' => $data['value'],
                 'yearly' => round($result['yearly']),
                 'extra_leads' => round($result['extra_leads'], 1),
+                'attribution' => $attribution ?: null,
             ],
             'page_url' => $request->headers->get('referer'),
             'ip' => $request->ip(),
@@ -67,7 +72,10 @@ class OmzetcheckController extends Controller
             'sector' => (string) ($data['sector'] ?? ''),
             'amount' => $amount,
             'extra_leads' => $extra,
+            'attribution' => ConversionsApi::attributionLine($attribution),
         ]);
+
+        app()->terminating(fn () => $meta->send('Lead', $request, ['email' => $data['email'], 'first_name' => $data['first_name']], array_filter(['content_category' => $data['sector'] ?? null])));
 
         return response()->json(['ok' => true]);
     }

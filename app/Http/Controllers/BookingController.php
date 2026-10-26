@@ -6,6 +6,7 @@ use App\Models\FormSubmission;
 use App\Models\PageSection;
 use App\Services\GoHighLevel\CalendarBooking;
 use App\Services\GoHighLevel\ContactFields;
+use App\Services\Meta\ConversionsApi;
 use App\Support\BookingForm;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
@@ -45,7 +46,7 @@ class BookingController extends Controller
         return response()->json(['days' => (object) $days]);
     }
 
-    public function store(Request $request, CalendarBooking $booking): JsonResponse
+    public function store(Request $request, CalendarBooking $booking, ConversionsApi $meta): JsonResponse
     {
         // Honeypot: een bot vult het verborgen veld in. Doe alsof het gelukt is.
         if (filled($request->input('hp'))) {
@@ -56,7 +57,10 @@ class BookingController extends Controller
             'section' => ['required', 'integer'],
             'start' => ['required', 'date'],
             'answers' => ['nullable', 'array'],
+            ...ConversionsApi::RULES,
         ]);
+
+        $attribution = ConversionsApi::attribution($request);
 
         // De velden komen uit de sectie zelf, nooit uit de browser: wat de bezoeker
         // instuurt bepaalt enkel de antwoorden.
@@ -112,6 +116,10 @@ class BookingController extends Controller
             }
         }
 
+        if (filled(config('services.gohighlevel.attribution_field')) && $attribution) {
+            $customFields[config('services.gohighlevel.attribution_field')] = ConversionsApi::attributionLine($attribution);
+        }
+
         $result = $booking->book($calendarId, $start->toIso8601String(), $contact, $customFields, $notes);
 
         if (! $result['ok']) {
@@ -125,10 +133,13 @@ class BookingController extends Controller
             'data' => [
                 ...collect($fields)->mapWithKeys(fn (array $field) => [$field['label'] => $answers[$field['key']] ?? null])->filter()->all(),
                 'start' => $result['start'],
+                'attribution' => $attribution ?: null,
             ],
             'page_url' => $request->headers->get('referer'),
             'ip' => $request->ip(),
         ]);
+
+        app()->terminating(fn () => $meta->send('Schedule', $request, array_filter(['email' => $contact['email'] ?? null, 'first_name' => $contact['first_name'] ?? null])));
 
         return response()->json($result);
     }
