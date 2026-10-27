@@ -8,6 +8,7 @@ use App\Services\GoHighLevel\OpportunityStage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -17,8 +18,13 @@ use Illuminate\Validation\ValidationException;
 class GoHighLevelWebhookController extends Controller
 {
     /**
-     * Offerte getekend → voorschotfactuur in Billit. De body stellen we zelf
-     * samen in de workflow (zie wiki WebGoeroe "offerte-flow").
+     * Offerte getekend → voorschotfactuur in Billit + deal naar de voorschotstap.
+     *
+     * De workflow stuurt het contact (contact_id) en de documentnaam; de site
+     * zoekt zelf de juiste deal (OpportunityStage::findForQuote) en neemt
+     * naam en waarde uit die deal. Vindt hij er geen eenduidige, dan komt er
+     * geen factuur en krijgt Pieter een mail. De oude body (opportunity_id +
+     * amount_excl) blijft werken.
      */
     public function quoteSigned(Request $request, DepositInvoiceService $service, OpportunityStage $stage): JsonResponse
     {
@@ -37,15 +43,33 @@ class GoHighLevelWebhookController extends Controller
             throw $e;
         }
 
-        $amount = $this->amount($data['amount_excl']);
+        if (filled($data['contact_id'] ?? null)) {
+            $found = $stage->findForQuote($data['contact_id'], $data['document_name'] ?? null);
+            $opportunity = $found['opportunity'];
+
+            if (! $opportunity) {
+                return $this->unmatched('getekend', $data, $found['reason']);
+            }
+
+            $data['opportunity_id'] = $opportunity['id'];
+            $data['project'] = $opportunity['name'] ?? ($data['document_name'] ?? null);
+            $data['amount_excl'] = $opportunity['monetaryValue'] ?? 0;
+            $sourceId = filled($data['document_url'] ?? null)
+                ? 'doc:'.sha1($data['document_url'])
+                : 'opportunity:'.$opportunity['id'];
+        } else {
+            $sourceId = $data['document_id'] ?? 'opportunity:'.$data['opportunity_id'];
+        }
+
+        $amount = $this->amount($data['amount_excl'] ?? 0);
 
         if ($amount <= 0) {
-            return response()->json(['message' => 'Geen geldige dealwaarde (amount_excl).'], 422);
+            return $this->unmatched('getekend', $data, 'De deal "'.($data['project'] ?? '?').'" heeft geen waarde (excl. btw).', 422);
         }
 
         $invoice = $service->handle([
             ...$data,
-            'source_id' => $data['document_id'] ?? 'opportunity:'.$data['opportunity_id'],
+            'source_id' => $sourceId,
             'amount_excl' => $amount,
         ]);
 
@@ -70,12 +94,47 @@ class GoHighLevelWebhookController extends Controller
         $this->authorizeWebhook($request);
 
         $data = $request->validate([
-            'opportunity_id' => ['required', 'string', 'max:191'],
+            'contact_id' => ['nullable', 'string', 'max:191', 'required_without:opportunity_id'],
+            'document_name' => ['nullable', 'string', 'max:191'],
+            'opportunity_id' => ['nullable', 'string', 'max:191'],
         ]);
 
+        $opportunityId = $data['opportunity_id'] ?? null;
+
+        if (filled($data['contact_id'] ?? null)) {
+            $found = $stage->findForQuote($data['contact_id'], $data['document_name'] ?? null);
+
+            if (! $found['opportunity']) {
+                return $this->unmatched('verstuurd', $data, $found['reason']);
+            }
+
+            $opportunityId = $found['opportunity']['id'];
+        }
+
         return response()->json([
-            'stage' => $stage->moveTo($data['opportunity_id'], OpportunityStage::PROPOSAL_SENT),
+            'stage' => $stage->moveTo($opportunityId, OpportunityStage::PROPOSAL_SENT),
         ]);
+    }
+
+    /** Geen eenduidige deal: niets doen, Pieter verwittigen. */
+    private function unmatched(string $event, array $data, ?string $reason, int $status = 200): JsonResponse
+    {
+        $document = $data['document_name'] ?? '(zonder naam)';
+
+        Log::error("GoHighLevel webhook offerte-{$event}: geen deal", ['reason' => $reason, 'document' => $document, 'contact_id' => $data['contact_id'] ?? null]);
+
+        rescue(fn () => Mail::raw(
+            "Offerte \"{$document}\" is {$event}, maar ik kon niet bepalen bij welke deal ze hoort.\n\n"
+            ."Reden: {$reason}\n\n"
+            .($event === 'getekend'
+                ? "Er is GEEN voorschotfactuur gemaakt en de deal is niet verplaatst. Maak de factuur zelf in Billit, of geef de deal dezelfde naam als het document en laat 6.3 opnieuw lopen.\n"
+                : "De deal is niet naar Proposal Sent gezet. Doe dat zelf, en geef de deal best dezelfde naam als het document, anders lukt de voorschotfactuur straks ook niet.\n"),
+            fn ($message) => $message
+                ->to(config('services.billit.notify'))
+                ->subject("Offerte {$event}, deal niet gevonden: {$document}"),
+        ), report: false);
+
+        return response()->json(['status' => 'unmatched', 'reason' => $reason], $status);
     }
 
     private function authorizeWebhook(Request $request): void
@@ -89,10 +148,13 @@ class GoHighLevelWebhookController extends Controller
     private function validated(Request $request): array
     {
         return $request->validate([
-            'document_id' => ['nullable', 'string', 'max:191', 'required_without:opportunity_id'],
+            'contact_id' => ['nullable', 'string', 'max:191', 'required_without_all:document_id,opportunity_id'],
+            'document_name' => ['nullable', 'string', 'max:191'],
+            'document_url' => ['nullable', 'string', 'max:2000'],
+            'document_id' => ['nullable', 'string', 'max:191'],
             'opportunity_id' => ['nullable', 'string', 'max:191'],
             'project' => ['nullable', 'string', 'max:191'],
-            'amount_excl' => ['required'],
+            'amount_excl' => ['required_without:contact_id'],
             'contact' => ['required', 'array'],
             'contact.email' => ['nullable', 'email'],
             'contact.company' => ['nullable', 'string', 'max:191'],
