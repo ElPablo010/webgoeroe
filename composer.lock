@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c137cb229e68983911695a5314f05562",
+    "content-hash": "31128b867a30192308d8beae3e17744e",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -9873,16 +9873,16 @@
         },
         {
             "name": "webgoeroe/reviews",
-            "version": "v0.1.1",
+            "version": "v0.2.0",
             "source": {
                 "type": "git",
                 "url": "git@github.com:ElPablo010/reviews.git",
-                "reference": "34c30072d2459d62c116ff3a1d4c6fa072fea3b2"
+                "reference": "05a78e8e4b8239aa6391d09e99471db08f61bade"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ElPablo010/reviews/zipball/34c30072d2459d62c116ff3a1d4c6fa072fea3b2",
-                "reference": "34c30072d2459d62c116ff3a1d4c6fa072fea3b2",
+                "url": "https://api.github.com/repos/ElPablo010/reviews/zipball/05a78e8e4b8239aa6391d09e99471db08f61bade",
+                "reference": "05a78e8e4b8239aa6391d09e99471db08f61bade",
                 "shasum": ""
             },
             "require": {
@@ -9909,10 +9909,10 @@
             ],
             "description": "Reviews-module van De WebGoeroe: Google-reviews vragen aan contacten met persoonlijke link, klikregistratie, herinneringen en afmelden, voor Laravel + Filament-sites op webgoeroe/core.",
             "support": {
-                "source": "https://github.com/ElPablo010/reviews/tree/v0.1.1",
+                "source": "https://github.com/ElPablo010/reviews/tree/v0.2.0",
                 "issues": "https://github.com/ElPablo010/reviews/issues"
             },
-            "time": "2026-10-19T14:09:14+00:00"
+            "time": "2026-10-30T09:13:59+00:00"
         },
         {
             "name": "webgoeroe/seo-growth",

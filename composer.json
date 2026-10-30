@@ -21,7 +21,7 @@
         "mallardduck/blade-lucide-icons": "^1.26",
         "webgoeroe/core": "^0.12",
         "webgoeroe/seo-growth": "^0.7",
-        "webgoeroe/reviews": "^0.1.1"
+        "webgoeroe/reviews": "^0.2"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
