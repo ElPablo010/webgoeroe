@@ -7,7 +7,11 @@
 
     Heropenen vanaf elders (bv. de "Cookie-instellingen"-link in de footer):
     window.dispatchEvent(new CustomEvent('open-cookie-preferences'))
+
+    compact: op landingspagina's één korte regel zonder titel en icoon, zodat
+    de banner half zo hoog is en het formulier niet afdekt.
 --}}
+@props(['compact' => false])
 <div
     x-data="{
         open: false,
@@ -92,7 +96,17 @@
     aria-modal="true"
     aria-label="Cookievoorkeuren"
 >
-    <div class="w-full max-w-2xl rounded-2xl border border-white/[0.08] bg-[#0a0a0d] p-6 shadow-2xl shadow-black/50">
+    <div @class([
+        'w-full max-w-2xl rounded-2xl border border-white/[0.08] bg-[#0a0a0d] shadow-2xl shadow-black/50',
+        'p-4' => $compact,
+        'p-6' => ! $compact,
+    ])>
+        @if ($compact)
+        <p class="text-sm text-white/60">
+            We gebruiken cookies voor statistieken en advertenties.
+            <a href="/cookiebeleid" class="text-cyan-400 hover:underline">Cookiebeleid</a>
+        </p>
+        @else
         <div class="mb-3 flex items-start gap-3">
             <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-cyan-400/10 text-cyan-400">
                 <x-lucide-cookie class="h-4.5 w-4.5" />
@@ -105,6 +119,7 @@
                 </p>
             </div>
         </div>
+        @endif
 
         <div
             {{-- Geen eigen x-transition: het paneel moet mee in-/uitfaden met de
@@ -154,7 +169,7 @@
             </div>
         </div>
 
-        <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <div @class(['flex flex-wrap items-center justify-between', 'mt-3 gap-2' => $compact, 'mt-4 gap-3' => ! $compact])>
             <button
                 type="button"
                 @click="detailed = ! detailed"
@@ -162,17 +177,17 @@
             >
                 <x-lucide-chevron-up x-show="detailed" class="h-4 w-4" />
                 <x-lucide-chevron-down x-show="! detailed" class="h-4 w-4" />
-                <span x-text="detailed ? 'Minder' : 'Voorkeuren aanpassen'"></span>
+                <span x-text="detailed ? 'Minder' : @js($compact ? 'Voorkeuren' : 'Voorkeuren aanpassen')"></span>
             </button>
 
             <div class="flex flex-wrap gap-2">
-                <button x-show="detailed" type="button" @click="savePreferences()" class="cursor-pointer rounded-lg border border-white/10 px-4 py-2 text-sm font-medium text-white/70 transition-colors hover:bg-white/[0.06]">
+                <button x-show="detailed" type="button" @click="savePreferences()" @class(["cursor-pointer rounded-lg border border-white/10 text-sm font-medium text-white/70 transition-colors hover:bg-white/[0.06]", "px-3 py-1.5" => $compact, "px-4 py-2" => ! $compact])>
                     Voorkeuren opslaan
                 </button>
-                <button type="button" @click="rejectAll()" class="cursor-pointer rounded-lg border border-white/10 px-4 py-2 text-sm font-medium text-white/70 transition-colors hover:bg-white/[0.06]">
+                <button type="button" @click="rejectAll()" @class(["cursor-pointer rounded-lg border border-white/10 text-sm font-medium text-white/70 transition-colors hover:bg-white/[0.06]", "px-3 py-1.5" => $compact, "px-4 py-2" => ! $compact])>
                     Weigeren
                 </button>
-                <button type="button" @click="acceptAll()" class="cursor-pointer rounded-lg bg-cyan-400 px-4 py-2 text-sm font-semibold text-[#050507] transition-colors hover:bg-cyan-300">
+                <button type="button" @click="acceptAll()" @class(["cursor-pointer rounded-lg bg-cyan-400 text-sm font-semibold text-[#050507] transition-colors hover:bg-cyan-300", "px-3 py-1.5" => $compact, "px-4 py-2" => ! $compact])>
                     Accepteren
                 </button>
             </div>

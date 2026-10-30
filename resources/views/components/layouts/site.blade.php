@@ -82,7 +82,7 @@
     @else
         <x-site.footer />
     @endif
-    <x-site.cookie-consent />
+    <x-site.cookie-consent :compact="$isLanding" />
 
     {{-- Chat-widget van GoHighLevel (All-in-one chat): gesprekken komen binnen
          in GHL Conversations, naast Facebook en Instagram. Niet op landingspagina's:
