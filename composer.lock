@@ -9916,16 +9916,16 @@
         },
         {
             "name": "webgoeroe/seo-growth",
-            "version": "v0.7.4",
+            "version": "v0.7.5",
             "source": {
                 "type": "git",
                 "url": "git@github.com:ElPablo010/seo-growth.git",
-                "reference": "c3df4826afe289e2d800ed4960d599cff0f132e8"
+                "reference": "035aaa62733d0baceda3176bf6d9d8a1ba595f54"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ElPablo010/seo-growth/zipball/c3df4826afe289e2d800ed4960d599cff0f132e8",
-                "reference": "c3df4826afe289e2d800ed4960d599cff0f132e8",
+                "url": "https://api.github.com/repos/ElPablo010/seo-growth/zipball/035aaa62733d0baceda3176bf6d9d8a1ba595f54",
+                "reference": "035aaa62733d0baceda3176bf6d9d8a1ba595f54",
                 "shasum": ""
             },
             "require": {
@@ -9951,10 +9951,10 @@
             ],
             "description": "Groei-module van De WebGoeroe: Search Console, Google Analytics 4, leads-attributie, DataForSEO, AI-briefing en goedkeuringsdashboard voor Laravel + Filament-sites.",
             "support": {
-                "source": "https://github.com/ElPablo010/seo-growth/tree/v0.7.4",
+                "source": "https://github.com/ElPablo010/seo-growth/tree/v0.7.5",
                 "issues": "https://github.com/ElPablo010/seo-growth/issues"
             },
-            "time": "2026-10-23T14:25:27+00:00"
+            "time": "2026-10-31T10:20:40+00:00"
         }
     ],
     "packages-dev": [
