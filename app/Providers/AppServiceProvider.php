@@ -126,6 +126,12 @@ class AppServiceProvider extends ServiceProvider
                             ->helperText('Leeg = "30 minuten, online."')
                             ->maxLength(80)
                             ->visible(fn (\Filament\Schemas\Components\Utilities\Get $get): bool => $get('ghl_display') === 'own'),
+                        TextInput::make('appointment_title')
+                            ->label('Titel van de afspraak')
+                            ->placeholder('Website Bottleneck Scan')
+                            ->helperText('In de agenda en de uitnodiging. Leeg = naam van de GHL-agenda + naam van de klant.')
+                            ->maxLength(120)
+                            ->visible(fn (\Filament\Schemas\Components\Utilities\Get $get): bool => $get('ghl_display') === 'own'),
                     ])
                     ->visible(fn (\Filament\Schemas\Components\Utilities\Get $get): bool => $get('provider') === 'ghl');
 

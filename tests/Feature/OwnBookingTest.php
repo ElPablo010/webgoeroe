@@ -106,6 +106,20 @@ it('maakt het contact en de afspraak met Google Meet en bewaart de inzending', f
     expect(FormSubmission::where('type', 'booking')->count())->toBe(1);
 });
 
+it('gebruikt de ingestelde afspraaktitel als die er is', function () {
+    $this->section->update(['content' => [...$this->section->content, 'appointment_title' => 'Website Bottleneck Scan']]);
+    Http::fake([
+        'ghl.test/contacts/upsert' => Http::response(['contact' => ['id' => 'c1']]),
+        'ghl.test/calendars/cal123' => Http::response(['calendar' => ['name' => 'Bottleneck Scan Websites', 'teamMembers' => []]]),
+        'ghl.test/calendars/events/appointments' => Http::response(['id' => 'a1'], 201),
+    ]);
+
+    $this->postJson(route('booking.store'), bookingPayload())->assertOk();
+
+    Http::assertSent(fn (Request $r) => str_ends_with($r->url(), '/calendars/events/appointments')
+        && $r['title'] === 'Website Bottleneck Scan');
+});
+
 it('meldt een net bezet tijdstip als 409', function () {
     Http::fake([
         'ghl.test/contacts/upsert' => Http::response(['contact' => ['id' => 'c1']]),

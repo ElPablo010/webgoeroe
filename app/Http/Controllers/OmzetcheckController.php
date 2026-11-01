@@ -20,8 +20,8 @@ class OmzetcheckController extends Controller
     {
         // Honeypot: een bot vult het verborgen veld in én verstuurt meteen. Doe
         // alsof het gelukt is. Chrome-autofill vult het veld soms ook in bij
-        // echte bezoekers; die zitten langer dan 3 s op de pagina en gaan door.
-        if (filled($request->input('website')) && (int) $request->input('elapsed', 0) < 3000) {
+        // echte bezoekers; die zitten langer dan 10 s op de pagina en gaan door.
+        if (filled($request->input('website')) && (int) $request->input('elapsed', 0) < 10000) {
             return response()->json(['ok' => true]);
         }
 

@@ -66,7 +66,7 @@ class CalendarBooking
      * @param  array<string, string>  $notes  [vraag => antwoord], enkel in de afspraakbeschrijving
      * @return array{ok: bool, reason?: string, start?: string}  reason: 'taken' (tijdstip net bezet) of 'error'
      */
-    public function book(string $calendarId, string $start, array $contact, array $customFields = [], array $notes = []): array
+    public function book(string $calendarId, string $start, array $contact, array $customFields = [], array $notes = [], ?string $title = null): array
     {
         if (! $this->isConfigured()) {
             Log::error('Boeking: GHL niet ingesteld (GHL_API_TOKEN), afspraak niet gemaakt.');
@@ -109,7 +109,7 @@ class CalendarBooking
                 'calendarId' => $calendarId,
                 'contactId' => $contactId,
                 'assignedUserId' => $member['userId'] ?? null,
-                'title' => trim(($calendar['name'] ?? 'Gesprek').' – '.$name),
+                'title' => filled($title) ? trim($title) : trim(($calendar['name'] ?? 'Gesprek').' – '.$name),
                 'description' => $this->description($notes),
                 'startTime' => $start->toIso8601String(),
                 'endTime' => $start->addMinutes((int) ($calendar['slotDuration'] ?? 30))->toIso8601String(),

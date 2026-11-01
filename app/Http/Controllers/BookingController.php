@@ -120,7 +120,7 @@ class BookingController extends Controller
             $customFields[config('services.gohighlevel.attribution_field')] = ConversionsApi::attributionLine($attribution);
         }
 
-        $result = $booking->book($calendarId, $start->toIso8601String(), $contact, $customFields, $notes);
+        $result = $booking->book($calendarId, $start->toIso8601String(), $contact, $customFields, $notes, $content['appointment_title'] ?? null);
 
         if (! $result['ok']) {
             Cache::forget("booking.slots.{$calendarId}.".self::earliest()->toDateString());
