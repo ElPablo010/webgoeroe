@@ -105,6 +105,23 @@ it('negeert een bot die het verborgen veld invult', function () {
     expect(FormSubmission::count())->toBe(0);
 });
 
+it('laat een echte bezoeker door als Chrome het verborgen veld invult', function () {
+    Http::fake();
+
+    $this->postJson('/omzetcheck', omzetcheckPayload(['website' => 'https://autofill.test', 'elapsed' => 45000]))->assertOk();
+
+    expect(FormSubmission::where('type', 'omzetcheck')->count())->toBe(1);
+});
+
+it('bewaart een inzending met een lange advertentielink als referer', function () {
+    Http::fake();
+    $referer = 'https://dewebgoeroe.be/website-die-verkoopt?utm_source=meta&fbclid='.str_repeat('a', 400);
+
+    $this->withHeader('referer', $referer)->postJson('/omzetcheck', omzetcheckPayload())->assertOk();
+
+    expect(FormSubmission::where('type', 'omzetcheck')->first()->page_url)->toHaveLength(255);
+});
+
 it('vraagt een voornaam en een geldig e-mailadres', function () {
     Http::fake();
 

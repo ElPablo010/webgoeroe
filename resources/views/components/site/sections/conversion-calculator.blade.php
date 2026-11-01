@@ -50,7 +50,7 @@
             data-reveal
             x-data="{
                 ...@js($config),
-                first_name: '', email: '', website: '', sending: false, error: '',
+                first_name: '', email: '', website: '', startedAt: Date.now(), sending: false, error: '',
                 // Naam en e-mail uit de gate meegeven aan de agenda (voorinvullen).
                 ctaUrl(base) {
                     // Een anker op de pagina zelf (#scan) laten we ongemoeid: een query erachter breekt de sprong.
@@ -67,7 +67,7 @@
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                             body: JSON.stringify({
-                                first_name: this.first_name, email: this.email, website: this.website,
+                                first_name: this.first_name, email: this.email, website: this.website, elapsed: Date.now() - this.startedAt,
                                 sector: this.sectorLabel, visitors: this.visitors, leads: this.leads,
                                 close: this.close, value: this.value, target: this.target, tracking: tracking
                             })

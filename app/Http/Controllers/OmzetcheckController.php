@@ -18,8 +18,10 @@ class OmzetcheckController extends Controller
 {
     public function store(Request $request, OmzetcheckContact $ghl, ConversionsApi $meta): JsonResponse
     {
-        // Honeypot: een bot vult het verborgen veld in. Doe alsof het gelukt is.
-        if (filled($request->input('website'))) {
+        // Honeypot: een bot vult het verborgen veld in én verstuurt meteen. Doe
+        // alsof het gelukt is. Chrome-autofill vult het veld soms ook in bij
+        // echte bezoekers; die zitten langer dan 3 s op de pagina en gaan door.
+        if (filled($request->input('website')) && (int) $request->input('elapsed', 0) < 3000) {
             return response()->json(['ok' => true]);
         }
 
