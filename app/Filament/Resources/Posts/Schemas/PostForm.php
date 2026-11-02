@@ -5,7 +5,7 @@ namespace App\Filament\Resources\Posts\Schemas;
 use Webgoeroe\Core\Filament\Schemas\Components\SeoMetaFields;
 use Webgoeroe\Core\Filament\Schemas\Components\MediaPickerField;
 use Filament\Forms\Components\DateTimePicker;
-use Filament\Forms\Components\RichEditor;
+use Webgoeroe\Core\Filament\Schemas\Components\RichText;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
@@ -127,7 +127,7 @@ class PostForm
                         Tab::make('Inhoud')
                             ->id('sections')
                             ->schema([
-                                RichEditor::make('body')
+                                RichText::make('body')
                                     ->label('Artikeltekst')
                                     ->toolbarButtons([
                                         'bold',
