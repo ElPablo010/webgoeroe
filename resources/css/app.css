@@ -121,3 +121,9 @@ html { scroll-behavior: smooth; }
 .prose { --tw-prose-bullets: var(--color-cyan-600); }
 .prose.prose-invert { --tw-prose-bullets: var(--color-cyan-400); }
 .prose ul > li::marker { font-size: 1.25em; }
+
+/* De editor (Tiptap) zet de tekst van elk lijstitem in een <p>. Typography ziet
+   dat als een "losse" lijst en geeft elke alinea extra marge; die halen we weg,
+   zodat de items even dicht staan als een gewone lijst. */
+.prose li > p { margin-top: 0; margin-bottom: 0; }
+.prose li > p + p { margin-top: 0.5em; }
