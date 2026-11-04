@@ -76,4 +76,17 @@ return [
         'max_pixels' => 12_000_000,
     ],
 
+    /*
+     * Opvolging van aanvragen (core 0.14): deze formulieren volgt GoHighLevel
+     * al op (mails, pipeline), dus geen bevestigingsmail, herinnering of
+     * "Te beantwoorden". Aan te passen op Leads → Opvolging.
+     */
+    'follow_up' => [
+        'types' => [
+            'booking' => false,
+            'omzetcheck' => false,
+            'speed_to_lead_start' => false,
+        ],
+    ],
+
 ];
