@@ -4,9 +4,9 @@ namespace App\Services\GoHighLevel;
 
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Webgoeroe\Core\Integrations\GoHighLevel\Client;
 
 /**
  * Contactvelden van GoHighLevel voor het formulier van de eigen kalender: de vijf
@@ -50,7 +50,7 @@ class ContactFields
         }
 
         try {
-            $response = $this->request()->get('/locations/'.config('services.gohighlevel.location_id').'/customFields', ['model' => 'contact']);
+            $response = $this->request()->get('/locations/'.(new Client)->locationId().'/customFields', ['model' => 'contact']);
         } catch (\Throwable $e) {
             Log::error('Contactvelden ophalen uit GHL mislukt.', ['error' => $e->getMessage()]);
 
@@ -120,7 +120,7 @@ class ContactFields
             return 'custom:'.$existing;
         }
 
-        $response = $this->request()->post('/locations/'.config('services.gohighlevel.location_id').'/customFields', [
+        $response = $this->request()->post('/locations/'.(new Client)->locationId().'/customFields', [
             'name' => $name,
             'dataType' => $largeText ? 'LARGE_TEXT' : 'TEXT',
             'model' => 'contact',
@@ -141,10 +141,7 @@ class ContactFields
 
     private function request(): PendingRequest
     {
-        return Http::baseUrl(rtrim((string) config('services.gohighlevel.base_url'), '/'))
-            ->withToken((string) config('services.gohighlevel.api_token'))
-            ->withHeaders(['Version' => '2021-07-28'])
-            ->acceptJson()
-            ->timeout(10);
+        // Sleutel en location-ID uit de core (Instellingen → Integraties, anders .env).
+        return (new Client)->request()->timeout(10);
     }
 }

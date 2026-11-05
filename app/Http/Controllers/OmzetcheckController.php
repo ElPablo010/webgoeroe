@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\FormSubmission;
-use App\Services\GoHighLevel\OmzetcheckContact;
 use App\Services\Meta\ConversionsApi;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -11,12 +10,14 @@ use Illuminate\Http\Request;
 /**
  * Gate op de omzetcheck: de bezoeker laat voornaam en e-mail achter om zijn
  * resultaat te zien. Hier rekenen we het resultaat opnieuw uit (zelfde formule
- * als de calculator in de browser), bewaren de inzending (telt als lead in de
- * Groei-meetlaag) en sturen het contact naar GoHighLevel.
+ * als de calculator in de browser) en bewaren de inzending (telt als lead in de
+ * Groei-meetlaag). Naar GoHighLevel gaat ze via de koppeling van de core
+ * (Instellingen → Integraties): `amount`, `extra_leads`, `sector` en `herkomst`
+ * staan daar aan GHL-velden gekoppeld, de tag start de workflow.
  */
 class OmzetcheckController extends Controller
 {
-    public function store(Request $request, OmzetcheckContact $ghl, ConversionsApi $meta): JsonResponse
+    public function store(Request $request, ConversionsApi $meta): JsonResponse
     {
         // Honeypot: een bot vult het verborgen veld in én verstuurt meteen. Doe
         // alsof het gelukt is. Chrome-autofill vult het veld soms ook in bij
@@ -61,20 +62,13 @@ class OmzetcheckController extends Controller
                 'close' => $data['close'],
                 'value' => $data['value'],
                 'yearly' => round($result['yearly']),
-                'extra_leads' => round($result['extra_leads'], 1),
+                'amount' => $amount,
+                'extra_leads' => $extra,
+                'herkomst' => ConversionsApi::attributionLine($attribution) ?: null,
                 'attribution' => $attribution ?: null,
             ],
             'page_url' => $request->headers->get('referer'),
             'ip' => $request->ip(),
-        ]);
-
-        $ghl->send([
-            'first_name' => $data['first_name'],
-            'email' => $data['email'],
-            'sector' => (string) ($data['sector'] ?? ''),
-            'amount' => $amount,
-            'extra_leads' => $extra,
-            'attribution' => ConversionsApi::attributionLine($attribution),
         ]);
 
         app()->terminating(fn () => $meta->send('Lead', $request, ['email' => $data['email'], 'first_name' => $data['first_name']], array_filter(['content_category' => $data['sector'] ?? null])));

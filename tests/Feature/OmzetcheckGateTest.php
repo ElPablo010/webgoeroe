@@ -7,8 +7,9 @@ use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Http;
 
 /**
- * Gate op de omzetcheck: voornaam + e-mail → resultaat, inzending (lead) en
- * contact in GoHighLevel (velden eerst, daarna de tag die de workflow start).
+ * Gate op de omzetcheck: voornaam + e-mail → resultaat, inzending (lead) en,
+ * via de GHL-koppeling van de core (ingesteld door de migratie
+ * ghl_via_core_koppeling), contact in GoHighLevel: velden eerst, daarna de tags.
  */
 beforeEach(function () {
     config([
@@ -58,7 +59,8 @@ it('bewaart de inzending en zet het contact met velden en daarna de starttag in 
 
     $submission = FormSubmission::where('type', 'omzetcheck')->sole();
     expect($submission->data['email'])->toBe('jan@voorbeeld.be')
-        ->and($submission->data['yearly'])->toBe(72000);
+        ->and($submission->data['yearly'])->toBe(72000)
+        ->and($submission->ghl_contact_id)->toBe('c-1');
 
     $sent = Http::recorded()->map(fn (array $pair) => $pair[0])->values();
     expect($sent)->toHaveCount(2);
@@ -69,13 +71,15 @@ it('bewaart de inzending en zet het contact met velden en daarna de starttag in 
         ->and($upsert->hasHeader('Authorization', 'Bearer test-token'))->toBeTrue()
         ->and($upsert['locationId'])->toBe('loc-1')
         ->and($upsert['email'])->toBe('jan@voorbeeld.be')
-        ->and($upsert['tags'])->toBe(['campagne-websites'])
+        ->and($upsert['firstName'])->toBe('Jan')
+        ->and($upsert['source'])->toBe('Omzetcheck website')
+        ->and(isset($upsert['tags']))->toBeFalse()
         ->and(collect($upsert['customFields'])->pluck('field_value')->all())
         ->toBe(['€ 72.000', '10', 'Bouw & renovatie']);
 
-    // De starttag komt pas ná de velden, zodat de eerste mail het bedrag kent.
+    // De tags (ook de starttag) komen pas ná de velden, zodat de eerste mail het bedrag kent.
     expect($sent[1]->url())->toBe('https://ghl.test/contacts/c-1/tags')
-        ->and($sent[1]['tags'])->toBe(['omzetcheck-ingevuld']);
+        ->and($sent[1]['tags'])->toBe(['campagne-websites', 'omzetcheck-ingevuld']);
 });
 
 it('toont het resultaat ook als GHL niet bereikbaar is', function () {

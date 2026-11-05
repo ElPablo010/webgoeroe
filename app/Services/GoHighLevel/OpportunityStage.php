@@ -3,8 +3,8 @@
 namespace App\Services\GoHighLevel;
 
 use Illuminate\Http\Client\PendingRequest;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Webgoeroe\Core\Integrations\GoHighLevel\Client;
 
 /**
  * Zet een deal in GoHighLevel op een stap, in welke pijplijn hij ook staat.
@@ -21,8 +21,7 @@ class OpportunityStage
 
     public function isConfigured(): bool
     {
-        return filled(config('services.gohighlevel.api_token'))
-            && filled(config('services.gohighlevel.location_id'));
+        return (new Client)->isConfigured();
     }
 
     /**
@@ -42,7 +41,7 @@ class OpportunityStage
 
         try {
             $response = $this->request()->get('/opportunities/search', [
-                'location_id' => config('services.gohighlevel.location_id'),
+                'location_id' => (new Client)->locationId(),
                 'contact_id' => $contactId,
                 'status' => 'open',
                 'limit' => 100,
@@ -111,7 +110,7 @@ class OpportunityStage
             $currentStageId = $opportunity->json('opportunity.pipelineStageId');
 
             $pipelines = $this->request()->get('/opportunities/pipelines', [
-                'locationId' => config('services.gohighlevel.location_id'),
+                'locationId' => (new Client)->locationId(),
             ]);
 
             if (! $pipelines->successful()) {
@@ -160,10 +159,7 @@ class OpportunityStage
 
     private function request(): PendingRequest
     {
-        return Http::baseUrl(rtrim((string) config('services.gohighlevel.base_url'), '/'))
-            ->withToken((string) config('services.gohighlevel.api_token'))
-            ->withHeaders(['Version' => '2021-07-28'])
-            ->acceptJson()
-            ->timeout(10);
+        // Sleutel en location-ID uit de core (Instellingen → Integraties, anders .env).
+        return (new Client)->request()->timeout(10);
     }
 }

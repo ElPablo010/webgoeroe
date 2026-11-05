@@ -9,8 +9,8 @@ use Livewire\Livewire;
 
 /**
  * Startformulier van de landingspagina "Speed to lead elektriciens": inzending
- * op de site (lead) en contact met tag in GoHighLevel, zonder dat een GHL-fout
- * de bezoeker blokkeert.
+ * op de site (lead) en, via de GHL-koppeling van de core, contact met tag in
+ * GoHighLevel, zonder dat een GHL-fout de bezoeker blokkeert.
  */
 beforeEach(function () {
     config([
@@ -32,6 +32,7 @@ function speedToLeadForm(): \Livewire\Features\SupportTesting\Testable
 it('bewaart de inzending en zet het contact met tag in GoHighLevel', function () {
     Mail::fake();
     Http::fake(['ghl.test/*' => Http::response(['contact' => ['id' => 'c-1']])]);
+    config(['mail.notify_to' => 'pieter@voorbeeld.be']);
 
     speedToLeadForm()->call('submit')->assertSet('sent', true);
 
@@ -43,6 +44,8 @@ it('bewaart de inzending en zet het contact met tag in GoHighLevel', function ()
         && $r['lastName'] === 'Janssen'
         && $r['companyName'] === 'Elektro Janssen'
         && $r['phone'] === '+32 478 00 00 00'
+        && $r['source'] === 'Landingspagina speed to lead elektriciens');
+    Http::assertSent(fn (Request $r) => str_ends_with($r->url(), '/contacts/c-1/tags')
         && $r['tags'] === ['lp-elektriciens-start']);
 
     // De melding komt dan uit GoHighLevel, niet van de site.

@@ -2,18 +2,18 @@
 
 namespace App\Livewire\Forms;
 
-use App\Services\GoHighLevel\SpeedToLeadContact;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 use Webgoeroe\Core\Core;
 use Webgoeroe\Core\Livewire\Concerns\GuardsAgainstSpam;
-use Webgoeroe\Core\Livewire\Forms\ContactForm;
 
 /**
  * Startformulier van de landingspagina "Speed to lead elektriciens": naam,
  * bedrijf, e-mail en gsm. Geen betaal- of facturatiegegevens: Pieter belt om
  * op te zetten, de betaallink volgt bij livegang. Elke inzending staat op de
- * site (telt als lead) en gaat als contact met tag naar GoHighLevel.
+ * site (telt als lead) en gaat via de koppeling van de core (Instellingen →
+ * Integraties) als contact met tag naar GoHighLevel. Lukt dat niet, dan mailt
+ * de core zelf de eigenaar.
  */
 class SpeedToLeadStartForm extends Component
 {
@@ -47,7 +47,7 @@ class SpeedToLeadStartForm extends Component
         ];
     }
 
-    public function submit(SpeedToLeadContact $ghl): void
+    public function submit(): void
     {
         // Stille spam-afhandeling: doe alsof het lukte, sla niets op.
         if ($this->isSpam($this->name, $this->email)) {
@@ -64,18 +64,12 @@ class SpeedToLeadStartForm extends Component
             return;
         }
 
-        $submission = Core::model('form_submission')::create([
+        Core::model('form_submission')::create([
             'type' => self::TYPE,
             'data' => $data,
             'page_url' => url()->previous(),
             'ip' => request()->ip(),
         ]);
-
-        // De melding naar Pieter komt uit GoHighLevel (workflow 1.3). Enkel als het
-        // contact daar niet aankomt, mailt de site zelf, zodat geen aanvraag verloren gaat.
-        if (! $ghl->send($data)) {
-            ContactForm::notifyOwner($submission);
-        }
 
         $this->sent = true;
         $this->reset(['name', 'company', 'email', 'phone']);

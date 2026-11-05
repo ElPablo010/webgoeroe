@@ -245,13 +245,21 @@ Het blok `conversion_calculator` vraagt eerst voornaam + e-mail vóór het resul
 `POST /omzetcheck` ([`OmzetcheckController`](app/Http/Controllers/OmzetcheckController.php))
 rekent het resultaat server-side opnieuw uit (zelfde formule als de Alpine-code in
 `conversion-calculator.blade.php`; houd ze gelijk), bewaart een `FormSubmission`
-van type `omzetcheck` (telt automatisch als lead) en roept
-[`OmzetcheckContact`](app/Services/GoHighLevel/OmzetcheckContact.php) aan: contact
-upsert in GoHighLevel met de velden bedrag/extra aanvragen/sector en tag
-`campagne-websites`, daarna pas de tag `omzetcheck-ingevuld` die de GHL-workflow
-"Omzetcheck ingevuld" start (zo kent mail 1 het bedrag al). GHL-fouten blokkeren de
-bezoeker nooit; ze komen in de log. `.env`: `GHL_API_TOKEN` (Private Integration,
-scope contacts.write) en `GHL_LOCATION_ID`. Veld-ID's staan in `config/services.php`.
+van type `omzetcheck` (telt automatisch als lead, met de velden `amount` ("€ 72.000"),
+`extra_leads` ("2,5"), `sector` en `herkomst`). Naar GoHighLevel gaat ze via de
+**GHL-koppeling van de core** (Instellingen → Modules: "Koppeling GoHighLevel";
+Instellingen → Integraties: per formulier tags, velden en bron), net als
+`speed_to_lead_start`. De core zet eerst het contact met de velden en daarna pas de tags
+`campagne-websites` en `omzetcheck-ingevuld` (die laatste start de GHL-workflow
+"Omzetcheck ingevuld"; zo kent mail 1 het bedrag al). De beginstand komt uit de migratie
+`2026_11_05_090000_ghl_via_core_koppeling`. Faalt GHL voor een type zonder opvolging op
+de site, dan mailt de core zelf de eigenaar; de fout staat bij de aanvraag (knop "Opnieuw").
+GHL-fouten blokkeren de
+bezoeker nooit. Sleutel: Instellingen → Integraties, anders `.env` `GHL_API_TOKEN` en
+`GHL_LOCATION_ID`; de eigen kalender en de offerte-webhooks (`CalendarBooking`,
+`ContactFields`, `OpportunityStage`) gebruiken dezelfde sleutel via de core-`Client`.
+De boeking (type `booking`) staat bij Integraties bewust uit: `CalendarBooking` maakt
+zelf contact en afspraak, anders komt het contact er dubbel in.
 De route is zonder CSRF (publieke leadvorm, pagina kan gecachet zijn; uitsluiten via
 `withoutMiddleware(PreventRequestForgery::class)`, niet `ValidateCsrfToken`: in Laravel 13 gaf dat live
 een 419 terwijl de tests slaagden): honeypot

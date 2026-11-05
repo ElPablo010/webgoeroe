@@ -63,33 +63,18 @@ return [
     'gohighlevel' => [
         'webhook_secret' => env('GHL_WEBHOOK_SECRET'),
 
-        // Omzetcheck (website-conversiecalculator) → contact in GoHighLevel.
-        // Token: Private Integration met scopes contacts.write + contacts.readonly,
-        // en voor het eigen boekingsscherm calendars.readonly + calendars/events.write.
+        // Sleutel en location-ID: de core leest eerst Instellingen → Integraties,
+        // anders deze waarden. Welke formulieren naar GHL gaan (omzetcheck,
+        // speed to lead) staat ook daar. Token: Private Integration met scopes
+        // contacts.write + contacts.readonly, locations/customFields.readonly,
+        // opportunities, en voor het eigen boekingsscherm calendars.readonly +
+        // calendars/events.write.
         'api_token' => env('GHL_API_TOKEN'),
         'location_id' => env('GHL_LOCATION_ID', 'JJ446huNYhVtsrONFbVO'),
-        // Startformulier landingspagina "Speed to lead elektriciens": de tag start
-        // de GHL-workflow 1.3 (bevestigingsmail en melding).
-        'speed_to_lead' => [
-            'tag' => env('GHL_SPEED_TO_LEAD_TAG', 'lp-elektriciens-start'),
-            'source' => 'Landingspagina speed to lead elektriciens',
-        ],
         'base_url' => env('GHL_BASE_URL', 'https://services.leadconnectorhq.com'),
         // Eigen boekingsscherm (weergave "Eigen kalender"): inleiding in de Google-uitnodiging.
         'booking' => [
             'description' => env('GHL_BOOKING_DESCRIPTION', 'Dit is je gratis gesprek van 30 minuten met Pieter van De WebGoeroe. Je ontvangt ook een bevestiging per e-mail.'),
-        ],
-        'omzetcheck' => [
-            // Tag die de workflow "Omzetcheck ingevuld" start; wordt pas gezet
-            // nadat de velden bewaard zijn, zodat de mail het bedrag al kent.
-            'trigger_tag' => 'omzetcheck-ingevuld',
-            'campaign_tag' => 'campagne-websites',
-            // Aangepaste contactvelden in GHL (Instellingen → Aangepaste velden).
-            'fields' => [
-                'amount' => env('GHL_FIELD_OMZETCHECK_AMOUNT', 'pTNAaeGjLM6rvWfEsPgb'),
-                'extra_leads' => env('GHL_FIELD_OMZETCHECK_EXTRA', 'HaBaw5mnNLpjVKmOCa3f'),
-                'sector' => env('GHL_FIELD_OMZETCHECK_SECTOR', 'erEowVlDBPvqgg0wKrBR'),
-            ],
         ],
         // Herkomst advertentie (tekstveld "Herkomst advertentie" op het contact): "bron | campagne | advertentie | sector".
         // Leeg = niet bewaard in GHL (wel in de inzending op de site).

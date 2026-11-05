@@ -5,8 +5,8 @@ namespace App\Services\GoHighLevel;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Webgoeroe\Core\Integrations\GoHighLevel\Client;
 
 /**
  * Eigen boekingsscherm op een GoHighLevel-agenda: vrije tijdstippen ophalen en
@@ -24,8 +24,7 @@ class CalendarBooking
 
     public function isConfigured(): bool
     {
-        return filled(config('services.gohighlevel.api_token'))
-            && filled(config('services.gohighlevel.location_id'));
+        return (new Client)->isConfigured();
     }
 
     /**
@@ -80,7 +79,7 @@ class CalendarBooking
             $name = trim(($contact['first_name'] ?? '').' '.($contact['last_name'] ?? '')) ?: $contact['email'];
 
             $upsert = $this->request()->post('/contacts/upsert', array_filter([
-                'locationId' => config('services.gohighlevel.location_id'),
+                'locationId' => (new Client)->locationId(),
                 'firstName' => $contact['first_name'] ?? null,
                 'lastName' => $contact['last_name'] ?? null,
                 'email' => $contact['email'],
@@ -105,7 +104,7 @@ class CalendarBooking
             $location = collect($member['locationConfigurations'] ?? [])->first();
 
             $appointment = $this->request()->post('/calendars/events/appointments', array_filter([
-                'locationId' => config('services.gohighlevel.location_id'),
+                'locationId' => (new Client)->locationId(),
                 'calendarId' => $calendarId,
                 'contactId' => $contactId,
                 'assignedUserId' => $member['userId'] ?? null,
@@ -171,10 +170,9 @@ class CalendarBooking
 
     private function request(): PendingRequest
     {
-        return Http::baseUrl(rtrim((string) config('services.gohighlevel.base_url'), '/'))
-            ->withToken((string) config('services.gohighlevel.api_token'))
+        // Sleutel en location-ID uit de core (Instellingen → Integraties, anders .env).
+        return (new Client)->request()
             ->withHeaders(['Version' => '2021-04-15'])
-            ->acceptJson()
             ->timeout(15);
     }
 }
