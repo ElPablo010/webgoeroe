@@ -82,6 +82,39 @@ it('bewaart de inzending en zet het contact met velden en daarna de starttag in 
         ->and($sent[1]['tags'])->toBe(['campagne-websites', 'omzetcheck-ingevuld']);
 });
 
+it('onthoudt het calculatorblok en stuurt de tags en bron van dat blok naar GHL', function () {
+    Http::fake([
+        'ghl.test/contacts/upsert' => Http::response(['contact' => ['id' => 'c-1']]),
+        'ghl.test/contacts/c-1/tags' => Http::response(['tags' => []]),
+    ]);
+    $page = \Webgoeroe\Core\Core::model('page')::create(['title' => 'Website die verkoopt', 'slug' => 'wdv', 'locale' => 'nl', 'published' => true]);
+    $section = $page->sections()->create([
+        'section_type' => 'conversion_calculator',
+        'sort_order' => 1,
+        'content' => ['heading' => 'Wat kost je website je?', 'ghl' => ['tags' => ['wdv-omzetcheck']]],
+    ]);
+    $other = $page->sections()->create(['section_type' => 'text', 'sort_order' => 2, 'content' => []]);
+
+    // Een blok van een ander type telt niet.
+    $this->postJson('/omzetcheck', omzetcheckPayload(['section' => $other->id]))->assertOk();
+    expect(FormSubmission::sole()->page_section_id)->toBeNull();
+
+    FormSubmission::query()->delete();
+    Http::fake([
+        'ghl.test/contacts/upsert' => Http::response(['contact' => ['id' => 'c-1']]),
+        'ghl.test/contacts/c-1/tags' => Http::response(['tags' => []]),
+    ]);
+    $this->postJson('/omzetcheck', omzetcheckPayload(['section' => $section->id]))->assertOk();
+
+    expect(FormSubmission::sole()->page_section_id)->toBe($section->id);
+    Http::assertSent(fn (Request $r): bool => str_ends_with($r->url(), '/contacts/upsert') && $r['source'] === 'Website die verkoopt – Wat kost je website je?');
+    Http::assertSent(fn (Request $r): bool => str_ends_with($r->url(), '/contacts/c-1/tags') && $r['tags'] === ['wdv-omzetcheck']);
+
+    // Het blok geeft zijn ID mee aan de browser.
+    $html = Blade::render('<x-site.sections.conversion-calculator :section="$section" :content="$section->content" />', ['section' => $section]);
+    expect($html)->toContain('\u0022section\u0022:'.$section->id);
+});
+
 it('toont het resultaat ook als GHL niet bereikbaar is', function () {
     Http::fake(['ghl.test/*' => Http::response('boom', 500)]);
 

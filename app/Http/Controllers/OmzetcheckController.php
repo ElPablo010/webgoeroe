@@ -6,6 +6,7 @@ use App\Models\FormSubmission;
 use App\Services\Meta\ConversionsApi;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Webgoeroe\Core\Core;
 
 /**
  * Gate op de omzetcheck: de bezoeker laat voornaam en e-mail achter om zijn
@@ -35,6 +36,7 @@ class OmzetcheckController extends Controller
             'close' => ['required', 'numeric', 'min:0', 'max:100'],
             'value' => ['required', 'numeric', 'min:0', 'max:100000000'],
             'target' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'section' => ['nullable', 'integer'],
             ...ConversionsApi::RULES,
         ]);
 
@@ -51,8 +53,14 @@ class OmzetcheckController extends Controller
         $amount = '€ '.number_format($result['yearly'], 0, ',', '.');
         $extra = preg_replace('/,0$/', '', number_format($result['extra_leads'], 1, ',', '.'));
 
+        // Het blok: tags, bron en deal in GHL komen uit de instellingen van die sectie (core).
+        $sectionId = filled($data['section'] ?? null)
+            ? Core::model('page_section')::query()->whereKey($data['section'])->where('section_type', 'conversion_calculator')->value('id')
+            : null;
+
         FormSubmission::create([
             'type' => 'omzetcheck',
+            'page_section_id' => $sectionId,
             'data' => [
                 'first_name' => $data['first_name'],
                 'email' => $data['email'],

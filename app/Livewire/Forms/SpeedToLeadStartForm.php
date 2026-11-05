@@ -6,6 +6,7 @@ use Livewire\Attributes\Validate;
 use Livewire\Component;
 use Webgoeroe\Core\Core;
 use Webgoeroe\Core\Livewire\Concerns\GuardsAgainstSpam;
+use Webgoeroe\Core\Livewire\Concerns\RemembersSection;
 
 /**
  * Startformulier van de landingspagina "Speed to lead elektriciens": naam,
@@ -18,6 +19,7 @@ use Webgoeroe\Core\Livewire\Concerns\GuardsAgainstSpam;
 class SpeedToLeadStartForm extends Component
 {
     use GuardsAgainstSpam;
+    use RemembersSection;
 
     public const TYPE = 'speed_to_lead_start';
 
@@ -69,6 +71,7 @@ class SpeedToLeadStartForm extends Component
             'data' => $data,
             'page_url' => url()->previous(),
             'ip' => request()->ip(),
+            ...$this->sectionAttributes(),
         ]);
 
         $this->sent = true;

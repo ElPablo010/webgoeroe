@@ -113,6 +113,8 @@ class AppServiceProvider extends ServiceProvider
             })
             ->register('calculator', 'Calculator (gemiste omzet)', CalculatorFields::class)
             ->register('conversion_calculator', 'Calculator (website-conversie)', ConversionCalculatorFields::class)
+            // Levert aanvragen van type omzetcheck: tags, bron en deal per blok (core).
+            ->ghl('conversion_calculator', 'omzetcheck')
             ->register('case_results', 'Case-resultaten', CaseResultsFields::class)
             ->register('cases_grid', 'Case studies grid', CasesGridFields::class)
             // Contactgegevens naast het formulier (e-mail, telefoon, adres), net

@@ -25,6 +25,7 @@
     $requireContact = (bool) ($content['require_contact'] ?? true);
     $config['unlocked'] = ! $requireContact;
     $config['endpoint'] = route('omzetcheck.store');
+    $config['section'] = $section?->getKey();
     $ctaHref  = \Webgoeroe\Core\Support\Url::resolveCtaHref($content, '');
     $numCls   = 'w-20 sm:w-24 rounded-lg border border-white/10 bg-white/[0.05] px-3 py-2 text-right text-lg font-semibold text-white outline-none transition focus:border-cyan-400/50 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none';
     $inputCls = 'mt-2 block w-full min-w-0 rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3 text-lg font-semibold text-white outline-none transition focus:border-cyan-400/50';
@@ -68,7 +69,7 @@
                             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                             body: JSON.stringify({
                                 first_name: this.first_name, email: this.email, website: this.website, elapsed: Date.now() - this.startedAt,
-                                sector: this.sectorLabel, visitors: this.visitors, leads: this.leads,
+                                section: this.section, sector: this.sectorLabel, visitors: this.visitors, leads: this.leads,
                                 close: this.close, value: this.value, target: this.target, tracking: tracking
                             })
                         });
