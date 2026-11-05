@@ -7,17 +7,6 @@
 
 return [
 
-    // Routes zoals in de package, maar zonder de boekingsroutes van de core
-    // (core 0.15.1): De WebGoeroe gebruikt nog zijn eigen BookingController
-    // (routes/web.php). Weg te halen zodra de site op de core-kalender overstapt
-    // (branch ghl-core).
-    'routes' => [
-        'seo' => true,
-        'pages' => true,
-        'exclude' => ['admin', 'login', 'livewire', 'storage', '_debugbar', 'design'],
-        'booking' => false,
-    ],
-
     // Enkel Nederlands op de root (geen prefix, geen taalschakelaar, geen hreflang).
     'locales' => [
         'nl' => 'NL',
