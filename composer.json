@@ -20,7 +20,9 @@
         "livewire/livewire": "^4.3",
         "mallardduck/blade-lucide-icons": "^1.26",
         "webgoeroe/ai-builder": "^0.2",
-        "webgoeroe/core": "^0.15.8",
+        "webgoeroe/blog": "^0.1.1",
+        "webgoeroe/cases": "^0.1.1",
+        "webgoeroe/core": "^0.15.9",
         "webgoeroe/reviews": "^0.2.2",
         "webgoeroe/seo-growth": "^0.9"
     },
@@ -123,6 +125,16 @@
             "name": "seo-growth",
             "type": "vcs",
             "url": "https://github.com/ElPablo010/seo-growth.git"
+        },
+        {
+            "name": "blog",
+            "type": "vcs",
+            "url": "https://github.com/ElPablo010/blog.git"
+        },
+        {
+            "name": "cases",
+            "type": "vcs",
+            "url": "https://github.com/ElPablo010/cases.git"
         }
     ]
 }

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "e3bf1af6ff78dbb17019635a6a4046f5",
+    "content-hash": "c338bf550e96539642f2a478e88cc151",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -9880,17 +9880,103 @@
             "time": "2026-11-05T06:58:34+00:00"
         },
         {
-            "name": "webgoeroe/core",
-            "version": "v0.15.8",
+            "name": "webgoeroe/blog",
+            "version": "v0.1.1",
             "source": {
                 "type": "git",
-                "url": "git@github.com:ElPablo010/core.git",
-                "reference": "34daa2061e9b1d0bec23ae55720ababf290017c1"
+                "url": "git@github.com:ElPablo010/blog.git",
+                "reference": "bc538ca31234899275739ec472ec98bdb9f3cf7a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ElPablo010/core/zipball/34daa2061e9b1d0bec23ae55720ababf290017c1",
-                "reference": "34daa2061e9b1d0bec23ae55720ababf290017c1",
+                "url": "https://api.github.com/repos/ElPablo010/blog/zipball/bc538ca31234899275739ec472ec98bdb9f3cf7a",
+                "reference": "bc538ca31234899275739ec472ec98bdb9f3cf7a",
+                "shasum": ""
+            },
+            "require": {
+                "filament/filament": "^5.0",
+                "laravel/framework": "^13.0",
+                "php": "^8.3",
+                "webgoeroe/core": "^0.15.9"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Webgoeroe\\Blog\\BlogServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Webgoeroe\\Blog\\": "src/"
+                }
+            },
+            "license": [
+                "proprietary"
+            ],
+            "description": "Blog-module van De WebGoeroe: artikels met overzicht, detailpagina, SEO (Article-schema, sitemap, llms.txt) en een instelbare CTA-banner, voor Laravel + Filament-sites op webgoeroe/core.",
+            "support": {
+                "source": "https://github.com/ElPablo010/blog/tree/v0.1.1",
+                "issues": "https://github.com/ElPablo010/blog/issues"
+            },
+            "time": "2026-11-05T15:21:03+00:00"
+        },
+        {
+            "name": "webgoeroe/cases",
+            "version": "v0.1.1",
+            "source": {
+                "type": "git",
+                "url": "git@github.com:ElPablo010/cases.git",
+                "reference": "56c2beeab03e4b322633a97b3d1f098b50188b69"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/ElPablo010/cases/zipball/56c2beeab03e4b322633a97b3d1f098b50188b69",
+                "reference": "56c2beeab03e4b322633a97b3d1f098b50188b69",
+                "shasum": ""
+            },
+            "require": {
+                "filament/filament": "^5.0",
+                "laravel/framework": "^13.0",
+                "php": "^8.3",
+                "webgoeroe/core": "^0.15.9"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Webgoeroe\\Cases\\CasesServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Webgoeroe\\Cases\\": "src/"
+                }
+            },
+            "license": [
+                "proprietary"
+            ],
+            "description": "Cases-module van De WebGoeroe: klantcases met overzicht, detailpagina, een cases-grid-blok, SEO (sitemap, llms.txt) en een instelbare CTA-banner met override per case, voor Laravel + Filament-sites op webgoeroe/core.",
+            "support": {
+                "source": "https://github.com/ElPablo010/cases/tree/v0.1.1",
+                "issues": "https://github.com/ElPablo010/cases/issues"
+            },
+            "time": "2026-11-05T15:21:06+00:00"
+        },
+        {
+            "name": "webgoeroe/core",
+            "version": "v0.15.9",
+            "source": {
+                "type": "git",
+                "url": "git@github.com:ElPablo010/core.git",
+                "reference": "3a9970d6a7b9a2e09b175413aa38e51e69873d11"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/ElPablo010/core/zipball/3a9970d6a7b9a2e09b175413aa38e51e69873d11",
+                "reference": "3a9970d6a7b9a2e09b175413aa38e51e69873d11",
                 "shasum": ""
             },
             "require": {
@@ -9919,10 +10005,10 @@
             ],
             "description": "Site-basis van De WebGoeroe: page-builder met blokken, media, menu's, redirects, header/footer, SEO (sitemap, robots, llms.txt, JSON-LD) en formulieren voor Laravel + Filament-sites.",
             "support": {
-                "source": "https://github.com/ElPablo010/core/tree/v0.15.8",
+                "source": "https://github.com/ElPablo010/core/tree/v0.15.9",
                 "issues": "https://github.com/ElPablo010/core/issues"
             },
-            "time": "2026-11-05T13:42:25+00:00"
+            "time": "2026-11-05T15:20:49+00:00"
         },
         {
             "name": "webgoeroe/reviews",
