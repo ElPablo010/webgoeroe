@@ -249,7 +249,7 @@ van type `omzetcheck` (telt automatisch als lead, met de velden `amount` ("€ 7
 `extra_leads` ("2,5"), `sector` en `herkomst`). Naar GoHighLevel gaat ze via de
 **GHL-koppeling van de core** (Instellingen → Modules: "Koppeling GoHighLevel";
 Instellingen → Integraties: per formuliertype aan/uit en velden; tags, bron en deal
-per blok, onderaan het calculatorblok → GoHighLevel, core 0.16), net als
+per blok, onderaan het calculatorblok → GoHighLevel, core 0.15.7), net als
 `speed_to_lead_start`. Het blok gaat mee als `section` in de POST (`page_section_id`). De core zet eerst het contact met de velden en daarna pas de tags
 `campagne-websites` en `omzetcheck-ingevuld` (die laatste start de GHL-workflow
 "Omzetcheck ingevuld"; zo kent mail 1 het bedrag al). De beginstand komt uit de migratie
@@ -288,7 +288,7 @@ Hier blijft enkel wat eigen is aan deze site:
 De boeking maakt zelf contact en afspraak in GHL en bewaart het contact bij de aanvraag
 (`ghl_contact_id`) en het blok (`page_section_id`). Op Integraties staat type "Boeking"
 aan met enkel `herkomst` → het GHL-veld "Herkomst advertentie"; tags, bron en deal stel je
-per agenda in, onderaan het boeking-blok → GoHighLevel (core 0.16). Een bestaande open deal
+per agenda in, onderaan het boeking-blok → GoHighLevel (core 0.15.7). Een bestaande open deal
 van het contact schuift door naar die stap. Token-scopes: `calendars.readonly`,
 `calendars/events.write`, `locations/customFields.readonly` + `.write`. Op Combell staat
 `LOG_LEVEL=error`, dus GHL-fouten loggen als error.
