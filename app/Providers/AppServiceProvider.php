@@ -7,14 +7,10 @@ use App\Filament\Schemas\Sections\ConversionCalculatorFields;
 use App\Filament\Schemas\Sections\CaseResultsFields;
 use App\Filament\Schemas\Sections\CasesGridFields;
 use App\Models\Page;
-use App\Services\GoHighLevel\ContactFields;
-use App\Support\BookingForm;
+use App\Services\Meta\ConversionsApi;
 use App\Support\ContentSeo;
 use App\Support\LandingPages;
 use App\Support\SiteCta;
-use Filament\Actions\Action;
-use Filament\Forms\Components\Hidden;
-use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -22,14 +18,12 @@ use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
-use Filament\Schemas\Schema;
-use Filament\Notifications\Notification;
-use Filament\Support\Exceptions\Halt;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Str;
 use Laravel\Passport\Passport;
 use Webgoeroe\Core\Core;
 use Webgoeroe\Core\Filament\Schemas\Components\MediaPickerField;
@@ -54,6 +48,7 @@ class AppServiceProvider extends ServiceProvider
         Passport::authorizationView('oauth.authorize');
 
         $this->registerBlocks();
+        $this->registerBookings();
         // Startformulier van de landingspagina "Speed to lead elektriciens".
         Core::formTypes()->register('speed_to_lead_start', 'Speed to lead: starten', 'forms.speed-to-lead-start-form', [], 'Speed to lead: starten');
         $this->registerGeneralSettings();
@@ -64,21 +59,32 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
+     * Eigen kalender (core): herkomst van de advertentie meebewaren (`herkomst` staat
+     * op Integraties aan het GHL-veld "Herkomst advertentie" gekoppeld) en het
+     * Meta-serverevent "Schedule" na een geslaagde boeking.
+     */
+    protected function registerBookings(): void
+    {
+        Core::bookings()
+            ->rules(ConversionsApi::RULES)
+            ->data(function (Request $request): array {
+                $attribution = ConversionsApi::attribution($request);
+
+                return ['attribution' => $attribution ?: null, 'herkomst' => ConversionsApi::attributionLine($attribution) ?: null];
+            })
+            ->booked(fn (Request $request, Model $submission, array $contact) => app(ConversionsApi::class)
+                ->send('Schedule', $request, array_filter(['email' => $contact['email'] ?? null, 'first_name' => $contact['first_name'] ?? null])));
+    }
+
+    /**
      * Blokken die enkel deze site heeft, en de extra velden op core-blokken.
      * De publieke views staan in resources/views/components/site/sections.
      */
     protected function registerBlocks(): void
     {
         Core::blocks()
-            // Agenda (boeking): naast Cal.com en Calendly ook de GoHighLevel-agenda,
-            // zodat een boeking onder hetzelfde contact in GHL landt (workflows
-            // stoppen dan de opvolging). URL = de iframe-URL van de agenda.
-            ->configure('booking', [
-                'providers' => ['calcom' => 'Cal.com', 'calendly' => 'Calendly', 'ghl' => 'GoHighLevel'],
-                'url_providers' => ['calcom', 'calendly', 'ghl'],
-            ])
-            // GoHighLevel kan als iframe in de pagina (standaard), achter een knop in een
-            // pop-up, of als eigen kalender op de site (vrije momenten via de GHL-API): dan breekt de GHL-agenda de paginalayout niet en is er geen scroll-in-scroll.
+            // Agenda (boeking): GoHighLevel (iframe, pop-up of eigen kalender, met de
+            // formuliervelden) komt uit de core zodra "Koppeling GoHighLevel" aanstaat.
             ->extend('booking', function (array $fields): array {
                 // Opmaak in dezelfde woorden en op dezelfde plek als bij het formulierblok:
                 // na de tekstvelden, net vóór de agenda-instellingen. Badge en vinkjes
@@ -102,130 +108,6 @@ class AppServiceProvider extends ServiceProvider
                         && collect($f->getDefaultChildComponents())->contains(fn ($c) => is_object($c) && method_exists($c, 'getName') && $c->getName() === 'provider'));
                     array_splice($fields, $providerGrid === false ? count($fields) : $providerGrid, 0, [$layout]);
                 }
-
-                $fields[] = Grid::make(['default' => 1, 'md' => 2])
-                    ->schema([
-                        Select::make('ghl_display')
-                            ->label('Weergave (GoHighLevel)')
-                            ->options([
-                                'iframe' => 'Iframe in de pagina',
-                                'popup' => 'Pop-up achter een knop',
-                                'own' => 'Eigen kalender (zonder iframe)',
-                            ])
-                            ->default('iframe')
-                            ->selectablePlaceholder(false)
-                            ->live(),
-                        TextInput::make('popup_button_label')
-                            ->label('Knoptekst pop-up')
-                            ->default('Kies een moment')
-                            ->maxLength(80)
-                            ->visible(fn (\Filament\Schemas\Components\Utilities\Get $get): bool => $get('ghl_display') === 'popup'),
-                        TextInput::make('calendar_note')
-                            ->label('Tekst onder "Kies een dag en uur"')
-                            ->placeholder('30 minuten, online.')
-                            ->helperText('Leeg = "30 minuten, online."')
-                            ->maxLength(80)
-                            ->visible(fn (\Filament\Schemas\Components\Utilities\Get $get): bool => $get('ghl_display') === 'own'),
-                        TextInput::make('appointment_title')
-                            ->label('Titel van de afspraak')
-                            ->placeholder('Website Bottleneck Scan')
-                            ->helperText('In de agenda en de uitnodiging. Leeg = naam van de GHL-agenda + naam van de klant.')
-                            ->maxLength(120)
-                            ->visible(fn (\Filament\Schemas\Components\Utilities\Get $get): bool => $get('ghl_display') === 'own'),
-                    ])
-                    ->visible(fn (\Filament\Schemas\Components\Utilities\Get $get): bool => $get('provider') === 'ghl');
-
-                // Eigen kalender: de formuliervelden staan hier (één plek), elk gekoppeld aan
-                // een contactveld in GoHighLevel. Nieuwe velden maak je via "+" meteen in GHL aan.
-                $fields[] = Repeater::make('form_fields')
-                    ->label('Formuliervelden')
-                    ->helperText('De vragen bij het boeken, in deze volgorde. Elk antwoord komt in het gekoppelde veld van het contact in GoHighLevel. Een e-mailveld is verplicht.')
-                    ->schema([
-                        Hidden::make('key')->default(fn (): string => Str::lower(Str::random(8))),
-                        Grid::make(['default' => 1, 'md' => 2])->schema([
-                            TextInput::make('label')
-                                ->label('Vraag')
-                                ->required()
-                                ->maxLength(200)
-                                ->live(onBlur: true),
-                            Select::make('target')
-                                ->label('Opslaan in (GoHighLevel)')
-                                ->options(fn (ContactFields $ghl): array => $ghl->options())
-                                ->getOptionLabelUsing(fn (?string $value, ContactFields $ghl): ?string => $ghl->label($value))
-                                ->helperText(fn (ContactFields $ghl): ?string => $ghl->custom() === null
-                                    ? 'De eigen velden uit GoHighLevel konden niet opgehaald worden (GHL_API_TOKEN ontbreekt of heeft geen recht locations/customFields.readonly).'
-                                    : null)
-                                ->required()
-                                ->searchable()
-                                ->rule(fn () => function (string $attribute, mixed $value, \Closure $fail): void {
-                                    if (! BookingForm::isValidTarget((string) $value)) {
-                                        $fail('Kies een veld uit de lijst.');
-                                    }
-                                })
-                                ->createOptionForm([
-                                    TextInput::make('name')
-                                        ->label('Naam van het nieuwe veld in GoHighLevel')
-                                        ->required()
-                                        ->maxLength(150),
-                                    Toggle::make('large')
-                                        ->label('Groot tekstvak (meerdere regels)'),
-                                ])
-                                ->createOptionModalHeading('Nieuw veld in GoHighLevel')
-                                ->createOptionUsing(function (array $data, ContactFields $ghl): string {
-                                    $target = $ghl->create($data['name'], (bool) ($data['large'] ?? false));
-
-                                    if ($target === null) {
-                                        Notification::make()->title('Het veld kon niet aangemaakt worden in GoHighLevel.')->danger()->send();
-
-                                        throw new Halt;
-                                    }
-
-                                    return $target;
-                                })
-                                ->suffixAction(
-                                    Action::make('refreshGhlFields')
-                                        ->icon('heroicon-m-arrow-path')
-                                        ->tooltip('Lijst vernieuwen uit GoHighLevel')
-                                        ->action(fn (ContactFields $ghl) => $ghl->refresh()),
-                                ),
-                            Select::make('type')
-                                ->label('Soort veld')
-                                ->options(BookingForm::TYPES)
-                                ->default('text')
-                                ->required()
-                                ->selectablePlaceholder(false),
-                            TextInput::make('placeholder')
-                                ->label('Voorbeeldtekst in het veld (optioneel)')
-                                ->maxLength(120),
-                        ]),
-                        Toggle::make('required')->label('Verplicht'),
-                    ])
-                    ->default(BookingForm::defaults())
-                    ->itemLabel(fn (array $state): ?string => $state['label'] ?? null)
-                    ->reorderable()
-                    ->collapsible()
-                    ->collapsed()
-                    // Filament klapt bij "toevoegen" álle items open; hier enkel het nieuwe.
-                    ->addAction(fn (Action $action) => $action->action(function (Repeater $component): void {
-                        $newUuid = $component->generateUuid();
-                        $items = $component->getRawState();
-                        $newUuid ? $items[$newUuid] = [] : $items[] = [];
-                        $newKey = $newUuid ?? array_key_last($items);
-
-                        $component->rawState($items);
-                        $component->getChildSchema($newKey)->fill();
-                        $component->collapsed(fn (?Schema $item): bool => ! str_ends_with((string) $item?->getStatePath(), '.'.$newKey));
-                        $component->callAfterStateUpdated();
-                        $component->shouldPartiallyRenderAfterActionsCalled() ? $component->partiallyRender() : null;
-                    }))
-                    ->addActionLabel('Veld toevoegen')
-                    ->rule(fn () => function (string $attribute, mixed $value, \Closure $fail): void {
-                        if (! collect((array) $value)->contains('target', 'email')) {
-                            $fail('Koppel één veld aan "E-mailadres": zonder kan GoHighLevel geen contact maken.');
-                        }
-                    })
-                    ->columnSpanFull()
-                    ->visible(fn (\Filament\Schemas\Components\Utilities\Get $get): bool => $get('provider') === 'ghl' && $get('ghl_display') === 'own');
 
                 return $fields;
             })

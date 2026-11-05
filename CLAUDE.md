@@ -256,10 +256,8 @@ Instellingen → Integraties: per formulier tags, velden en bron), net als
 de site, dan mailt de core zelf de eigenaar; de fout staat bij de aanvraag (knop "Opnieuw").
 GHL-fouten blokkeren de
 bezoeker nooit. Sleutel: Instellingen → Integraties, anders `.env` `GHL_API_TOKEN` en
-`GHL_LOCATION_ID`; de eigen kalender en de offerte-webhooks (`CalendarBooking`,
-`ContactFields`, `OpportunityStage`) gebruiken dezelfde sleutel via de core-`Client`.
-De boeking (type `booking`) staat bij Integraties bewust uit: `CalendarBooking` maakt
-zelf contact en afspraak, anders komt het contact er dubbel in.
+`GHL_LOCATION_ID`; de eigen kalender (core) en de offerte-webhooks (`OpportunityStage`)
+gebruiken dezelfde sleutel via de core-`Client`.
 De route is zonder CSRF (publieke leadvorm, pagina kan gecachet zijn; uitsluiten via
 `withoutMiddleware(PreventRequestForgery::class)`, niet `ValidateCsrfToken`: in Laravel 13 gaf dat live
 een 419 terwijl de tests slaagden): honeypot
@@ -270,28 +268,29 @@ workflow start dan niet nog eens. Tests: `tests/Feature/OmzetcheckGateTest.php`.
 
 ## Eigen kalender (boeking-blok, GoHighLevel)
 
-Het boeking-blok met aanbieder GoHighLevel heeft drie weergaven (`ghl_display`):
-`iframe` (standaard), `popup` (knop, GHL-agenda in een venster) en `own` (eigen
-kalender zonder iframe, [`booking-own.blade.php`](resources/views/components/site/sections/booking-own.blade.php)).
-`own` haalt vrije momenten via `GET /boeking/tijdstippen` en boekt via `POST /boeking`
-([`BookingController`](app/Http/Controllers/BookingController.php) →
-[`CalendarBooking`](app/Services/GoHighLevel/CalendarBooking.php)): contact upsert +
-afspraak met `meetingLocationType` uit de agenda (Google Meet), dus de workflows op
-"Appointment status" draaien mee en de mail krijgt Meet- en verplaats-link. Alleen
-agenda's die in een boeking-sectie staan zijn bereikbaar (agenda-ID = laatste deel van de URL).
-Token (`GHL_API_TOKEN`) heeft naast contacts ook `calendars.readonly` en
-`calendars/events.write` nodig; zonder die rechten mislukt boeken (502, in de log).
-Formuliervelden staan per boeking-sectie in `content.form_fields` (admin: "Formuliervelden"),
-elk met `target`: een standaardveld (`first_name`, `last_name`, `email`, `phone`, `website`),
-`custom:<id>` (eigen GHL-contactveld) of `appointment` (enkel in de afspraak). De keuzelijst komt
-uit GHL ([`ContactFields`](app/Services/GoHighLevel/ContactFields.php), 15 min cache, knop
-"Lijst vernieuwen"); via "+" maak je een nieuw GHL-veld aan (bestaande naam = hergebruiken).
-De velden komen bij het boeken uit de sectie zelf, nooit uit de browser; zonder velden gelden
-`BookingForm::defaults()`, en een e-mailveld is er altijd. Token-scopes daarvoor:
-`locations/customFields.readonly` + `.write`. Op Combell staat `LOG_LEVEL=error`, dus
-GHL-fouten loggen als error.
-De tekst onder "Kies een dag en uur" is per sectie instelbaar (`calendar_note`, leeg = "30 minuten, online.").
-`bootstrap/app.php` rendert JSON-fouten voor `boeking`.
+De logica zit sinds core 0.14.2 in **webgoeroe/core** (zie `docs/werking.md` daar):
+aanbieder GoHighLevel verschijnt in het boeking-blok zodra "Koppeling GoHighLevel" aanstaat,
+met weergave `iframe`, `popup` of `own` (eigen kalender), de formuliervelden per sectie
+(`content.form_fields`, elk met een GHL-`target`), afspraaktitel en inleiding. Routes
+`booking.slots` en `booking.store`, `BookingController`, `CalendarBooking`, `ContactFields`
+en `BookingForm` zijn van de core.
+
+Hier blijft enkel wat eigen is aan deze site:
+- **Opmaak**: [`booking.blade.php`](resources/views/components/site/sections/booking.blade.php)
+  (iframe, pop-up, voorinvullen vanuit de omzetcheck) en
+  [`booking-own.blade.php`](resources/views/components/site/sections/booking-own.blade.php)
+  (maandkalender in de huisstijl, `window.wgTracking` voor de pixel).
+- **`AppServiceProvider::registerBookings()`** (`Core::bookings()`): trackingregels, herkomst
+  (`attribution` + `herkomst`) in de inzending en het Meta-event `Schedule` na het boeken.
+- Inleiding in de uitnodiging: per sectie, anders `services.gohighlevel.booking.description`.
+
+De boeking maakt zelf contact en afspraak in GHL en bewaart het contact bij de aanvraag
+(`ghl_contact_id`). Op Integraties staat type "Boeking" aan met enkel `herkomst` → het
+GHL-veld "Herkomst advertentie" (migratie `ghl_via_core_koppeling`); tags of een deal
+kun je daar toevoegen zonder dubbel contact. Token-scopes: `calendars.readonly`,
+`calendars/events.write`, `locations/customFields.readonly` + `.write`. Op Combell staat
+`LOG_LEVEL=error`, dus GHL-fouten loggen als error.
+Tests: `tests/Feature/OwnBookingTest.php` (en `CoreBookingTest` in de core).
 
 ## Wisselen met een ander blok
 

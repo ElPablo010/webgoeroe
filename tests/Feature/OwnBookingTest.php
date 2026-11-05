@@ -2,8 +2,8 @@
 
 use App\Models\FormSubmission;
 use App\Models\Page;
-use App\Services\GoHighLevel\ContactFields;
-use App\Support\BookingForm;
+use Webgoeroe\Core\Integrations\GoHighLevel\ContactFields;
+use Webgoeroe\Core\Support\BookingForm;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Cache;

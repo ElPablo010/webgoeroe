@@ -149,8 +149,8 @@
                         @endphp
                         <link rel="preconnect" href="https://api.leadconnectorhq.com">
                         @if ($ghlOwn)
-                            {{-- Eigen kalender: geen iframe, de site toont zelf de vrije momenten (BookingController). --}}
-                            <x-site.sections.booking-own :calendar-id="\App\Http\Controllers\BookingController::calendarId($content)" :section-id="$section?->id" :fields="\App\Support\BookingForm::fields($content)" :prefill="$ghlParams" :note="$content['calendar_note'] ?? null" />
+                            {{-- Eigen kalender: geen iframe, de site toont zelf de vrije momenten (BookingController van de core). --}}
+                            <x-site.sections.booking-own :calendar-id="\Webgoeroe\Core\Http\Controllers\BookingController::calendarId($content)" :section-id="$section?->id" :fields="\Webgoeroe\Core\Support\BookingForm::fields($content)" :prefill="$ghlParams" :note="$content['calendar_note'] ?? null" />
                         @elseif ($ghlPopup)
                             {{-- Pop-up: de iframe laadt pas bij het openen en heeft zijn eigen scroll
                                  binnen het venster, dus de pagina zelf blijft rustig. Andere knoppen op

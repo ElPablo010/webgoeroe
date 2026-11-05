@@ -10,7 +10,8 @@ use Webgoeroe\Core\Support\Modules;
  * (Instellingen → Integraties) in plaats van eigen code. Zet de module aan en
  * neemt de tags, velden en bron over die vroeger in config/services.php
  * stonden. Een type dat al ingesteld is, blijft zoals het is. De boeking
- * (eigen kalender) maakt zelf contact en afspraak in GHL en blijft hier uit.
+ * (eigen kalender, nu ook in de core) maakt zelf contact en afspraak in GHL;
+ * de koppeling zet daar enkel nog de herkomst van de advertentie bij.
  */
 return new class extends Migration
 {
@@ -36,6 +37,13 @@ return new class extends Migration
             'tags' => ['lp-elektriciens-start'],
             'source' => 'Landingspagina speed to lead elektriciens',
             'fields' => [],
+        ];
+
+        $stored['booking'] ??= [
+            'enabled' => filled($attribution),
+            'tags' => [],
+            'source' => 'Boeking website',
+            'fields' => filled($attribution) ? [['form' => 'herkomst', 'ghl' => $attribution]] : [],
         ];
 
         Core::model('setting')::set(SubmissionSync::SETTING, $stored);
