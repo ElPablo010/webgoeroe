@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "bd1d295306cafe8c993646606ee55b40",
+    "content-hash": "58929729198450392e1ce930b6b9fa1e",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -9839,22 +9839,22 @@
         },
         {
             "name": "webgoeroe/ai-builder",
-            "version": "v0.1.0",
+            "version": "v0.2.0",
             "source": {
                 "type": "git",
                 "url": "git@github.com:ElPablo010/ai-builder.git",
-                "reference": "cef39b45d4c31d7a237a52f2d1d77277e8b7253c"
+                "reference": "35ff97caeafdd82410ff7058c38a95d3f181a417"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ElPablo010/ai-builder/zipball/cef39b45d4c31d7a237a52f2d1d77277e8b7253c",
-                "reference": "cef39b45d4c31d7a237a52f2d1d77277e8b7253c",
+                "url": "https://api.github.com/repos/ElPablo010/ai-builder/zipball/35ff97caeafdd82410ff7058c38a95d3f181a417",
+                "reference": "35ff97caeafdd82410ff7058c38a95d3f181a417",
                 "shasum": ""
             },
             "require": {
                 "laravel/framework": "^13.0",
                 "php": "^8.3",
-                "webgoeroe/core": "^0.15"
+                "webgoeroe/core": "^0.15.2"
             },
             "type": "library",
             "extra": {
@@ -9874,23 +9874,23 @@
             ],
             "description": "AI-paginabouwer van De WebGoeroe: pagina's schrijven, afwerken en aanpassen met de blokken van de site-basis (webgoeroe/core), met controleronde, versies en kostenlogging.",
             "support": {
-                "source": "https://github.com/ElPablo010/ai-builder/tree/v0.1.0",
+                "source": "https://github.com/ElPablo010/ai-builder/tree/v0.2.0",
                 "issues": "https://github.com/ElPablo010/ai-builder/issues"
             },
-            "time": "2026-11-04T21:38:58+00:00"
+            "time": "2026-11-05T06:58:34+00:00"
         },
         {
             "name": "webgoeroe/core",
-            "version": "v0.15.0",
+            "version": "v0.15.3",
             "source": {
                 "type": "git",
                 "url": "git@github.com:ElPablo010/core.git",
-                "reference": "2a94f01d17a13f0df99e5e82cb43d15cb0f7601f"
+                "reference": "785e763489107b62d02439fc7a6bb85e11d55dfa"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ElPablo010/core/zipball/2a94f01d17a13f0df99e5e82cb43d15cb0f7601f",
-                "reference": "2a94f01d17a13f0df99e5e82cb43d15cb0f7601f",
+                "url": "https://api.github.com/repos/ElPablo010/core/zipball/785e763489107b62d02439fc7a6bb85e11d55dfa",
+                "reference": "785e763489107b62d02439fc7a6bb85e11d55dfa",
                 "shasum": ""
             },
             "require": {
@@ -9919,10 +9919,10 @@
             ],
             "description": "Site-basis van De WebGoeroe: page-builder met blokken, media, menu's, redirects, header/footer, SEO (sitemap, robots, llms.txt, JSON-LD) en formulieren voor Laravel + Filament-sites.",
             "support": {
-                "source": "https://github.com/ElPablo010/core/tree/v0.15.0",
+                "source": "https://github.com/ElPablo010/core/tree/v0.15.3",
                 "issues": "https://github.com/ElPablo010/core/issues"
             },
-            "time": "2026-11-04T21:38:44+00:00"
+            "time": "2026-11-05T07:01:26+00:00"
         },
         {
             "name": "webgoeroe/reviews",
