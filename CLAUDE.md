@@ -100,16 +100,12 @@ Hier blijft wat eigen is aan deze site:
   favicon op de Header-pagina, geen LinkedIn in de footer, pixelbudget 12 MP.
 - **`AppServiceProvider`**: de eigen blokken `calculator` (gemiste oproepen),
   `conversion_calculator` (website-conversie, sectorkeuze + `?sector=` uit de URL),
-  `case_results`, `cases_grid`, de contactvelden (e-mail/telefoon/adres) op het form-blok, de
-  secties "Call-to-action" en "Landingspagina's" op Instellingen → Algemeen (`Core::generalSettings()`;
+  `case_results`, de contactvelden (e-mail/telefoon/adres) op het form-blok, de
+  sectie "Landingspagina's" op Instellingen → Algemeen (`Core::generalSettings()`;
   landingspagina's = zonder menu en footer, via `App\Support\LandingPages` in de layout),
   op de paginatabel een kolom "Landingspagina" en een filter "Type" (`Core::pageTable()`,
-  `registerPageTable()`) en `App\Support\ContentSeo::register()`.
-- **`App\Support\ContentSeo`**: cases en blog in sitemap.xml en llms.txt
-  (`Core::seo()`), en de meta/JSON-LD als Seo-macro's: `Seo::fromCaseStudy()`,
-  `Seo::fromPost()`, `Seo::fromBlogIndex()`, `Seo::fromCaseStudiesIndex()`.
-  Registreer een macro als callable (`[self::class, 'methode']`), niet als
-  closure met `self::` — die wordt aan Seo gebonden en roept zichzelf aan.
+  `registerPageTable()`). Blog en cases (met hun SEO): zie "Blog, cases en de
+  CTA-banner (modules)".
 - Blog en cases (resources, controllers, MCP-server, `MediaPath`, `MediaUrl`)
   zijn volledig van deze site.
 - De standaardtests van de core draaien mee (`tests/Pest.php`, `phpunit.xml`).
@@ -157,29 +153,28 @@ geeft een 500.
 
 ---
 
-## Site-brede call-to-action
+## Blog, cases en de CTA-banner (modules)
 
-De afsluitende CTA-banner onderaan **elk blogartikel** en **elke case** komt uit
-één instelling: **Instellingen → Algemeen → Call-to-action** (titel, tekst,
-knoptekst en bestemming). Code: [`App\Support\SiteCta`](app/Support/SiteCta.php),
-opgeslagen als de `cta`-sleutel in de `settings`-tabel.
+Blog en cases komen sinds november 2026 uit de modules **`webgoeroe/blog`** en
+**`webgoeroe/cases`** (`Modules/repo/blog`, `Modules/repo/cases`): model,
+admin (Website → Blog/Cases), routes (`/blog`, `/cases`), SEO (sitemap, llms.txt,
+`Seo::fromPost()`/`fromCaseStudy()`) en het blok `cases_grid`. Deze site houdt:
 
-- De bestemming bewaar je bij voorkeur als **pagina-koppeling** (`link_type: page`
-  + `page_id`), niet als vast pad. `SiteCta::current()` rekent de href dan live
-  uit de slug van die pagina — hernoem je de pagina in het CMS, dan volgen alle
-  CTA's mee zonder code-wijziging. Zelfde afweging (en dezelfde reden dat
-  `PageLinkField` z'n href binnen een `statePath`-group niet betrouwbaar
-  wegschrijft) als in `SiteHeader` (core).
-- Een case mag afwijken via z'n eigen `content.cta`-velden — die zijn **puur
-  override**: laat je er één leeg, dan erft de case de site-instelling
-  (`SiteCta::mergedWith()`). In de praktijk vullen cases alleen `title`/`body`
-  in en erven ze de knop.
-- Blogartikelen hebben géén eigen CTA-velden; die gebruiken de instelling volledig.
+- de config (`config/blog.php`, `config/cases.php`: model = `App\Models\Post`
+  en `App\Models\CaseStudy`, dunne subklassen voor MCP en seeders);
+- het ontwerp: `resources/views/vendor/blog`, `resources/views/vendor/cases`,
+  `components/site/sections/cases-grid.blade.php` en de banner in
+  `resources/views/vendor/core/components/cta-banner.blade.php`;
+- de MCP-server (blog + cases) in `app/Mcp`.
 
-Wijzig de CTA-tekst dus **niet in de blade-views** — die lezen enkel `$cta`, dat
-de controllers meegeven. Het formulier op Instellingen → Algemeen staat in
-`AppServiceProvider::registerGeneralSettings()` (uitbreidingspunt
-`Core::generalSettings()` van de core).
+De **CTA-banner** onder elk artikel en elke case (titel, tekst, primaire en
+secundaire knop) stel je in op **Instellingen → Blog** en **Instellingen →
+Cases** (instellingen `blog_cta`, `cases_cta`; bouwblok `CtaBanner` uit de core).
+Een case kan titel, tekst en eigen knoppen overschrijven (tab Inhoud → Call to
+action; `content.cta`), bv. de offerte als primaire knop bij een websitecase.
+Leeg = de instelling. De vroegere sectie op Instellingen → Algemeen (`SiteCta`,
+sleutel `cta`) is weg; de migratie `move_cta_to_blog_and_cases_modules` zette
+haar inhoud over. Wijzig de CTA-tekst dus niet in de views.
 
 ---
 
@@ -520,7 +515,7 @@ OAuth-callback keert ook daarheen terug.
     homepage gekopieerd, waardoor twee keer dezelfde zin op de pagina stond,
     over een onderwerp waar ze niet bij hoorde.
   - **De knopbestemming blijft een paginakoppeling** (`link_type: page` +
-    `page_id`), niet een uitgerekend pad. Zelfde reden als bij [`SiteCta`](app/Support/SiteCta.php):
+    `page_id`), niet een uitgerekend pad. Zelfde reden als bij de CTA-banner (`CtaBanner` in de core):
     hernoem je de slug van de bottleneck-scan, dan volgen alle gegenereerde
     knoppen mee. De oude generator platste dit tot een kale `href` en leverde
     dus bróósere pagina's op dan wat je met de hand bouwt.
@@ -590,13 +585,13 @@ omgezet (h2-id's voor de TOC voegt de blade-view zelf toe). Helpers in
 [InteractsWithPosts](app/Mcp/Concerns/InteractsWithPosts.php).
 
 Deelafbeelding: `create_post`/`update_post` nemen ook `seo_image_url` +
-`seo_image_alt` (og:image). Optioneel: leeg = `ContentSeo` valt terug op de cover.
+`seo_image_alt` (og:image). Optioneel: leeg = de blog-module valt terug op de cover.
 
 ### Cases
 
 Let op: een case werkt **anders dan een post**. `CaseStudy::$content` is een
 **gestructureerde JSON-array** (geen HTML-string), met een vast stramien dat
-[CaseStudyForm](app/Filament/Resources/CaseStudies/Schemas/CaseStudyForm.php) en de
+het case-formulier van de module `webgoeroe/cases` en de
 publieke view verwachten:
 
 ```

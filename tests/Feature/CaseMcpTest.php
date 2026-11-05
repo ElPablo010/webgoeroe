@@ -64,7 +64,8 @@ it('creates a draft case with the full content structure', function () {
         ->and($case->content['goals'][0]['text'])->toBe('Online boeken mogelijk maken')
         ->and($case->content['approach']['steps'][0]['title'])->toBe('Analyse')
         ->and($case->content['results']['metrics'][0]['value'])->toBe('+65%')
-        ->and($case->content['cta']['button_url'])->toBe('/contact');
+        // Eén eigen knop wordt content.cta.buttons (module webgoeroe/cases).
+        ->and($case->content['cta']['buttons'][0])->toMatchArray(['label' => 'Plan gesprek', 'href' => '/contact', 'variant' => 'primary']);
 });
 
 it('publishes immediately when published is true and returns the public url', function () {

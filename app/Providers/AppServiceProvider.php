@@ -5,18 +5,13 @@ namespace App\Providers;
 use App\Filament\Schemas\Sections\CalculatorFields;
 use App\Filament\Schemas\Sections\ConversionCalculatorFields;
 use App\Filament\Schemas\Sections\CaseResultsFields;
-use App\Filament\Schemas\Sections\CasesGridFields;
 use App\Models\Page;
 use App\Services\Meta\ConversionsApi;
-use App\Support\ContentSeo;
 use App\Support\LandingPages;
-use App\Support\SiteCta;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Grid;
-use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -27,7 +22,6 @@ use Illuminate\Support\ServiceProvider;
 use Laravel\Passport\Passport;
 use Webgoeroe\Core\Core;
 use Webgoeroe\Core\Filament\Schemas\Components\MediaPickerField;
-use Webgoeroe\Core\Filament\Schemas\Components\PageLinkField;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -53,9 +47,6 @@ class AppServiceProvider extends ServiceProvider
         Core::formTypes()->register('speed_to_lead_start', 'Speed to lead: starten', 'forms.speed-to-lead-start-form', [], 'Speed to lead: starten');
         $this->registerGeneralSettings();
         $this->registerPageTable();
-
-        // Cases en blog in sitemap.xml, llms.txt en de meta/JSON-LD (Seo::fromPost, …).
-        ContentSeo::register();
     }
 
     /**
@@ -116,7 +107,8 @@ class AppServiceProvider extends ServiceProvider
             // Levert aanvragen van type omzetcheck: tags, bron en deal per blok (core).
             ->ghl('conversion_calculator', 'omzetcheck')
             ->register('case_results', 'Case-resultaten', CaseResultsFields::class)
-            ->register('cases_grid', 'Case studies grid', CasesGridFields::class)
+            // Cases-grid komt uit de module webgoeroe/cases (eigen ontwerp in
+            // components/site/sections/cases-grid).
             // Contactgegevens naast het formulier (e-mail, telefoon, adres), net
             // onder de kop en vóór de formulierkeuze.
             ->extend('form', function (array $fields): array {
@@ -248,34 +240,11 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
-     * Instellingen → Algemeen → Call-to-action: de afsluitende banner onderaan
-     * elk blogartikel en elke case (App\Support\SiteCta, sleutel `cta`).
+     * Instellingen → Algemeen. De CTA-banner onder blog en cases staat sinds
+     * november 2026 in Instellingen → Blog en → Cases (modules).
      */
     protected function registerGeneralSettings(): void
     {
-        Core::generalSettings()->section(
-            fn () => Section::make('Call-to-action')
-                ->description('De afsluitende banner onderaan elk blogartikel en elke case. Wijzig je de bestemming hier, dan volgen alle CTA\'s mee.')
-                ->schema([
-                    Group::make()
-                        ->statePath(SiteCta::KEY)
-                        ->schema([
-                            TextInput::make('title')
-                                ->label('Titel')
-                                ->maxLength(120),
-                            Textarea::make('body')
-                                ->label('Tekst')
-                                ->rows(3),
-                            TextInput::make('button_label')
-                                ->label('Knoptekst')
-                                ->maxLength(80),
-                            PageLinkField::make(required: false),
-                        ]),
-                ]),
-            keys: [SiteCta::KEY],
-            fill: fn (): array => [SiteCta::KEY => SiteCta::current()],
-        );
-
         Core::generalSettings()->section(
             fn () => Section::make('Landingspagina\'s')
                 ->description('Pagina\'s voor advertenties: zonder menu en footer, zodat de bezoeker op de pagina blijft. Onderaan blijven enkel de juridische links staan.')

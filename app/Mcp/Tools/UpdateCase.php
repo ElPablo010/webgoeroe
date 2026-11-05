@@ -70,7 +70,7 @@ class UpdateCase extends Tool
         }
 
         if (array_key_exists('content', $validated)) {
-            $case->content = $validated['content'];
+            $case->content = $this->normalizeContent($validated['content']);
         }
 
         if (array_key_exists('slug', $validated)) {

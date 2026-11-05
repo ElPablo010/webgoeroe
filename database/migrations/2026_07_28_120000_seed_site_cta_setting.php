@@ -3,7 +3,6 @@
 use App\Models\CaseStudy;
 use App\Models\Page;
 use App\Models\Setting;
-use App\Support\SiteCta;
 use Illuminate\Database\Migrations\Migration;
 
 /**
@@ -23,6 +22,18 @@ return new class extends Migration
 
     private const OLD_BUTTON_LABEL = 'Plan strategisch gesprek';
 
+    /** Sleutel en standaard van de toenmalige App\Support\SiteCta (sinds november 2026 vervangen door de modules blog en cases). */
+    private const KEY = 'cta';
+
+    private const DEFAULTS = [
+        'title' => 'Benieuwd wat dit voor jouw bedrijf kan betekenen?',
+        'body' => 'In een gratis adviesgesprek van 30 minuten bekijken we samen jouw situatie. Geen verplichtingen, wel concrete inzichten.',
+        'button_label' => 'Plan je gratis adviesgesprek',
+        'link_type' => 'url',
+        'page_id' => null,
+        'href' => '/gratis-adviesgesprek',
+    ];
+
     public function up(): void
     {
         $this->seedSetting();
@@ -37,7 +48,7 @@ return new class extends Migration
 
     private function seedSetting(): void
     {
-        if (Setting::query()->where('key', SiteCta::KEY)->exists()) {
+        if (Setting::query()->where('key', self::KEY)->exists()) {
             return;
         }
 
@@ -48,8 +59,8 @@ return new class extends Migration
             ->orderByRaw("slug = 'gratis-adviesgesprek' desc")
             ->first();
 
-        Setting::set(SiteCta::KEY, [
-            ...SiteCta::defaults(),
+        Setting::set(self::KEY, [
+            ...self::DEFAULTS,
             ...($page !== null
                 ? ['link_type' => 'page', 'page_id' => $page->id, 'href' => '/'.$page->slug]
                 : []),

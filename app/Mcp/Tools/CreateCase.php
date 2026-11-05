@@ -57,7 +57,7 @@ class CreateCase extends Tool
             'cover_alt' => $validated['cover_alt'] ?? null,
             'meta_title' => $validated['meta_title'] ?? null,
             'meta_description' => $validated['meta_description'] ?? null,
-            'content' => $validated['content'],
+            'content' => $this->normalizeContent($validated['content']),
             'featured' => (bool) ($validated['featured'] ?? false),
             'published' => $published,
         ]);

@@ -18,6 +18,8 @@
             <directory>vendor/webgoeroe/seo-growth/tests</directory>
             <directory>vendor/webgoeroe/reviews/tests</directory>
             <directory>vendor/webgoeroe/ai-builder/tests</directory>
+            <directory>vendor/webgoeroe/blog/tests</directory>
+            <directory>vendor/webgoeroe/cases/tests</directory>
         </testsuite>
     </testsuites>
     <source>

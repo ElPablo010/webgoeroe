@@ -18,6 +18,8 @@ use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Webgoeroe\Blog\BlogPlugin;
+use Webgoeroe\Cases\CasesPlugin;
 use Webgoeroe\Core\CorePlugin;
 use Webgoeroe\Core\Filament\NavigationOrder;
 use Webgoeroe\Core\Support\SiteHeader;
@@ -59,6 +61,8 @@ class AdminPanelProvider extends PanelProvider
                 CorePlugin::make(),
                 SeoGrowthPlugin::make(),
                 ReviewsPlugin::make(),
+                BlogPlugin::make(),
+                CasesPlugin::make(),
             ])
             ->middleware([
                 EncryptCookies::class,

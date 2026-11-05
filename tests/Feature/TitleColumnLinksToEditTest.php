@@ -1,9 +1,9 @@
 <?php
 
-use App\Filament\Resources\CaseStudies\CaseStudyResource;
-use App\Filament\Resources\CaseStudies\Pages\ListCaseStudies;
-use App\Filament\Resources\Posts\Pages\ListPosts;
-use App\Filament\Resources\Posts\PostResource;
+use Webgoeroe\Cases\Filament\Resources\CaseStudies\CaseStudyResource;
+use Webgoeroe\Cases\Filament\Resources\CaseStudies\Pages\ListCaseStudies;
+use Webgoeroe\Blog\Filament\Resources\Posts\Pages\ListPosts;
+use Webgoeroe\Blog\Filament\Resources\Posts\PostResource;
 use App\Models\CaseStudy;
 use App\Models\Post;
 use App\Models\User;

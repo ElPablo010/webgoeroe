@@ -98,6 +98,37 @@ trait InteractsWithCases
     }
 
     /**
+     * Eén eigen knop (button_label + button_url) wordt content.cta.buttons, de
+     * vorm van de cases-module. Zonder beide blijft de case de knoppen uit
+     * Instellingen → Cases volgen.
+     *
+     * @param  array<string, mixed>|null  $content
+     * @return array<string, mixed>|null
+     */
+    protected function normalizeContent(?array $content): ?array
+    {
+        if (! is_array($content['cta'] ?? null)) {
+            return $content;
+        }
+
+        $cta = $content['cta'];
+
+        if (filled($cta['button_label'] ?? null) && filled($cta['button_url'] ?? null)) {
+            $cta['buttons'] = [[
+                'label' => $cta['button_label'],
+                'variant' => 'primary',
+                'link_type' => 'url',
+                'href' => $cta['button_url'],
+            ]];
+        }
+
+        unset($cta['button_label'], $cta['button_url']);
+        $content['cta'] = $cta;
+
+        return $content;
+    }
+
+    /**
      * Hetzelfde contract als contentRules(), maar als MCP-inputschema.
      */
     protected function contentSchema(JsonSchema $schema): object
@@ -155,8 +186,8 @@ trait InteractsWithCases
             'cta' => $schema->object([
                 'title' => $schema->string()->description('Titel van de afsluitende call-to-action.'),
                 'body' => $schema->string()->description('Tekst van de call-to-action.'),
-                'button_label' => $schema->string()->description('Knoptekst. Laat leeg om de site-brede CTA-knop te gebruiken.'),
-                'button_url' => $schema->string()->description('Knop-URL. Laat leeg om de site-brede bestemming (de adviesgesprek-pagina) te gebruiken — dat is de aanbevolen keuze.'),
+                'button_label' => $schema->string()->description('Knoptekst van één eigen knop. Laat leeg om de knoppen uit Instellingen → Cases te gebruiken (aanbevolen).'),
+                'button_url' => $schema->string()->description('Knop-URL van die eigen knop. Laat leeg om de knoppen uit Instellingen → Cases te gebruiken (aanbevolen).'),
             ]),
         ]);
     }
