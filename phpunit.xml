@@ -17,6 +17,7 @@
         <testsuite name="SeoGrowth">
             <directory>vendor/webgoeroe/seo-growth/tests</directory>
             <directory>vendor/webgoeroe/reviews/tests</directory>
+            <directory>vendor/webgoeroe/ai-builder/tests</directory>
         </testsuite>
     </testsuites>
     <source>

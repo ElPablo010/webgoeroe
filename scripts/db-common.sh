@@ -10,8 +10,9 @@ LOCAL_BACKUPS="storage/db-backups"         # gitignored
 # Content tables that travel local -> live. Everything else on live is either
 # generated there (form_submissions, seo_*), auth/session state (users, oauth_*,
 # personal_access_tokens, sessions) or schema bookkeeping (migrations) and must
-# never be overwritten by a local copy.
-PUSH_TABLES=(pages page_sections posts case_studies menus menu_items settings website_media redirects)
+# never be overwritten by a local copy. page_versions travels with pages: the
+# versions point at page ids, so they must come from the same side.
+PUSH_TABLES=(pages page_sections page_versions posts case_studies menus menu_items settings website_media redirects)
 
 MEDIA_DIR="storage/app/public/"
 
