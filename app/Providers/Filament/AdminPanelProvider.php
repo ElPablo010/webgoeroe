@@ -63,6 +63,7 @@ class AdminPanelProvider extends PanelProvider
                 ReviewsPlugin::make(),
                 BlogPlugin::make(),
                 CasesPlugin::make(),
+                \Webgoeroe\Chat\ChatPlugin::make(),
             ])
             ->middleware([
                 EncryptCookies::class,

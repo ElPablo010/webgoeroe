@@ -22,6 +22,7 @@
         "webgoeroe/ai-builder": "^0.2",
         "webgoeroe/blog": "^0.1.1",
         "webgoeroe/cases": "^0.1.1",
+        "webgoeroe/chat": "^0.1",
         "webgoeroe/core": "^0.15.9",
         "webgoeroe/reviews": "^0.2.2",
         "webgoeroe/seo-growth": "^0.9"
@@ -106,6 +107,11 @@
     "minimum-stability": "stable",
     "prefer-stable": true,
     "repositories": [
+        {
+            "name": "chat",
+            "type": "vcs",
+            "url": "https://github.com/ElPablo010/chat.git"
+        },
         {
             "name": "ai-builder",
             "type": "vcs",

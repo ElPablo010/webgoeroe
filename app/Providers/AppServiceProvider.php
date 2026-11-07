@@ -43,6 +43,7 @@ class AppServiceProvider extends ServiceProvider
 
         $this->registerBlocks();
         $this->registerBookings();
+        $this->hideChatWidgetOnLandingPages();
         // Startformulier van de landingspagina "Speed to lead elektriciens".
         Core::formTypes()->register('speed_to_lead_start', 'Speed to lead: starten', 'forms.speed-to-lead-start-form', [], 'Speed to lead: starten');
         $this->registerGeneralSettings();
@@ -287,5 +288,25 @@ class AppServiceProvider extends ServiceProvider
                         default => $query,
                     }),
             ]);
+    }
+
+    /**
+     * Landingspagina's hebben één doel: de chatwidget (webgoeroe/chat) hoort er
+     * niet op, de gewone pagina's houden hem.
+     */
+    protected function hideChatWidgetOnLandingPages(): void
+    {
+        if (! class_exists(\Webgoeroe\Chat\Support\WidgetVisibility::class)) {
+            return;
+        }
+
+        \Webgoeroe\Chat\Support\WidgetVisibility::hideWhen(function (Request $request): bool {
+            $ids = \App\Support\LandingPages::ids();
+
+            return $ids !== [] && \App\Models\Page::query()
+                ->whereIn('id', $ids)
+                ->where('slug', trim($request->path(), '/'))
+                ->exists();
+        });
     }
 }

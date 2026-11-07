@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c338bf550e96539642f2a478e88cc151",
+    "content-hash": "6db747714c1b71b76aa4acd771a43087",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -9964,6 +9964,49 @@
                 "issues": "https://github.com/ElPablo010/cases/issues"
             },
             "time": "2026-11-05T15:21:06+00:00"
+        },
+        {
+            "name": "webgoeroe/chat",
+            "version": "v0.1.1",
+            "source": {
+                "type": "git",
+                "url": "git@github.com:ElPablo010/chat.git",
+                "reference": "41effa4cb416eecc9f3ab837b186b82bb8b421a0"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/ElPablo010/chat/zipball/41effa4cb416eecc9f3ab837b186b82bb8b421a0",
+                "reference": "41effa4cb416eecc9f3ab837b186b82bb8b421a0",
+                "shasum": ""
+            },
+            "require": {
+                "filament/filament": "^5.0",
+                "laravel/framework": "^13.0",
+                "php": "^8.3",
+                "webgoeroe/core": "^0.15.7"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Webgoeroe\\Chat\\ChatServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Webgoeroe\\Chat\\": "src/"
+                }
+            },
+            "license": [
+                "proprietary"
+            ],
+            "description": "Chatwidget-module van De WebGoeroe: AI-chat op de site die antwoordt met de inhoud van de site, gegevens vraagt, escaleert naar een aanvraag en afspraken boekt via de kalender van de core. Elke functie apart aan/uit, GoHighLevel optioneel. Voor Laravel + Filament-sites op webgoeroe/core.",
+            "support": {
+                "source": "https://github.com/ElPablo010/chat/tree/v0.1.1",
+                "issues": "https://github.com/ElPablo010/chat/issues"
+            },
+            "time": "2026-11-07T13:38:34+00:00"
         },
         {
             "name": "webgoeroe/core",
