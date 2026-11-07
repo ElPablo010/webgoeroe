@@ -44,6 +44,7 @@ class AppServiceProvider extends ServiceProvider
         $this->registerBlocks();
         $this->registerBookings();
         $this->hideChatWidgetOnLandingPages();
+        $this->registerLeadChecks();
         // Startformulier van de landingspagina "Speed to lead elektriciens".
         Core::formTypes()->register('speed_to_lead_start', 'Speed to lead: starten', 'forms.speed-to-lead-start-form', [], 'Speed to lead: starten');
         $this->registerGeneralSettings();
@@ -66,6 +67,27 @@ class AppServiceProvider extends ServiceProvider
             })
             ->booked(fn (Request $request, Model $submission, array $contact) => app(ConversionsApi::class)
                 ->send('Schedule', $request, array_filter(['email' => $contact['email'] ?? null, 'first_name' => $contact['first_name'] ?? null])));
+    }
+
+    /**
+     * Lekkencheck (core 0.15.10): herkomst van de advertentie meebewaren (zoals bij de
+     * boeking) en het Meta-serverevent "Lead" met hetzelfde event_id als de pixel.
+     */
+    protected function registerLeadChecks(): void
+    {
+        if (! method_exists(Core::class, 'leadChecks')) {
+            return;
+        }
+
+        Core::leadChecks()
+            ->rules(ConversionsApi::RULES)
+            ->data(function (Request $request): array {
+                $attribution = ConversionsApi::attribution($request);
+
+                return ['attribution' => $attribution ?: null, 'herkomst' => ConversionsApi::attributionLine($attribution) ?: null];
+            })
+            ->submitted(fn (Request $request, Model $submission, array $contact) => app(ConversionsApi::class)
+                ->send('Lead', $request, array_filter(['email' => $contact['email'] ?? null, 'first_name' => $contact['first_name'] ?? null])));
     }
 
     /**

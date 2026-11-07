@@ -85,6 +85,7 @@ return [
         'types' => [
             'booking' => false,
             'omzetcheck' => false,
+            'lead_check' => false,
             'speed_to_lead_start' => false,
         ],
     ],

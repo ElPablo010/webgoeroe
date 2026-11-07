@@ -5,7 +5,7 @@
     uit en wist _fbp/_fbc. Staat in <head> vóór Alpine, zoals de GA4-snippet.
 
     Daarnaast zet dit script `window.wgTracking`:
-    - payload(): wat de formulieren (omzetcheck, boeking) meesturen naar de server:
+    - payload(): wat de formulieren (omzetcheck, boeking, lekkencheck) meesturen naar de server:
       herkomst (UTM + sector uit de URL), toestemming, _fbp/_fbc en een event_id;
     - fire(naam, payload): zelfde event in de browser, met hetzelfde event_id als
       het serverevent (Meta ontdubbelt daarop).
@@ -50,6 +50,8 @@
                 if (loaded && window.fbq && payload) fbq('track', name, {}, { eventID: payload.event_id });
             }
         };
+        // Zelfde haakje voor het core-blok Lekkencheck (core 0.15.10).
+        window.coreLeadTracking = window.wgTracking;
 
         if (id === '') return;
 
