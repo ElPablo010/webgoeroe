@@ -2910,16 +2910,16 @@
         },
         {
             "name": "laravel/prompts",
-            "version": "v0.3.26",
+            "version": "v0.3.27",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/prompts.git",
-                "reference": "2d1e9bf6bab8d3f383c254db7f2b4ea8816d55e0"
+                "reference": "abdfc75a1ae6c6f21522daed50da7124cbff09d2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/prompts/zipball/2d1e9bf6bab8d3f383c254db7f2b4ea8816d55e0",
-                "reference": "2d1e9bf6bab8d3f383c254db7f2b4ea8816d55e0",
+                "url": "https://api.github.com/repos/laravel/prompts/zipball/abdfc75a1ae6c6f21522daed50da7124cbff09d2",
+                "reference": "abdfc75a1ae6c6f21522daed50da7124cbff09d2",
                 "shasum": ""
             },
             "require": {
@@ -2962,9 +2962,9 @@
             ],
             "description": "Add beautiful and user-friendly forms to your command-line applications.",
             "support": {
-                "source": "https://github.com/laravel/prompts/tree/v0.3.26"
+                "source": "https://github.com/laravel/prompts/tree/v0.3.27"
             },
-            "time": "2026-10-09T14:45:13+00:00"
+            "time": "2026-11-09T16:07:10+00:00"
         },
         {
             "name": "laravel/sanctum",
@@ -10098,16 +10098,16 @@
         },
         {
             "name": "webgoeroe/seo-growth",
-            "version": "v0.9.0",
+            "version": "v0.9.1",
             "source": {
                 "type": "git",
                 "url": "git@github.com:ElPablo010/seo-growth.git",
-                "reference": "70ac28ca1055c98a24abb30194074a3b5e2381d9"
+                "reference": "4a1a7571faffd104188d64bc48f4d9003b1de265"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ElPablo010/seo-growth/zipball/70ac28ca1055c98a24abb30194074a3b5e2381d9",
-                "reference": "70ac28ca1055c98a24abb30194074a3b5e2381d9",
+                "url": "https://api.github.com/repos/ElPablo010/seo-growth/zipball/4a1a7571faffd104188d64bc48f4d9003b1de265",
+                "reference": "4a1a7571faffd104188d64bc48f4d9003b1de265",
                 "shasum": ""
             },
             "require": {
@@ -10133,10 +10133,10 @@
             ],
             "description": "Groei-module van De WebGoeroe: Search Console, Google Analytics 4, leads-attributie, DataForSEO, AI-briefing en goedkeuringsdashboard voor Laravel + Filament-sites.",
             "support": {
-                "source": "https://github.com/ElPablo010/seo-growth/tree/v0.9.0",
+                "source": "https://github.com/ElPablo010/seo-growth/tree/v0.9.1",
                 "issues": "https://github.com/ElPablo010/seo-growth/issues"
             },
-            "time": "2026-11-05T06:45:55+00:00"
+            "time": "2026-11-10T14:10:41+00:00"
         }
     ],
     "packages-dev": [
