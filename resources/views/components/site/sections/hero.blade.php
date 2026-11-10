@@ -30,7 +30,7 @@
         default   => 'min-h-[90vh] items-center',
     };
     $innerPadding = match ($height) {
-        'compact' => 'pt-28 pb-16 md:pt-32 md:pb-20',
+        'compact' => 'pt-24 pb-12 md:pt-32 md:pb-20',
         'medium'  => 'pt-32 pb-20 md:pt-40 md:pb-28',
         default   => 'py-28 md:py-36',
     };
@@ -40,6 +40,13 @@
     $headingSize  = $side
         ? 'md:text-5xl lg:text-6xl'
         : ($longHeading ? 'md:text-6xl' : 'md:text-6xl lg:text-7xl');
+    // Compact = voor advertentiepagina's: op een gsm moeten titel, tekst en knop
+    // samen in het eerste scherm passen. Tablet en desktop blijven zoals ze waren.
+    $compact      = $height === 'compact';
+    $headingBase  = $compact ? 'text-4xl' : 'text-5xl';
+    $eyebrowGap   = $compact ? 'mb-5 md:mb-8' : 'mb-8';
+    $subtitleGap  = $compact ? 'mt-4 text-base md:mt-6 md:text-lg' : 'mt-6 text-lg';
+    $ctaGap       = $compact ? 'mt-6 md:mt-10' : 'mt-10';
 @endphp
 
 <section
@@ -81,14 +88,14 @@
         <div class="{{ $side ? 'text-left' : '' }}">
 
             @if (! empty($content['eyebrow']))
-                <div class="mb-8 inline-flex animate-hero-enter items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/[0.07] px-4 py-1.5">
+                <div class="{{ $eyebrowGap }} inline-flex animate-hero-enter items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/[0.07] px-4 py-1.5">
                     <span class="h-1.5 w-1.5 rounded-full bg-cyan-400"></span>
                     <span class="text-xs font-semibold tracking-wider text-cyan-400">{{ $content['eyebrow'] }}</span>
                 </div>
             @endif
 
             @if (! empty($content['heading']))
-                <h1 class="animate-hero-enter text-5xl font-black leading-[1.05] tracking-[-0.02em] [animation-delay:110ms] {{ $headingSize }}">
+                <h1 class="animate-hero-enter {{ $headingBase }} font-black leading-[1.05] tracking-[-0.02em] [animation-delay:110ms] {{ $headingSize }}">
                     <span class="bg-gradient-to-b from-white to-white/50 bg-clip-text text-transparent">
                         {!! nl2br(e($content['heading'])) !!}
                     </span>
@@ -96,13 +103,13 @@
             @endif
 
             @if (! empty($content['subtitle']))
-                <div class="{{ $side ? '' : 'mx-auto ' }}mt-6 max-w-2xl animate-hero-enter text-lg leading-relaxed text-white/55 [animation-delay:210ms] [&_a]:underline [&_strong]:font-semibold [&_strong]:text-white/90">
+                <div class="{{ $side ? '' : 'mx-auto ' }}{{ $subtitleGap }} max-w-2xl animate-hero-enter leading-relaxed text-white/55 [animation-delay:210ms] [&_a]:underline [&_strong]:font-semibold [&_strong]:text-white/90">
                     {!! $content['subtitle'] !!}
                 </div>
             @endif
 
             @if (! empty($ctas))
-                <div class="mt-10 flex animate-hero-enter flex-wrap {{ $side ? 'justify-start' : 'justify-center' }} gap-3 [animation-delay:300ms]">
+                <div class="{{ $ctaGap }} flex animate-hero-enter flex-wrap {{ $side ? 'justify-start' : 'justify-center' }} gap-3 [animation-delay:300ms]">
                     @foreach ($ctas as $cta)
                         @php $variant = $cta['variant'] ?? 'primary'; @endphp
 
