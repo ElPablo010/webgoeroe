@@ -69,7 +69,15 @@
                     <h3 class="text-lg font-bold text-white">{{ $card['title'] ?? '' }}</h3>
 
                     @if (! empty($card['subtitle']))
-                        <p class="mt-0.5 text-sm text-cyan-400/70">{{ $card['subtitle'] }}</p>
+                        {{-- Begint de ondertitel met een bedrag ("€2.500 eenmalig"), dan tonen we dat groot als prijs. --}}
+                        @if (preg_match('/^\s*(€\s?[\d.,]+)(.*)$/u', $card['subtitle'], $price))
+                            <p class="mt-4 text-white">
+                                <span class="text-5xl font-black tracking-tight">{{ trim($price[1]) }}</span>
+                                <span class="ml-1 text-sm text-white/50">{{ trim($price[2]) }}</span>
+                            </p>
+                        @else
+                            <p class="mt-0.5 text-sm text-cyan-400/70">{{ $card['subtitle'] }}</p>
+                        @endif
                     @endif
 
                     @if (! empty($card['description']))
