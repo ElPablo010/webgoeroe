@@ -88,7 +88,7 @@
                         @endif
                         @if (! empty($contact['phone']))
                             <li>
-                                <a href="tel:{{ preg_replace('/[^0-9+]/', '', $contact['phone']) }}" class="flex items-center gap-2 text-white/40 transition-colors hover:text-white">
+                                <a href="{{ \App\Support\Phone::telHref($contact['phone']) }}" class="flex items-center gap-2 text-white/40 transition-colors hover:text-white">
                                     <x-lucide-phone class="h-4 w-4 shrink-0" />
                                     {{ $contact['phone'] }}
                                 </a>

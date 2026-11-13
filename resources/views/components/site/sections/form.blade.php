@@ -50,7 +50,7 @@
                         ! empty($content['contact_phone']) ? [
                             'label' => 'Telefoon',
                             'value' => $content['contact_phone'],
-                            'href'  => 'tel:' . preg_replace('/\s+/', '', $content['contact_phone']),
+                            'href'  => \App\Support\Phone::telHref($content['contact_phone']),
                             'icon'  => 'phone',
                         ] : null,
                         ! empty($content['contact_address']) ? [
