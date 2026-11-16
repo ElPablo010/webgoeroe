@@ -4,6 +4,9 @@
     $image    = $content['image'] ?? [];
     $ctas     = $content['ctas'] ?? [];
     $hasImage = ! empty($image['src']);
+    // Gekoppeld formulier (core 0.20): volledig, of beknopt met de rest in een popup.
+    $formType      = $content['form_type'] ?? null;
+    $formComponent = filled($formType) ? \Webgoeroe\Core\Core::formTypes()->component($formType) : null;
     // 'side' = beeld naast de tekst (tekst links). Ontbrekende keuze = achtergrond,
     // zoals hero's altijd werkten.
     $side     = $hasImage && ($content['image_layout'] ?? 'background') === 'side';
@@ -137,6 +140,12 @@
                             <a href="{{ \Webgoeroe\Core\Support\Url::resolveCtaHref($cta) }}" class="cursor-pointer rounded-full bg-primary-600 px-7 py-3.5 text-sm font-semibold text-white transition-all hover:bg-primary-500">{{ $cta['label'] ?? '' }}</a>
                         @endif
                     @endforeach
+                </div>
+            @endif
+
+            @if ($formComponent)
+                <div class="{{ $side ? '' : 'mx-auto ' }}mt-10 max-w-3xl animate-hero-enter rounded-2xl border border-white/[0.08] bg-[#0b0b10]/80 p-6 text-left text-white shadow-2xl shadow-black/40 backdrop-blur [animation-delay:360ms]">
+                    @livewire($formComponent, [...\Webgoeroe\Core\Core::formTypes()->params($formType, $content, $section), 'layout' => ($content['form_mode'] ?? 'brief') === 'full' ? 'inline' : 'brief'], key('hero-form-'.($section?->getKey() ?? $formType)))
                 </div>
             @endif
         </div>

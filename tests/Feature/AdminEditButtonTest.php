@@ -51,7 +51,8 @@ function editButtonCase(): CaseStudy
 it('shows an edit button linking to the page edit screen for a logged-in admin', function () {
     $page = editButtonPage();
 
-    actingAs(User::factory()->create())
+    // Pagina's lopen via de bewerkknop van de core: enkel wie het panel mag zien.
+    actingAs(User::factory()->create(['role' => 'admin']))
         ->get('/')
         ->assertOk()
         ->assertSee("/admin/pages/{$page->id}/edit", escape: false);

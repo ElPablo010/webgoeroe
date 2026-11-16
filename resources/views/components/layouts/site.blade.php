@@ -57,21 +57,23 @@
         <x-site.header />
     @endif
 
-    {{-- Snelkoppeling naar het bewerkscherm: pagina's geven $page mee, blog en
-         cases hun eigen editUrl — zo wissel je heen en weer zonder van pagina
-         te veranderen (de admin heeft de omgekeerde "Bekijken"-actie). --}}
-    @auth
-        @if ($page || $editUrl)
+    {{-- Snelkoppeling naar het bewerkscherm: blog en cases geven hun eigen
+         editUrl mee; pagina's en modules lopen via de bewerkknop van de core
+         (0.21, enkel voor wie het admin-panel mag zien). --}}
+    @if ($editUrl)
+        @auth
             <a
-                href="{{ $editUrl ?? route('filament.admin.resources.pages.edit', ['record' => $page, 'tab' => 'sections']) }}"
+                href="{{ $editUrl }}"
                 class="fixed right-4 top-20 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-violet-600 text-white shadow-lg transition hover:bg-violet-700"
                 title="Bewerk deze pagina"
                 aria-label="Bewerk pagina"
             >
                 <x-lucide-square-pen class="h-4 w-4" />
             </a>
-        @endif
-    @endauth
+        @endauth
+    @else
+        <x-dynamic-component :component="\Webgoeroe\Core\Support\Views::component('site.admin-bar')" :page="$page" />
+    @endif
 
     <main>
         {{ $slot }}
