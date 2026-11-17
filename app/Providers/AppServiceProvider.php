@@ -5,9 +5,13 @@ namespace App\Providers;
 use App\Filament\Schemas\Sections\CalculatorFields;
 use App\Filament\Schemas\Sections\ConversionCalculatorFields;
 use App\Filament\Schemas\Sections\CaseResultsFields;
+use App\Filament\Schemas\Sections\LeadCheckFields;
+use App\Livewire\LeadCheckForm;
 use App\Models\Page;
 use App\Services\Meta\ConversionsApi;
 use App\Support\LandingPages;
+use App\Support\LeadCheck;
+use App\Support\LeadCheckExtensions;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -20,9 +24,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Passport\Passport;
+use Livewire\Livewire;
 use Webgoeroe\Core\Core;
 use Webgoeroe\Core\Filament\Schemas\Components\MediaPickerField;
-use Webgoeroe\LeadCheck\Support\LeadCheck;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -71,11 +75,50 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
-     * Lekkencheck (module webgoeroe/lead-check): herkomst van de advertentie meebewaren
-     * (zoals bij de boeking) en het Meta-serverevent "Lead" met hetzelfde event_id als de pixel.
+     * Lekkencheck (blok `lead_check`; tot core 0.25 in de core): blok, aanvraagtype,
+     * GHL per vraag, veldlabels en formulier. Plus de herkomst van de advertentie
+     * meebewaren (zoals bij de boeking) en het Meta-serverevent "Lead" met hetzelfde event_id als de pixel.
      */
     protected function registerLeadChecks(): void
     {
+        $this->app->singleton(LeadCheckExtensions::class);
+
+        Core::blocks()
+            ->register(LeadCheckForm::TYPE, 'Lekkencheck (vragen + resultaat)', [LeadCheckFields::class, 'make'])
+            // Per vraag een eigen GHL-veld, de resultaatvelden en een tag per oranje/rood lek.
+            ->ghl(LeadCheckForm::TYPE, LeadCheckForm::TYPE, sync: function (array $content, array $data): array {
+                $fields = [];
+
+                foreach (LeadCheck::questions($content) as $question) {
+                    if (filled($question['ghl_field'])) {
+                        $fields[] = ['form' => $question['key'], 'ghl' => $question['ghl_field']];
+                    }
+                }
+
+                foreach ((array) ($content['ghl_result'] ?? []) as $key => $ghl) {
+                    if (filled($ghl)) {
+                        $fields[] = ['form' => (string) $key, 'ghl' => (string) $ghl];
+                    }
+                }
+
+                return ['fields' => $fields, 'tags' => (array) ($data['leak_tags'] ?? [])];
+            });
+
+        Core::formTypes()
+            ->category(LeadCheckForm::TYPE, 'Lekkencheck', fn (): bool => Core::model('page_section')::query()->where('section_type', LeadCheckForm::TYPE)->exists())
+            ->fieldLabels([
+                'result_year' => 'Bedrag per jaar',
+                'result_month' => 'Bedrag per maand',
+                'lost_clients' => 'Gemiste klanten per maand',
+                'top_leak' => 'Grootste lek',
+                'top_leak_advice' => 'Tip bij het grootste lek',
+                'leaks' => 'Lekken',
+                'score' => 'Score',
+                'leak_tags' => 'Lek-tags',
+            ]);
+
+        Livewire::component(LeadCheck::COMPONENT, LeadCheckForm::class);
+
         LeadCheck::hooks()
             ->rules(ConversionsApi::RULES)
             ->data(function (Request $request): array {

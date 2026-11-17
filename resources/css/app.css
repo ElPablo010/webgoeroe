@@ -6,7 +6,6 @@
 @source '../../storage/framework/views/*.php';
 @source '../../app/**/*.php';
 @source '../../vendor/webgoeroe/core/resources/views/**/*.blade.php';
-@source '../../vendor/webgoeroe/lead-check/resources/views/**/*.blade.php';
 
 @theme {
     --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',

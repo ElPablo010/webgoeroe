@@ -1,7 +1,7 @@
 @props(['section' => null, 'content' => []])
 
-{{-- Lekkencheck in de stijl van deze site. De vragen, het resultaat en de logica
-     komen uit de module webgoeroe/lead-check (lead-check::livewire.form). --}}
+{{-- Lekkencheck in de stijl van deze site. De vragen, het resultaat en de logica:
+     App\Livewire\LeadCheckForm en livewire/lead-check.blade.php. --}}
 @php
     $bg      = \Webgoeroe\Core\Filament\Schemas\Sections\SectionBackground::classes($content['background'] ?? null);
     $isDark  = \Webgoeroe\Core\Filament\Schemas\Sections\SectionBackground::isDark($content['background'] ?? null);
@@ -30,7 +30,7 @@
 
         <div class="mt-10 text-left">
             @if ($section?->getKey())
-                @livewire(\Webgoeroe\LeadCheck\Support\LeadCheck::COMPONENT, ['sectionId' => $section->getKey()], key('lead-check-'.$section->getKey()))
+                @livewire(\App\Support\LeadCheck::COMPONENT, ['sectionId' => $section->getKey()], key('lead-check-'.$section->getKey()))
             @endif
         </div>
     </div>

@@ -4,7 +4,7 @@ use App\Models\Page;
 use App\Support\LandingPages;
 use Webgoeroe\Core\Core;
 use Webgoeroe\Core\Integrations\GoHighLevel\SubmissionSync;
-use Webgoeroe\LeadCheck\Support\LeadCheck;
+use App\Support\LeadCheck;
 
 beforeEach(function () {
     Page::query()->create(['title' => 'Speed to lead elektriciens', 'slug' => 'speed-to-lead-elektriciens', 'locale' => 'nl', 'published' => true]);

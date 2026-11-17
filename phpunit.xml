@@ -21,7 +21,6 @@
             <directory>vendor/webgoeroe/blog/tests</directory>
             <directory>vendor/webgoeroe/cases/tests</directory>
             <directory>vendor/webgoeroe/chat/tests</directory>
-            <directory>vendor/webgoeroe/lead-check/tests</directory>
         </testsuite>
     </testsuites>
     <source>

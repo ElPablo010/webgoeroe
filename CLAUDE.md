@@ -153,14 +153,16 @@ geeft een 500.
 
 ---
 
-## Lekkencheck (module)
+## Lekkencheck
 
-Het blok **Lekkencheck** (`lead_check`) komt sinds core 0.26 uit de module
-**`webgoeroe/lead-check`** (`Modules/repo/lead-check`, werking in `docs/werking.md`
-daar); enkel deze site installeert ze. Deze site houdt het ontwerp
-(`components/site/sections/lead-check.blade.php`) en de haakjes in
-`AppServiceProvider::registerLeadChecks()` (`LeadCheck::hooks()`: herkomst en het
-Meta-serverevent "Lead"). Campagnes en GHL: `wiki/lekkencheck.md` van het project.
+Het blok **Lekkencheck** (`lead_check`) zat tot core 0.25 in de core; sinds core
+0.26 staat het in deze site (enkel De WebGoeroe gebruikt het). Registratie in
+`AppServiceProvider::registerLeadChecks()` (blok, GHL per vraag, aanvraagtype,
+veldlabels, Livewire `lead-check`, haakjes voor herkomst en het Meta-serverevent
+"Lead"). Code: `App\Support\LeadCheck`, `App\Livewire\LeadCheckForm`,
+`App\Filament\Schemas\Sections\LeadCheckFields`, views
+`components/site/sections/lead-check.blade.php` en `livewire/lead-check.blade.php`.
+Werking en campagnes: `wiki/lekkencheck-werking.md` en `wiki/lekkencheck.md` van het project.
 
 ---
 
