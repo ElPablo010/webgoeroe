@@ -23,7 +23,8 @@
         "webgoeroe/blog": "^0.1.1",
         "webgoeroe/cases": "^0.1.1",
         "webgoeroe/chat": "^0.1",
-        "webgoeroe/core": "^0.21",
+        "webgoeroe/core": "^0.26",
+        "webgoeroe/lead-check": "^0.1",
         "webgoeroe/reviews": "^0.2.2",
         "webgoeroe/seo-growth": "^0.9"
     },
@@ -141,6 +142,11 @@
             "name": "cases",
             "type": "vcs",
             "url": "https://github.com/ElPablo010/cases.git"
+        },
+        {
+            "name": "lead-check",
+            "type": "vcs",
+            "url": "https://github.com/ElPablo010/lead-check.git"
         }
     ]
 }

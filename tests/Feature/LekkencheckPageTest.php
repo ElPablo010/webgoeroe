@@ -4,7 +4,7 @@ use App\Models\Page;
 use App\Support\LandingPages;
 use Webgoeroe\Core\Core;
 use Webgoeroe\Core\Integrations\GoHighLevel\SubmissionSync;
-use Webgoeroe\Core\Support\LeadCheck;
+use Webgoeroe\LeadCheck\Support\LeadCheck;
 
 beforeEach(function () {
     Page::query()->create(['title' => 'Speed to lead elektriciens', 'slug' => 'speed-to-lead-elektriciens', 'locale' => 'nl', 'published' => true]);
@@ -13,7 +13,7 @@ beforeEach(function () {
 
 /**
  * Landingspagina /lekkencheck-elektriciens (migratie
- * 2026_11_07_120000_create_lekkencheck_elektriciens_page, core-blok lead_check).
+ * 2026_11_07_120000_create_lekkencheck_elektriciens_page, blok lead_check van de module webgoeroe/lead-check).
  */
 it('maakt de lekkencheck-pagina als landingspagina met 7 vragen', function () {
     $page = Page::query()->where('slug', 'lekkencheck-elektriciens')->sole();

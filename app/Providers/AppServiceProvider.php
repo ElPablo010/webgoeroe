@@ -22,6 +22,7 @@ use Illuminate\Support\ServiceProvider;
 use Laravel\Passport\Passport;
 use Webgoeroe\Core\Core;
 use Webgoeroe\Core\Filament\Schemas\Components\MediaPickerField;
+use Webgoeroe\LeadCheck\Support\LeadCheck;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -70,16 +71,12 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
-     * Lekkencheck (core 0.15.10): herkomst van de advertentie meebewaren (zoals bij de
-     * boeking) en het Meta-serverevent "Lead" met hetzelfde event_id als de pixel.
+     * Lekkencheck (module webgoeroe/lead-check): herkomst van de advertentie meebewaren
+     * (zoals bij de boeking) en het Meta-serverevent "Lead" met hetzelfde event_id als de pixel.
      */
     protected function registerLeadChecks(): void
     {
-        if (! method_exists(Core::class, 'leadChecks')) {
-            return;
-        }
-
-        Core::leadChecks()
+        LeadCheck::hooks()
             ->rules(ConversionsApi::RULES)
             ->data(function (Request $request): array {
                 $attribution = ConversionsApi::attribution($request);

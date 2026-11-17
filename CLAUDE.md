@@ -153,6 +153,17 @@ geeft een 500.
 
 ---
 
+## Lekkencheck (module)
+
+Het blok **Lekkencheck** (`lead_check`) komt sinds core 0.26 uit de module
+**`webgoeroe/lead-check`** (`Modules/repo/lead-check`, werking in `docs/werking.md`
+daar); enkel deze site installeert ze. Deze site houdt het ontwerp
+(`components/site/sections/lead-check.blade.php`) en de haakjes in
+`AppServiceProvider::registerLeadChecks()` (`LeadCheck::hooks()`: herkomst en het
+Meta-serverevent "Lead"). Campagnes en GHL: `wiki/lekkencheck.md` van het project.
+
+---
+
 ## Blog, cases en de CTA-banner (modules)
 
 Blog en cases komen sinds november 2026 uit de modules **`webgoeroe/blog`** en
