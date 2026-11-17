@@ -75,7 +75,7 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
-     * Lekkencheck (blok `lead_check`; tot core 0.25 in de core): blok, aanvraagtype,
+     * Lekkencheck (blok `lead_check`; tot core 0.27 in de core): blok, aanvraagtype,
      * GHL per vraag, veldlabels en formulier. Plus de herkomst van de advertentie
      * meebewaren (zoals bij de boeking) en het Meta-serverevent "Lead" met hetzelfde event_id als de pixel.
      */

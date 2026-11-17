@@ -3,7 +3,7 @@
 namespace App\Support;
 
 /**
- * Het rekenmodel van het blok "Lekkencheck" (tot core 0.25 in de core, nu in deze site). Eén model voor elke check:
+ * Het rekenmodel van het blok "Lekkencheck" (tot core 0.27 in de core, nu in deze site). Eén model voor elke check:
  * de vragen voeden het via hun rol, zodat een campagne nooit een eigen formule
  * nodig heeft.
  *
@@ -31,7 +31,7 @@ namespace App\Support;
  */
 class LeadCheck
 {
-    /** Livewire-component van het formulier (tot core 0.25: `core.lead-check`). */
+    /** Livewire-component van het formulier (tot core 0.27: `core.lead-check`). */
     public const COMPONENT = 'lead-check';
 
     /** Haakjes rond een ingevulde lekkencheck (vroeger Core::leadChecks()). */

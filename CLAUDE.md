@@ -155,8 +155,8 @@ geeft een 500.
 
 ## Lekkencheck
 
-Het blok **Lekkencheck** (`lead_check`) zat tot core 0.25 in de core; sinds core
-0.26 staat het in deze site (enkel De WebGoeroe gebruikt het). Registratie in
+Het blok **Lekkencheck** (`lead_check`) zat tot core 0.27 in de core; sinds core
+0.28 staat het in deze site (enkel De WebGoeroe gebruikt het). Registratie in
 `AppServiceProvider::registerLeadChecks()` (blok, GHL per vraag, aanvraagtype,
 veldlabels, Livewire `lead-check`, haakjes voor herkomst en het Meta-serverevent
 "Lead"). Code: `App\Support\LeadCheck`, `App\Livewire\LeadCheckForm`,

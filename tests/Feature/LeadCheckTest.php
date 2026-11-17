@@ -14,7 +14,7 @@ use App\Support\LeadCheckExtensions;
 require_once dirname(__DIR__, 2).'/vendor/webgoeroe/core/tests/helpers.php';
 
 /**
- * Blok "Lekkencheck" (tot core 0.25 in de core, nu in deze site): één rekenmodel
+ * Blok "Lekkencheck" (tot core 0.27 in de core, nu in deze site): één rekenmodel
  * met rollen per vraag, de aanvraag (type lead_check) met antwoorden en resultaat,
  * en GHL per vraag en per lek.
  */

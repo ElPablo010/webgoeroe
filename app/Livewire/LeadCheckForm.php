@@ -16,7 +16,7 @@ use Webgoeroe\Core\Livewire\Forms\ContactForm;
 use App\Support\LeadCheck;
 
 /**
- * Het blok "Lekkencheck" (Livewire-component `lead-check`, tot core 0.25 `core.lead-check` in de core). De vragen
+ * Het blok "Lekkencheck" (Livewire-component `lead-check`, tot core 0.27 `core.lead-check` in de core). De vragen
  * lopen in de browser (Alpine); bij "Toon mijn resultaat" komen de antwoorden
  * en de gegevens hier binnen. De server rekent zelf (Support\LeadCheck, met de
  * inhoud van het blok uit de database), bewaart de aanvraag (type `lead_check`,
