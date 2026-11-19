@@ -53,7 +53,7 @@ return new class extends Migration
                 'agenda_types' => ['startsessie', 'vervolguur'],
                 'agenda_note' => null,
                 'agenda_submit_label' => null,
-                'after_text' => '€ '.AiCoaching::START_PRICE." excl. btw, veilig online betalen. Niet tevreden, geld terug.\n\nLiever eerst een vraag stellen? Mail naar hello@dewebgoeroe.be of bel +32 (0)456 95 25 54.",
+                'after_text' => 'Liever eerst een vraag stellen? Mail naar hello@dewebgoeroe.be of bel +32 (0)456 95 25 54.',
             ]]);
         }
 

@@ -38,14 +38,17 @@ it('rendert de pagina met de tekst, de knoppen naar de agenda en de keuze tussen
     $html = $this->get('/ai-coaching')
         ->assertOk()
         ->assertSee('Een AI-coach die het samen met je opzet.')
-        ->assertSee('2 uur online · € 250 excl. btw · niet tevreden, geld terug')
+        ->assertSee('2 uur online · € 250 excl. btw')
         ->assertSee('Twee prijzen, geen abonnement')
         ->assertSee('Is dit iets voor jou?')
         ->assertSee('Boek je sessie')
-        ->assertSee('€ 250 excl. btw, veilig online betalen. Niet tevreden, geld terug.')
+        ->assertSee('Liever eerst een vraag stellen?')
         ->assertSee('Startsessie')
         ->assertSee('Vervolguur')
         ->getContent();
+
+    // Geen geld-terug-garantie (beslist 19/11/2026): nergens op de pagina, ook niet in meta, FAQ of schema.
+    expect(mb_strtolower($html))->not->toContain('geld terug')->not->toContain('garantie')->not->toContain('terugbetaal');
 
     // Hero, na sectie 4 en bij de prijzen: altijd dezelfde knop naar de agenda onderaan.
     expect(substr_count($html, 'href="#agenda"'))->toBe(3)

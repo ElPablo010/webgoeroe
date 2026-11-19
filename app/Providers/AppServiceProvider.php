@@ -218,12 +218,12 @@ class AppServiceProvider extends ServiceProvider
                     ->maxLength(255);
                 $fields[] = TextInput::make('cta_note')
                     ->label('Tekst onder de knoppen (optioneel)')
-                    ->helperText('Bv. de prijs en de garantie, kort en op één regel.')
+                    ->helperText('Bv. de prijs, kort en op één regel.')
                     ->maxLength(160);
 
                 return $fields;
             })
-            // Knoppen en een slottekst onder de kaarten (bv. de prijzen met de garantie en de knop naar de agenda).
+            // Knoppen en een slottekst onder de kaarten (bv. extra uitleg bij de prijzen en de knop naar de agenda).
             ->extend('cards', function (array $fields): array {
                 $fields[] = RichText::make('footer')
                     ->label('Tekst onder de kaarten (optioneel)')
