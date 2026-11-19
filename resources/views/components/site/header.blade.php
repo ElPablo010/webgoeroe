@@ -1,6 +1,8 @@
 @php
     $header = \Webgoeroe\Core\Support\SiteHeader::current();
-    $menu = \App\Models\Menu::where('location', 'main')->with('items.children')->first();
+    $menu = \App\Models\Menu::where('location', 'main')->with('items.children.page', 'items.page')->first();
+    // Een menu-item naar een concept-pagina blijft verborgen tot de pagina gepubliceerd is.
+    $menu?->items->each(fn ($item) => $item->setRelation('children', $item->children->filter(fn ($child) => $child->page_id === null || $child->page?->published)->values()));
     $cta = $header['cta'] ?? [];
 @endphp
 

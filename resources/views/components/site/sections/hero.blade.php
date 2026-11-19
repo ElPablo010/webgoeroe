@@ -143,6 +143,10 @@
                 </div>
             @endif
 
+            @if (! empty($content['cta_note']))
+                <p class="mt-4 animate-hero-enter text-sm text-white/45 [animation-delay:340ms] {{ $side ? 'text-left' : 'text-center' }}">{{ $content['cta_note'] }}</p>
+            @endif
+
             @if ($formComponent)
                 <div class="{{ $side ? '' : 'mx-auto ' }}mt-10 max-w-3xl animate-hero-enter rounded-2xl border border-white/[0.08] bg-[#0b0b10]/80 p-6 text-left text-white shadow-2xl shadow-black/40 backdrop-blur [animation-delay:360ms]">
                     @livewire($formComponent, [...\Webgoeroe\Core\Core::formTypes()->params($formType, $content, $section), 'layout' => ($content['form_mode'] ?? 'brief') === 'full' ? 'inline' : 'brief'], key('hero-form-'.($section?->getKey() ?? $formType)))

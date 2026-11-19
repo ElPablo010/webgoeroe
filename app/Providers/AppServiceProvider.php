@@ -9,10 +9,13 @@ use App\Filament\Schemas\Sections\LeadCheckFields;
 use App\Livewire\LeadCheckForm;
 use App\Models\Page;
 use App\Services\Meta\ConversionsApi;
+use App\Support\AiCoaching;
 use App\Support\LandingPages;
 use App\Support\LeadCheck;
 use App\Support\LeadCheckExtensions;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Grid;
@@ -27,6 +30,9 @@ use Laravel\Passport\Passport;
 use Livewire\Livewire;
 use Webgoeroe\Core\Core;
 use Webgoeroe\Core\Filament\Schemas\Components\MediaPickerField;
+use Webgoeroe\Core\Filament\Schemas\Components\PageLinkField;
+use Webgoeroe\Core\Filament\Schemas\Components\RichText;
+use Webgoeroe\Core\Filament\Schemas\Sections\CtaLinkSchema;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -50,6 +56,8 @@ class AppServiceProvider extends ServiceProvider
         $this->registerBookings();
         $this->hideChatWidgetOnLandingPages();
         $this->registerLeadChecks();
+        // Schema.org-Service met de twee prijzen op /ai-coaching (FAQPage en BreadcrumbList levert de core).
+        Core::seo()->pageGraph(fn (array $nodes, $page): array => AiCoaching::graph($nodes, $page));
         // Startformulier van de landingspagina "Speed to lead elektriciens".
         Core::formTypes()->register('speed_to_lead_start', 'Speed to lead: starten', 'forms.speed-to-lead-start-form', [], 'Speed to lead: starten');
         $this->registerGeneralSettings();
@@ -157,6 +165,12 @@ class AppServiceProvider extends ServiceProvider
                     }
                 }
                 $fields = array_values($fields);
+                // Kleine tekst onder de agenda (prijzen, betaling, een alternatief voor wie twijfelt).
+                $fields[] = Textarea::make('after_text')
+                    ->label('Tekst onder de agenda (optioneel)')
+                    ->helperText('Kleine tekst onder de kalender. Een lege regel start een nieuwe alinea.')
+                    ->rows(3)
+                    ->maxLength(1000);
                 if ($layout) {
                     $providerGrid = collect($fields)->search(fn ($f) => $f instanceof Grid
                         && collect($f->getDefaultChildComponents())->contains(fn ($c) => is_object($c) && method_exists($c, 'getName') && $c->getName() === 'provider'));
@@ -202,6 +216,23 @@ class AppServiceProvider extends ServiceProvider
                     ->helperText('YouTube-, Vimeo- of mp4-link. Toont de video in plaats van de afbeelding, enkel bij "Beeld naast de tekst". De afbeelding blijft de terugval en de SEO-afbeelding.')
                     ->url()
                     ->maxLength(255);
+                $fields[] = TextInput::make('cta_note')
+                    ->label('Tekst onder de knoppen (optioneel)')
+                    ->helperText('Bv. de prijs en de garantie, kort en op één regel.')
+                    ->maxLength(160);
+
+                return $fields;
+            })
+            // Knoppen en een slottekst onder de kaarten (bv. de prijzen met de garantie en de knop naar de agenda).
+            ->extend('cards', function (array $fields): array {
+                $fields[] = RichText::make('footer')
+                    ->label('Tekst onder de kaarten (optioneel)')
+                    ->toolbarButtons([
+                        ['bold', 'italic', 'link'],
+                        ['bulletList'],
+                        ['undo', 'redo'],
+                    ]);
+                $fields[] = CtaLinkSchema::repeater('ctas', 'Knoppen onder de kaarten');
 
                 return $fields;
             })
@@ -212,6 +243,23 @@ class AppServiceProvider extends ServiceProvider
                 $fields[] = TextInput::make('image.alt')
                     ->label('Afbeelding: alt-tekst')
                     ->maxLength(255);
+                // Korte regel onder de knoppen met een link naar een pagina. De regel verschijnt
+                // pas zodra die pagina gepubliceerd is, dus een concept-pagina geeft geen dode link.
+                $fields[] = Repeater::make('extra_lines')
+                    ->label('Extra regel met link (optioneel)')
+                    ->helperText('Bv. "Liever zelf leren? Bekijk onze AI-coaching." Verschijnt pas als de pagina gepubliceerd is.')
+                    ->schema([
+                        Grid::make(['default' => 1, 'md' => 2])->schema([
+                            TextInput::make('text')->label('Tekst voor de link')->maxLength(120),
+                            TextInput::make('label')->label('Linktekst')->required()->maxLength(120),
+                        ]),
+                        PageLinkField::make(),
+                    ])
+                    ->itemLabel(fn (array $state): ?string => $state['label'] ?? null)
+                    ->maxItems(1)
+                    ->defaultItems(0)
+                    ->collapsible()
+                    ->collapsed();
 
                 return $fields;
             })

@@ -302,6 +302,24 @@ van het contact schuift door naar die stap. Token-scopes: `calendars.readonly`,
 `LOG_LEVEL=error`, dus GHL-fouten loggen als error.
 Tests: `tests/Feature/OwnBookingTest.php` (en `CoreBookingTest` in de core).
 
+## AI-coaching (/ai-coaching)
+
+Pagina in de ik-vorm (bewuste uitzondering), gebouwd met de migratie
+`create_ai_coaching_page` en enkel bestaande blokken. Eigen aan deze site:
+
+- **Agenda** = eigen agenda van de core (`provider: agenda`) met twee soorten afspraak
+  (`startsessie` 120 min, `vervolguur` 60 min; de migratie zet de module en de soorten aan,
+  niet de beschikbare uren). Elk soort is een eigen boeking-blok, afgewisseld via
+  "Wisselen met een ander blok"; `#agenda` opent de startsessie. De sitevariant
+  `booking.blade.php` heeft daarvoor een `agenda`-tak.
+- **Extra velden** (`AppServiceProvider::registerBlocks()`): hero `cta_note`, cards
+  `footer` + `ctas`, booking `after_text`, cta `extra_lines` (regel met pagina-link die pas
+  verschijnt als die pagina gepubliceerd is).
+- **Concept = onzichtbaar**: de header verbergt menu-items naar een concept-pagina.
+- **Schema**: `App\Support\AiCoaching` voegt de Service met twee Offers toe (FAQPage en
+  BreadcrumbList komen uit de core). Prijzen staan ook in de prijskaarten: wijzig beide.
+- Tests: `tests/Feature/AiCoachingPageTest.php`.
+
 ## Wisselen met een ander blok
 
 Elk bloktype heeft onderaan "Wisselen met een ander blok" (`swap_with`, `swap_label`,
