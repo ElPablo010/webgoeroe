@@ -8,8 +8,8 @@ use Webgoeroe\Core\Agenda\Agenda;
 use Webgoeroe\Core\Support\Modules;
 
 /**
- * Pagina /ai-coaching (migratie 2026_11_19_120000_create_ai_coaching_page): concept tot
- * betalen bij het boeken werkt, daarna publiek.
+ * Pagina /ai-coaching (migraties 2026_11_19_120000_create_ai_coaching_page en
+ * 2026_11_19_220000_ai_coaching_paid_sessions): betaalde sessies, gepubliceerd.
  */
 beforeEach(function () {
     Page::query()->create(['title' => 'Bottleneck scan', 'slug' => 'bottleneck-scan', 'locale' => 'nl', 'published' => true]);
@@ -22,30 +22,29 @@ beforeEach(function () {
     MenuItem::query()->create(['menu_id' => $menu->id, 'parent_id' => $diensten->id, 'label' => 'Business Automation', 'position' => 3]);
 
     (require database_path('migrations/2026_11_19_120000_create_ai_coaching_page.php'))->up();
+    (require database_path('migrations/2026_11_19_220000_ai_coaching_paid_sessions.php'))->up();
 });
 
-it('zet de pagina op concept: niet publiek bereikbaar', function () {
+it('publiceert de pagina met elf blokken', function () {
     $page = Page::query()->where('slug', 'ai-coaching')->sole();
 
-    expect($page->published)->toBeFalse()
-        ->and($page->sections)->toHaveCount(12);
+    expect($page->published)->toBeTrue()
+        ->and($page->sections)->toHaveCount(11);
 
-    $this->get('/ai-coaching')->assertNotFound();
+    $this->get('/ai-coaching')->assertOk();
 });
 
-it('rendert de pagina met de tekst, de knoppen naar de agenda en beide soorten afspraak', function () {
-    Page::query()->where('slug', 'ai-coaching')->update(['published' => true]);
-
+it('rendert de pagina met de tekst, de knoppen naar de agenda en de keuze tussen beide soorten', function () {
     $html = $this->get('/ai-coaching')
         ->assertOk()
         ->assertSee('Een AI-coach die het samen met je opzet.')
         ->assertSee('2 uur online · € 250 excl. btw · niet tevreden, geld terug')
         ->assertSee('Twee prijzen, geen abonnement')
         ->assertSee('Is dit iets voor jou?')
-        ->assertSee('Boek je startsessie')
-        ->assertSee('Boek een vervolguur')
-        ->assertSee('Startsessie · 2 uur · € 250')
-        ->assertSee('Vervolguur · 1 uur · € 75')
+        ->assertSee('Boek je sessie')
+        ->assertSee('€ 250 excl. btw, veilig online betalen. Niet tevreden, geld terug.')
+        ->assertSee('Startsessie')
+        ->assertSee('Vervolguur')
         ->getContent();
 
     // Hero, na sectie 4 en bij de prijzen: altijd dezelfde knop naar de agenda onderaan.
@@ -53,25 +52,37 @@ it('rendert de pagina met de tekst, de knoppen naar de agenda en beide soorten a
         ->and($html)->toContain('id="agenda"');
 });
 
-it('zet de twee soorten afspraak klaar in de eigen agenda, de startsessie voorgeselecteerd', function () {
+it('zet de betaalde soorten klaar in de eigen agenda: startsessie voorgeselecteerd, vervolguur erbij', function () {
     expect(Modules::enabled(Modules::AGENDA))->toBeTrue()
-        ->and(Agenda::type('startsessie')->duration)->toBe(120)
-        ->and(Agenda::type('vervolguur')->duration)->toBe(60);
+        ->and(Modules::enabled(Modules::PAYMENTS))->toBeTrue();
+
+    $start = Agenda::type('startsessie');
+    $follow = Agenda::type('vervolguur');
+
+    expect($start->duration)->toBe(120)
+        ->and($start->priceCents)->toBe(25000)
+        ->and($start->vatRate)->toBe(21)
+        ->and($start->totalCents())->toBe(30250)
+        ->and($follow->duration)->toBe(60)
+        ->and($follow->priceCents)->toBe(7500)
+        ->and($follow->vatRate)->toBe(21)
+        ->and(Agenda::type()->isPaid())->toBeFalse();
 
     $sections = Page::query()->where('slug', 'ai-coaching')->sole()->sections->where('section_type', 'booking')->values();
 
-    expect($sections->pluck('content.agenda_type')->all())->toBe(['startsessie', 'vervolguur'])
-        ->and($sections[0]->content['swap_hidden'])->toBeFalse()
-        ->and($sections[1]->content['swap_hidden'])->toBeTrue();
+    expect($sections)->toHaveCount(1)
+        ->and($sections[0]->content['agenda_type'])->toBe('startsessie')
+        ->and(array_keys(Agenda::choicesFor($sections[0]->content)))->toBe(['startsessie', 'vervolguur'])
+        ->and($sections[0]->content)->not->toHaveKey('swap_with');
 
-    // Een tweede keer draaien maakt niets dubbel.
+    // Opnieuw draaien maakt niets dubbel en verandert niets.
     (require database_path('migrations/2026_11_19_120000_create_ai_coaching_page.php'))->up();
-    expect(collect(Agenda::setting('types'))->pluck('key')->all())->toBe(['startsessie', 'vervolguur']);
+    (require database_path('migrations/2026_11_19_220000_ai_coaching_paid_sessions.php'))->up();
+    expect(collect(Agenda::setting('types'))->pluck('key')->all())->toBe(['startsessie', 'vervolguur'])
+        ->and(Page::query()->where('slug', 'ai-coaching')->sole()->sections()->where('section_type', 'booking')->count())->toBe(1);
 });
 
 it('bevat de schema-data: Service met twee prijzen, FAQPage en BreadcrumbList', function () {
-    Page::query()->where('slug', 'ai-coaching')->update(['published' => true]);
-
     $html = $this->get('/ai-coaching')->assertOk()->getContent();
     preg_match_all('#<script type="application/ld\+json">(.*?)</script>#s', $html, $m);
     $nodes = collect($m[1])->flatMap(function (string $json): array {
@@ -101,24 +112,18 @@ it('houdt de prijzen in de tekst gelijk aan die in het schema', function () {
     expect($texts)->toContain('€ '.AiCoaching::START_PRICE)->toContain('€ '.AiCoaching::FOLLOW_UP_PRICE);
 });
 
-it('toont het menu-item pas als de pagina gepubliceerd is', function () {
+it('toont het menu-item en houdt het weg zolang de pagina een concept is', function () {
     $item = MenuItem::query()->where('label', 'AI-coaching')->sole();
     expect($item->parent->label)->toBe('Diensten')->and($item->position)->toBe(4);
 
-    $this->get('/bottleneck-scan')->assertOk()->assertDontSee('AI-coaching');
-
-    Page::query()->where('slug', 'ai-coaching')->update(['published' => true]);
-
     $this->get('/bottleneck-scan')->assertOk()->assertSee('AI-coaching');
+
+    Page::query()->where('slug', 'ai-coaching')->update(['published' => false]);
+
+    $this->get('/bottleneck-scan')->assertOk()->assertDontSee('AI-coaching');
 });
 
-it('zet de regel "Liever zelf leren?" onder de slotknop van drie pagina\'s, maar pas na publicatie', function () {
-    foreach (['ai-automatisering-zelfstandigen', 'ai-automatisering-kmo', 'business-automation'] as $slug) {
-        $this->get('/'.$slug)->assertOk()->assertDontSee('Liever zelf leren?');
-    }
-
-    Page::query()->where('slug', 'ai-coaching')->update(['published' => true]);
-
+it('zet de regel "Liever zelf leren?" onder de slotknop van drie pagina\'s', function () {
     foreach (['ai-automatisering-zelfstandigen', 'ai-automatisering-kmo', 'business-automation'] as $slug) {
         $this->get('/'.$slug)->assertOk()
             ->assertSee('Liever zelf leren?')
