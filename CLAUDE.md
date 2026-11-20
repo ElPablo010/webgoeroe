@@ -247,11 +247,12 @@ reist niet mee met een deploy: zie "Database & media" hierboven. `.env` staat en
 **Voor de deploy van betaalde afspraken (AI-coaching)**, eenmalig:
 - `composer.json` staat op core `^0.32.2`; de VCS-repository `ElPablo010/core` moet die tag hebben
   (staat gepusht) en de server moet erbij kunnen (deploy-key/GitHub-token zoals voor de andere modules).
-- Betalen en de bevestigingsmails lopen via de scheduler: `* * * * * php ~/webgoeroe/artisan schedule:run`
-  in `~/.crontab` (draait `queue:work --stop-when-empty` en `core:agenda-expire`). Bij het
-  nakijken van de server op 20/11/2026 stond daar nog geen regel voor: zonder die cron blijven
-  mails in de `jobs`-tabel staan en vervalt een niet-betaalde afspraak niet. Controleer dit
-  (ook of Combell de cron elders heeft staan) vóór de eerste echte betaling.
+- Betalen en de bevestigingsmails lopen via de scheduler (`schedule:run` elke minuut: draait
+  `queue:work --stop-when-empty` en `core:agenda-expire`). Nagekeken op 20/11/2026: de
+  `~/.crontab` op de server heeft er geen regel voor, maar `schedule:list` toont de geplande taken
+  en de `jobs`-tabel is leeg (0 wachtende, 0 mislukte), dus de cron staat waarschijnlijk in het
+  Combell-paneel. Controleer bij de eerste echte betaling dat de bevestigingsmail binnenkomt; zo niet,
+  zet `* * * * * php ~/webgoeroe/artisan schedule:run >> /dev/null 2>&1` in `~/.crontab`.
 - De Mollie-sleutel zet je in de live admin (Instellingen → Betalingen), de beschikbare uren
   bij Instellingen → Agenda; nooit in `.env`.
 
