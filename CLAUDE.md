@@ -275,6 +275,18 @@ ssh dewebgoeroebe@ssh.dewebgoeroe.be 'bash ~/deploy.sh'
 "✅ Deploy klaar." en dat de site daarna nog werkt. Content (pagina's, instellingen, media)
 reist niet mee met een deploy: zie "Database & media" hierboven. `.env` staat enkel op de server.
 
+**Voor de deploy van betaalde afspraken (AI-coaching)**, eenmalig:
+- `composer.json` staat op core `^0.32.2`; de VCS-repository `ElPablo010/core` moet die tag hebben
+  (staat gepusht) en de server moet erbij kunnen (deploy-key/GitHub-token zoals voor de andere modules).
+- Betalen en de bevestigingsmails lopen via de scheduler (`schedule:run` elke minuut: draait
+  `queue:work --stop-when-empty` en `core:agenda-expire`). Nagekeken op 20/11/2026: de
+  `~/.crontab` op de server heeft er geen regel voor, maar `schedule:list` toont de geplande taken
+  en de `jobs`-tabel is leeg (0 wachtende, 0 mislukte), dus de cron staat waarschijnlijk in het
+  Combell-paneel. Controleer bij de eerste echte betaling dat de bevestigingsmail binnenkomt; zo niet,
+  zet `* * * * * php ~/webgoeroe/artisan schedule:run >> /dev/null 2>&1` in `~/.crontab`.
+- De Mollie-sleutel zet je in de live admin (Instellingen → Betalingen), de beschikbare uren
+  bij Instellingen → Agenda; nooit in `.env`.
+
 ---
 
 ## Admin-chrome (zijbalk en topbalk)
@@ -365,15 +377,17 @@ Tests: `tests/Feature/OwnBookingTest.php` (en `CoreBookingTest` in de core).
 Pagina in de ik-vorm (bewuste uitzondering), gebouwd met de migratie
 `create_ai_coaching_page` en enkel bestaande blokken. Eigen aan deze site:
 
-- **Agenda** = eigen agenda van de core (`provider: agenda`) met twee soorten afspraak
-  (`startsessie` 120 min, `vervolguur` 60 min; de migratie zet de module en de soorten aan,
-  niet de beschikbare uren). Elk soort is een eigen boeking-blok, afgewisseld via
-  "Wisselen met een ander blok"; `#agenda` opent de startsessie. De sitevariant
-  `booking.blade.php` heeft daarvoor een `agenda`-tak.
+- **Agenda** = eigen agenda van de core (`provider: agenda`) met twee **betaalde** soorten afspraak
+  (`startsessie` 120 min € 250, `vervolguur` 60 min € 75, excl. btw, 21% btw). Eén boeking-blok met
+  `agenda_types` (de bezoeker kiest, startsessie voorgeselecteerd) en betaalt via Mollie (core 0.32,
+  module Betalingen). De migraties `create_ai_coaching_page` en `ai_coaching_paid_sessions` zetten
+  module, soorten, prijzen en publicatie; de beschikbare uren en de Mollie-sleutel (Instellingen →
+  Betalingen, nooit `.env`) stelt Pieter in de admin in. De sitevariant `booking.blade.php` heeft
+  daarvoor een `agenda`-tak.
 - **Extra velden** (`AppServiceProvider::registerBlocks()`): hero `cta_note`, cards
   `footer` + `ctas`, booking `after_text`, cta `extra_lines` (regel met pagina-link die pas
   verschijnt als die pagina gepubliceerd is).
-- **Concept = onzichtbaar**: de header verbergt menu-items naar een concept-pagina.
+- **Concept = onzichtbaar**: de pagina is gepubliceerd; de header verbergt menu-items naar een concept-pagina.
 - **Schema**: `App\Support\AiCoaching` voegt de Service met twee Offers toe (FAQPage en
   BreadcrumbList komen uit de core). Prijzen staan ook in de prijskaarten: wijzig beide.
 - Tests: `tests/Feature/AiCoachingPageTest.php`.

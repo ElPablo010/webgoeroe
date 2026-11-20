@@ -244,7 +244,7 @@ return new class extends Migration
                     $this->toAgenda(),
                     ['label' => 'Bekijk eerst wat je na één sessie hebt', 'variant' => 'ghost', 'link_type' => 'url', 'href' => '#na-je-eerste-sessie'],
                 ],
-                'cta_note' => '2 uur online · € 250 excl. btw · niet tevreden, geld terug',
+                'cta_note' => '2 uur online · € 250 excl. btw',
                 'image' => $photo,
             ]],
 
@@ -343,7 +343,7 @@ return new class extends Migration
                 ],
             ]],
 
-            // 8. Prijzen (2 kaarten) + garantie + knop
+            // 8. Prijzen (2 kaarten) + knop
             ['cards', [
                 'section_id' => 'prijzen',
                 'background' => 'dark',
@@ -354,8 +354,7 @@ return new class extends Migration
                     $this->card('rocket', 'Startsessie', 'Twee uur online, door mij voorbereid. Claude opgezet voor jouw bedrijf, je eerste taak geautomatiseerd en een lijst voor daarna. Je betaalt bij het boeken.', '€ '.AiCoaching::START_PRICE.' excl. btw'),
                     $this->card('life-buoy', 'Vervolgcoaching', 'Je boekt een uur wanneer je het nodig hebt en betaalt bij het boeken. Geen minimum, geen contract.', '€ '.AiCoaching::FOLLOW_UP_PRICE.' per uur excl. btw'),
                 ],
-                'footer' => '<p><strong>Niet tevreden, geld terug.</strong> Werkt je eerste taak aan het einde van de startsessie niet met AI, dan betaal ik je de volledige € '.AiCoaching::START_PRICE.' terug. Zonder discussie.</p>'
-                    .'<p>Je hebt een laptop, een internetverbinding en een betalend Claude-abonnement nodig. Dat abonnement neem je rechtstreeks bij Anthropic. Ik help je bij het kiezen tijdens of voor de sessie.</p>'
+                'footer' => '<p>Je hebt een laptop, een internetverbinding en een betalend Claude-abonnement nodig. Dat abonnement neem je rechtstreeks bij Anthropic. Ik help je bij het kiezen tijdens of voor de sessie.</p>'
                     .'<p>De coaching verloopt online, dus het maakt niet uit waar in Vlaanderen of België je zit.</p>',
                 'ctas' => [$this->toAgenda()],
             ]],
@@ -406,7 +405,7 @@ return new class extends Migration
                 'agenda_note' => '2 uur online · € '.AiCoaching::START_PRICE.' excl. btw',
                 'agenda_submit_label' => 'Boek mijn startsessie',
                 'agenda_fields' => $this->bookingFields(),
-                'after_text' => "Prijzen excl. btw. Veilig online betalen. Startsessie: niet tevreden, geld terug.\n\n".$contact,
+                'after_text' => $contact,
                 'swap_with' => 'vervolguur',
                 'swap_label' => 'Startsessie · 2 uur · € '.AiCoaching::START_PRICE,
                 'swap_hidden' => false,

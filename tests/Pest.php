@@ -16,6 +16,19 @@ use Tests\TestCase;
 
 pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
+    // Twee kerntests (sinds core 0.28.1 / 0.29.0) gaan uit van de standaardconfig; deze site
+    // zet de beeldvorm van tekst-en-media uit en registreert eigen vaste formuliertypes.
+    ->beforeEach(function () {
+        $skip = [
+            'it vult een lege beeldvorm' => 'Deze site heeft geen beeldvorm op tekst-en-media (config/core.php).',
+            'it zet het contactformulier om' => 'Deze site registreert eigen vaste formuliertypes (groep "Vaste formulieren").',
+        ];
+        foreach ($skip as $needle => $reason) {
+            if (str_contains(str_replace('_', ' ', $this->name()), $needle)) {
+                $this->markTestSkipped($reason);
+            }
+        }
+    })
     // De standaardtests van de site-basis en de Groei-module draaien vanuit
     // de packages mee.
     ->in('Feature', '../vendor/webgoeroe/core/tests/Feature', '../vendor/webgoeroe/seo-growth/tests/Feature', '../vendor/webgoeroe/reviews/tests/Feature', '../vendor/webgoeroe/ai-builder/tests/Feature', '../vendor/webgoeroe/blog/tests/Feature', '../vendor/webgoeroe/cases/tests/Feature', '../vendor/webgoeroe/chat/tests/Feature');
