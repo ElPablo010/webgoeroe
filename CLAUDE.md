@@ -595,13 +595,14 @@ beheerd worden via een MCP-server die **in de Laravel-app zelf** draait
 
 - **Endpoint**: `POST /mcp` (zie [routes/ai.php](routes/ai.php)).
 - **Server**: [app/Mcp/Servers/CmsServer.php](app/Mcp/Servers/CmsServer.php).
-- **Tools** (in [app/Mcp/Tools/](app/Mcp/Tools/)), 13 in totaal:
+- **Tools** (in [app/Mcp/Tools/](app/Mcp/Tools/)), 14 in totaal:
   - Blog: `list_posts`, `create_post`, `update_post`, `publish_post`, `unpublish_post`
   - Cases: `list_cases`, `create_case`, `update_case`, `publish_case`, `unpublish_case`
   - Gedeeld: `upload_media_from_url`, `upload_media_file` (base64 of data-URI, bv. een foto
     opgeladen vanuit het Contentoverzicht-artifact; zelfde opslag als een admin-upload),
     `preview_image` (read-only: verkleinde data-URI's van een Higgsfield-/Pexels-/eigen beeld,
     want het Contentoverzicht-artifact mag zelf geen externe beelden laden; vaste lijst hosts)
+  - Betalingen: `list_payments` (read-only, voor de facturatie): betaalde betalingen sinds `since` (standaard 14 dagen) met klant, bedrijfsnaam + btw-nummer (uit de optionele boekingsvelden "Bedrijfsnaam" en "Btw-nummer" van /ai-coaching), omschrijving, bedragen, provider en betaal-id. De ochtendroutine (stap A3 van `ochtendbrief-melding`) zet er per betaling een rij van in Notion Te factureren.
 - **Veiligheid**: `create_post`/`create_case` publiceren **niet** standaard
   (`published:false`); zet expliciet `published:true` om live te gaan.
   `unpublish_*` is het vangnet. Elke actie geeft de publieke `url` terug.

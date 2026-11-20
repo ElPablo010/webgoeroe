@@ -5,6 +5,7 @@ namespace App\Mcp\Servers;
 use App\Mcp\Tools\CreateCase;
 use App\Mcp\Tools\CreatePost;
 use App\Mcp\Tools\ListCases;
+use App\Mcp\Tools\ListPayments;
 use App\Mcp\Tools\ListPosts;
 use App\Mcp\Tools\PreviewImage;
 use App\Mcp\Tools\PublishCase;
@@ -80,6 +81,9 @@ class CmsServer extends Server
         UploadMediaFromUrl::class,
         UploadMediaFile::class,
         PreviewImage::class,
+
+        // Betalingen (alleen-lezen, voor de facturatie)
+        ListPayments::class,
     ];
 
     protected array $resources = [

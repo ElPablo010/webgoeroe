@@ -85,6 +85,19 @@ it('zet de betaalde soorten klaar in de eigen agenda: startsessie voorgeselectee
         ->and(Page::query()->where('slug', 'ai-coaching')->sole()->sections()->where('section_type', 'booking')->count())->toBe(1);
 });
 
+it('vraagt bedrijfsnaam en btw-nummer als optionele velden voor de factuur, zonder dubbels', function () {
+    $migration = require database_path('migrations/2026_11_20_120000_ai_coaching_booking_invoice_fields.php');
+    $migration->up();
+    $migration->up();
+
+    $section = Page::query()->where('slug', 'ai-coaching')->sole()->sections()->where('section_type', 'booking')->sole();
+    $fields = collect($section->content['agenda_fields'])->keyBy('label');
+
+    expect($fields->keys()->all())->toBe(['Voornaam', 'E-mailadres', 'Telefoon', 'Bedrijfsnaam', 'Btw-nummer', 'Website', 'Wat doe je?', 'Welke taak kost je elke week het meeste tijd?'])
+        ->and($fields['Bedrijfsnaam']['required'])->toBeFalse()
+        ->and($fields['Btw-nummer']['required'])->toBeFalse();
+});
+
 it('bevat de schema-data: Service met twee prijzen, FAQPage en BreadcrumbList', function () {
     $html = $this->get('/ai-coaching')->assertOk()->getContent();
     preg_match_all('#<script type="application/ld\+json">(.*?)</script>#s', $html, $m);
