@@ -113,6 +113,37 @@
             @endforeach
         </div>
 
+        @php
+            $cardsFooter = trim(strip_tags((string) ($content['footer'] ?? ''))) !== '' ? $content['footer'] : null;
+            $cardsCtas   = array_values(array_filter($content['ctas'] ?? [], fn ($cta) => ! empty($cta['label'])));
+        @endphp
+        @if ($cardsFooter)
+            <div class="prose prose-invert mx-auto mt-10 max-w-3xl text-center prose-p:text-white/55 prose-p:leading-relaxed prose-strong:text-white/90">{!! $cardsFooter !!}</div>
+        @endif
+        @if ($cardsCtas !== [])
+            <div class="mt-10 flex flex-wrap justify-center gap-3">
+                @foreach ($cardsCtas as $cta)
+                    @if (($cta['variant'] ?? 'primary') === 'primary')
+                        <a
+                            href="{{ \Webgoeroe\Core\Support\Url::resolveCtaHref($cta) }}"
+                            class="cursor-pointer inline-flex items-center gap-2 px-8 py-4 text-base font-semibold transition-all"
+                            style="background:#fff; color:#000; border-radius:100px; box-shadow:0 0 rgba(255,255,255,0);"
+                            onmouseenter="this.style.background='rgba(255,255,255,0.92)'; this.style.boxShadow='0 0 40px rgba(255,255,255,0.2),0 8px 30px rgba(0,0,0,0.4)'; this.style.transform='translateY(-1px)'"
+                            onmouseleave="this.style.background='#fff'; this.style.boxShadow='0 0 rgba(255,255,255,0)'; this.style.transform=''"
+                        >{{ $cta['label'] }}</a>
+                    @else
+                        <a
+                            href="{{ \Webgoeroe\Core\Support\Url::resolveCtaHref($cta) }}"
+                            class="cursor-pointer inline-flex items-center gap-2 px-8 py-4 text-base font-semibold transition-all"
+                            style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.7); border-radius:100px;"
+                            onmouseenter="this.style.background='rgba(255,255,255,0.10)'; this.style.borderColor='rgba(255,255,255,0.2)'; this.style.color='#fff'; this.style.transform='translateY(-1px)'"
+                            onmouseleave="this.style.background='rgba(255,255,255,0.06)'; this.style.borderColor='rgba(255,255,255,0.1)'; this.style.color='rgba(255,255,255,0.7)'; this.style.transform=''"
+                        >{{ $cta['label'] }}</a>
+                    @endif
+                @endforeach
+            </div>
+        @endif
+
         @if ($hasMore)
             <div class="mt-10 text-center">
                 <button

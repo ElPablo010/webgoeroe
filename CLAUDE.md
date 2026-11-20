@@ -76,6 +76,37 @@ http://localhost:8000/admin
 
 ---
 
+## Deploy — live op Combell
+
+De site staat op **https://dewebgoeroe.be** (Combell shared hosting, pakket LinExpress
+dewebgoeroe.be). Zelfde opzet als de andere websiteprojecten (skill `deploy-combell`).
+
+| | |
+|---|---|
+| SSH | `ssh dewebgoeroebe@ssh.dewebgoeroe.be` (key-auth) |
+| App-map | `~/webgoeroe` (buiten de docroot) |
+| Docroot | `~/www` — echte map met symlinks, elke deploy opnieuw opgebouwd |
+| Branch op de server | `master` (`git pull --ff-only`) |
+| PHP | 8.3 |
+| Hoofd-URL | `APP_URL=https://dewebgoeroe.be` |
+| Mail / wachtrij | `MAIL_MAILER=smtp`, `QUEUE_CONNECTION=database`, `LOG_LEVEL=error` |
+
+**Elke volgende deploy** ("klaar en deploy") — eerst naar `master` pushen, dan:
+
+```bash
+ssh dewebgoeroebe@ssh.dewebgoeroe.be 'bash ~/deploy.sh'
+```
+
+`~/deploy.sh` staat enkel op de server (niet in git): pull → `composer install --no-dev`
+→ `npm ci && npm run build` → `~/www` opnieuw opbouwen → `optimize:clear`, `migrate --force`,
+`optimize` → rechten (`chmod 600` op de Passport-sleutels). Controleer dat het eindigt met
+"✅ Deploy klaar." en dat de site daarna nog werkt. Content (pagina's, instellingen, media)
+reist niet mee met een deploy: zie "Database & media" hierboven. `.env` staat enkel op de server.
+Uitzondering: een **content-migratie** (zoals `create_ai_coaching_page`) draait wel mee via
+`migrate --force`, en maakt dan live de pagina aan.
+
+---
+
 ## Site-basis — package webgoeroe/core
 
 De basis (modellen, page-builder en core-blokken, media, menu's, redirects,
@@ -328,6 +359,24 @@ van het contact schuift door naar die stap. Token-scopes: `calendars.readonly`,
 `calendars/events.write`, `locations/customFields.readonly` + `.write`. Op Combell staat
 `LOG_LEVEL=error`, dus GHL-fouten loggen als error.
 Tests: `tests/Feature/OwnBookingTest.php` (en `CoreBookingTest` in de core).
+
+## AI-coaching (/ai-coaching)
+
+Pagina in de ik-vorm (bewuste uitzondering), gebouwd met de migratie
+`create_ai_coaching_page` en enkel bestaande blokken. Eigen aan deze site:
+
+- **Agenda** = eigen agenda van de core (`provider: agenda`) met twee soorten afspraak
+  (`startsessie` 120 min, `vervolguur` 60 min; de migratie zet de module en de soorten aan,
+  niet de beschikbare uren). Elk soort is een eigen boeking-blok, afgewisseld via
+  "Wisselen met een ander blok"; `#agenda` opent de startsessie. De sitevariant
+  `booking.blade.php` heeft daarvoor een `agenda`-tak.
+- **Extra velden** (`AppServiceProvider::registerBlocks()`): hero `cta_note`, cards
+  `footer` + `ctas`, booking `after_text`, cta `extra_lines` (regel met pagina-link die pas
+  verschijnt als die pagina gepubliceerd is).
+- **Concept = onzichtbaar**: de header verbergt menu-items naar een concept-pagina.
+- **Schema**: `App\Support\AiCoaching` voegt de Service met twee Offers toe (FAQPage en
+  BreadcrumbList komen uit de core). Prijzen staan ook in de prijskaarten: wijzig beide.
+- Tests: `tests/Feature/AiCoachingPageTest.php`.
 
 ## Wisselen met een ander blok
 

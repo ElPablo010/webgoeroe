@@ -131,7 +131,18 @@
             </div>
         @endif
 
-                    @if (! $url)
+                    @if ($provider === 'agenda')
+                        {{-- Eigen agenda van de core (Instellingen → Agenda): geen derde partij. Het soort
+                             afspraak (duur, mails) volgt `agenda_type` van dit blok. --}}
+                        <x-dynamic-component
+                            :component="\Webgoeroe\Core\Support\Views::section('booking-agenda')"
+                            :section-id="$section?->id"
+                            :step-tag="(! empty($content['heading']) && ! $isFirst) ? 'h3' : 'h2'"
+                            :fields="\Webgoeroe\Core\Agenda\AgendaForm::fields($content)"
+                            :methods="\Webgoeroe\Core\Agenda\Agenda::typeFor($content)->methodLabels()"
+                            :note="$content['agenda_note'] ?? null"
+                            :submit-label="$content['agenda_submit_label'] ?? null" />
+                    @elseif (! $url)
                         <p class="text-center text-sm text-red-500">Geen URL ingesteld.</p>
                     @elseif ($provider === 'ghl')
                         {{-- GoHighLevel-agenda (iframe). Naam en e-mail uit de omzetcheck vullen het
@@ -283,7 +294,15 @@
                         <script src="https://assets.calendly.com/assets/external/widget.js" async></script>
                     @endif
 
-                    @if ($privacy !== '')
+                    @if (filled($content['after_text'] ?? null))
+                        <div class="mx-auto mt-5 max-w-3xl space-y-2 text-center text-sm {{ $isHero || $isDark ? 'text-white/50' : 'text-slate-500' }}">
+                            @foreach (preg_split('/\R{2,}/', trim((string) $content['after_text'])) as $paragraph)
+                                <p>{{ trim($paragraph) }}</p>
+                            @endforeach
+                        </div>
+                    @endif
+
+                    @if ($privacy !== '' && $provider !== 'agenda')
                         <p class="mt-4 text-center text-xs {{ $isHero || $isDark ? 'text-white/40' : 'text-slate-500' }}">{{ $privacy }}</p>
                     @endif
 

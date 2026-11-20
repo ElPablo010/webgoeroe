@@ -17,7 +17,8 @@
             @endif
         @endif
 
-        <div class="prose max-w-none {{ $isDark ? 'prose-invert prose-p:text-white/70' : '' }}">
+        {{-- Tabellen: kop- en gewone cellen krijgen dezelfde opvulling, zodat de kolommen onder hun kop staan. --}}
+        <div class="prose max-w-none [&_td]:px-3 [&_td]:align-top [&_th]:px-3 [&_th]:text-left [&_td:first-child]:pl-0 [&_th:first-child]:pl-0 {{ $isDark ? 'prose-invert prose-p:text-white/70' : '' }}">
             {!! $content['body'] ?? '' !!}
         </div>
     </div>

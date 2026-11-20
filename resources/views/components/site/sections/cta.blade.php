@@ -108,6 +108,20 @@
                 </div>
             @endif
 
+            {{-- Extra regel met link naar een pagina ("Liever zelf leren? Bekijk onze AI-coaching.").
+                 Een link naar een concept-pagina blijft weg: geen dode links. --}}
+            @foreach ($content['extra_lines'] ?? [] as $line)
+                @php
+                    $linkPage  = ($line['link_type'] ?? 'page') === 'page' && ! empty($line['page_id']) ? \App\Models\Page::find($line['page_id']) : null;
+                    $lineShown = ! empty($line['label']) && (($line['link_type'] ?? 'page') !== 'page' || ($linkPage && $linkPage->published));
+                @endphp
+                @if ($lineShown)
+                    <p class="relative mt-6 text-sm text-white/50">
+                        @if (! empty($line['text'])){{ $line['text'] }} @endif<a href="{{ \Webgoeroe\Core\Support\Url::resolveCtaHref($line) }}" class="cursor-pointer font-medium text-white/80 underline decoration-white/30 underline-offset-4 transition-colors hover:text-white">{{ $line['label'] }}</a>
+                    </p>
+                @endif
+            @endforeach
+
             {{-- Note / caption --}}
             @if (! empty($note))
                 <p class="relative mt-5 text-sm" style="color:rgba(255,255,255,0.25);">{{ $note }}</p>
