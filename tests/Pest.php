@@ -22,6 +22,8 @@ pest()->extend(TestCase::class)
         $skip = [
             'it vult een lege beeldvorm' => 'Deze site heeft geen beeldvorm op tekst-en-media (config/core.php).',
             'it zet het contactformulier om' => 'Deze site registreert eigen vaste formuliertypes (groep "Vaste formulieren").',
+            'it beschermt het eindpunt met een token' => 'Deze site draait een eigen MCP-server (blog + cases), geen list_pages van de core (core 0.34).',
+            'it toont het focuspunt in de hero en een galerij met links' => 'Deze site heeft een eigen hero-view zonder het focuspunt-attribuut van de core (core 0.34).',
         ];
         foreach ($skip as $needle => $reason) {
             if (str_contains(str_replace('_', ' ', $this->name()), $needle)) {

@@ -20,12 +20,12 @@
         "livewire/livewire": "^4.3",
         "mallardduck/blade-lucide-icons": "^1.26",
         "webgoeroe/ai-builder": "^0.2",
-        "webgoeroe/blog": "^0.1.1",
-        "webgoeroe/cases": "^0.1.1",
-        "webgoeroe/chat": "^0.1",
-        "webgoeroe/core": "^0.32.2",
-        "webgoeroe/reviews": "^0.2.2",
-        "webgoeroe/seo-growth": "^0.9"
+        "webgoeroe/blog": "^0.2",
+        "webgoeroe/cases": "^0.2",
+        "webgoeroe/chat": "^0.2",
+        "webgoeroe/core": "^0.34.2",
+        "webgoeroe/reviews": "^0.3",
+        "webgoeroe/seo-growth": "^0.11"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
