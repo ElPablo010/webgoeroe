@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "8542ba093ae61ec3ec77c39637a4e96a",
+    "content-hash": "3c35badcd106468db7a1320b9a2f0008",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -2063,16 +2063,16 @@
         },
         {
             "name": "guzzlehttp/promises",
-            "version": "3.1.0",
+            "version": "3.1.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/guzzle/promises.git",
-                "reference": "094d0ec418eb3b1411ea271a180ec95cae6ae933"
+                "reference": "863d10526fe8232e79a8005220472ea553fd0b82"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/guzzle/promises/zipball/094d0ec418eb3b1411ea271a180ec95cae6ae933",
-                "reference": "094d0ec418eb3b1411ea271a180ec95cae6ae933",
+                "url": "https://api.github.com/repos/guzzle/promises/zipball/863d10526fe8232e79a8005220472ea553fd0b82",
+                "reference": "863d10526fe8232e79a8005220472ea553fd0b82",
                 "shasum": ""
             },
             "require": {
@@ -2127,7 +2127,7 @@
             ],
             "support": {
                 "issues": "https://github.com/guzzle/promises/issues",
-                "source": "https://github.com/guzzle/promises/tree/3.1.0"
+                "source": "https://github.com/guzzle/promises/tree/3.1.1"
             },
             "funding": [
                 {
@@ -2143,21 +2143,21 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-10-18T12:48:16+00:00",
-            "published-time": "2026-10-18T12:48:47+00:00"
+            "time": "2026-11-20T00:03:31+00:00",
+            "published-time": "2026-11-20T00:04:39+00:00"
         },
         {
             "name": "guzzlehttp/psr7",
-            "version": "3.5.0",
+            "version": "3.5.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/guzzle/psr7.git",
-                "reference": "b7d9cd94918e1f042d22cf188a7a866e5906bf1d"
+                "reference": "ef2058cc884d864affa6ef7cd23a68d45e015c2f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/guzzle/psr7/zipball/b7d9cd94918e1f042d22cf188a7a866e5906bf1d",
-                "reference": "b7d9cd94918e1f042d22cf188a7a866e5906bf1d",
+                "url": "https://api.github.com/repos/guzzle/psr7/zipball/ef2058cc884d864affa6ef7cd23a68d45e015c2f",
+                "reference": "ef2058cc884d864affa6ef7cd23a68d45e015c2f",
                 "shasum": ""
             },
             "require": {
@@ -2249,7 +2249,7 @@
             ],
             "support": {
                 "issues": "https://github.com/guzzle/psr7/issues",
-                "source": "https://github.com/guzzle/psr7/tree/3.5.0"
+                "source": "https://github.com/guzzle/psr7/tree/3.5.1"
             },
             "funding": [
                 {
@@ -2265,8 +2265,8 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-11-18T15:29:09+00:00",
-            "published-time": "2026-11-18T15:29:39+00:00"
+            "time": "2026-11-19T20:35:18+00:00",
+            "published-time": "2026-11-19T20:36:27+00:00"
         },
         {
             "name": "guzzlehttp/uri-template",
@@ -10128,16 +10128,16 @@
         },
         {
             "name": "webgoeroe/core",
-            "version": "v0.32.0",
+            "version": "v0.32.2",
             "source": {
                 "type": "git",
                 "url": "git@github.com:ElPablo010/core.git",
-                "reference": "627a18dfe209ae4088cb280a122e9f185426c110"
+                "reference": "01f1984be2dec1fc4ef4ad0024f379a66e21232a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ElPablo010/core/zipball/627a18dfe209ae4088cb280a122e9f185426c110",
-                "reference": "627a18dfe209ae4088cb280a122e9f185426c110",
+                "url": "https://api.github.com/repos/ElPablo010/core/zipball/01f1984be2dec1fc4ef4ad0024f379a66e21232a",
+                "reference": "01f1984be2dec1fc4ef4ad0024f379a66e21232a",
                 "shasum": ""
             },
             "require": {
@@ -10166,10 +10166,10 @@
             ],
             "description": "Site-basis van De WebGoeroe: page-builder met blokken, media, menu's, redirects, header/footer, SEO (sitemap, robots, llms.txt, JSON-LD) en formulieren voor Laravel + Filament-sites.",
             "support": {
-                "source": "https://github.com/ElPablo010/core/tree/v0.32.0",
+                "source": "https://github.com/ElPablo010/core/tree/v0.32.2",
                 "issues": "https://github.com/ElPablo010/core/issues"
             },
-            "time": "2026-11-19T13:25:00+00:00"
+            "time": "2026-11-20T11:16:24+00:00"
         },
         {
             "name": "webgoeroe/reviews",
