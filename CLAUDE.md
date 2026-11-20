@@ -217,6 +217,44 @@ Nooit meegepusht (live is daarvoor de bron): `form_submissions`, `leads`, `gsc_*
 Media-sync voegt toe en overschrijft, maar **verwijdert nooit** (in beide richtingen).
 `--no-media` slaat de mediastap over.
 
+## Deploy — live op Combell
+
+De site staat op **https://dewebgoeroe.be** (Combell shared hosting, pakket LinExpress
+dewebgoeroe.be). Zelfde opzet als de andere websiteprojecten (skill `deploy-combell`).
+
+| | |
+|---|---|
+| SSH | `ssh dewebgoeroebe@ssh.dewebgoeroe.be` (key-auth) |
+| App-map | `~/webgoeroe` (buiten de docroot) |
+| Docroot | `~/www` — echte map met symlinks, elke deploy opnieuw opgebouwd |
+| Branch op de server | `master` (`git pull --ff-only`) |
+| PHP | 8.3 |
+| Hoofd-URL | `APP_URL=https://dewebgoeroe.be` |
+| Mail / wachtrij | `MAIL_MAILER=smtp`, `QUEUE_CONNECTION=database`, `LOG_LEVEL=error` |
+
+**Elke volgende deploy** ("klaar en deploy") — eerst naar `master` pushen, dan:
+
+```bash
+ssh dewebgoeroebe@ssh.dewebgoeroe.be 'bash ~/deploy.sh'
+```
+
+`~/deploy.sh` staat enkel op de server (niet in git): pull → `composer install --no-dev`
+→ `npm ci && npm run build` → `~/www` opnieuw opbouwen → `optimize:clear`, `migrate --force`,
+`optimize` → rechten (`chmod 600` op de Passport-sleutels). Controleer dat het eindigt met
+"✅ Deploy klaar." en dat de site daarna nog werkt. Content (pagina's, instellingen, media)
+reist niet mee met een deploy: zie "Database & media" hierboven. `.env` staat enkel op de server.
+
+**Voor de deploy van betaalde afspraken (AI-coaching)**, eenmalig:
+- `composer.json` staat op core `^0.32.2`; de VCS-repository `ElPablo010/core` moet die tag hebben
+  (staat gepusht) en de server moet erbij kunnen (deploy-key/GitHub-token zoals voor de andere modules).
+- Betalen en de bevestigingsmails lopen via de scheduler: `* * * * * php ~/webgoeroe/artisan schedule:run`
+  in `~/.crontab` (draait `queue:work --stop-when-empty` en `core:agenda-expire`). Bij het
+  nakijken van de server op 20/11/2026 stond daar nog geen regel voor: zonder die cron blijven
+  mails in de `jobs`-tabel staan en vervalt een niet-betaalde afspraak niet. Controleer dit
+  (ook of Combell de cron elders heeft staan) vóór de eerste echte betaling.
+- De Mollie-sleutel zet je in de live admin (Instellingen → Betalingen), de beschikbare uren
+  bij Instellingen → Agenda; nooit in `.env`.
+
 ---
 
 ## Admin-chrome (zijbalk en topbalk)
