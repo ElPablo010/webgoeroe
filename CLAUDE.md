@@ -76,25 +76,34 @@ http://localhost:8000/admin
 
 ---
 
-## Deploy — live op dewebgoeroe.be (Combell)
+## Deploy — live op Combell
 
-Zelfde opzet als alle andere sites op `webgoeroe/core` (zie de skill `deploy-combell`):
+De site staat op **https://dewebgoeroe.be** (Combell shared hosting, pakket LinExpress
+dewebgoeroe.be). Zelfde opzet als de andere websiteprojecten (skill `deploy-combell`).
 
-- **Deployen** ("klaar en deploy"): `ssh dewebgoeroebe@ssh.dewebgoeroe.be 'bash ~/deploy.sh'`
-  vanaf `master` na een push. Het script moet eindigen op "Deploy klaar"; controleer
-  daarna dat de site nog werkt. Zonder "klaar en deploy" niet deployen.
-- **Server**: Combell (LinExpress), app in `~/webgoeroe` (buiten de webroot, `~/www` is een
-  echte map met symlinks), PHP 8.3. Het script haalt de code uit git (deploy-key
-  `github-webgoeroe`; de module-repos via het token "WebGoeroe modules"), draait
-  `composer install --no-dev`, bouwt de assets op de server (`public/build` staat niet in
-  git), maakt eerst een DB-backup in `~/db-backups/` als er migraties openstaan en draait
-  `php artisan migrate --force`.
-- **Content-migraties lopen dus mee met de deploy**: een pagina die via een migratie
-  aangemaakt wordt (zoals `/ai-coaching`, op concept) bestaat live pas na een deploy.
-  Lokaal bestaat ze pas nadat je `php artisan migrate` draait op je eigen database
-  (`webgoeroe.test`). Een concept-pagina is voor gasten een 404, voor een ingelogde
-  beheerder niet.
-- Geen wijzigingen op de server buiten het script. Nooit een token of wachtwoord via de chat.
+| | |
+|---|---|
+| SSH | `ssh dewebgoeroebe@ssh.dewebgoeroe.be` (key-auth) |
+| App-map | `~/webgoeroe` (buiten de docroot) |
+| Docroot | `~/www` — echte map met symlinks, elke deploy opnieuw opgebouwd |
+| Branch op de server | `master` (`git pull --ff-only`) |
+| PHP | 8.3 |
+| Hoofd-URL | `APP_URL=https://dewebgoeroe.be` |
+| Mail / wachtrij | `MAIL_MAILER=smtp`, `QUEUE_CONNECTION=database`, `LOG_LEVEL=error` |
+
+**Elke volgende deploy** ("klaar en deploy") — eerst naar `master` pushen, dan:
+
+```bash
+ssh dewebgoeroebe@ssh.dewebgoeroe.be 'bash ~/deploy.sh'
+```
+
+`~/deploy.sh` staat enkel op de server (niet in git): pull → `composer install --no-dev`
+→ `npm ci && npm run build` → `~/www` opnieuw opbouwen → `optimize:clear`, `migrate --force`,
+`optimize` → rechten (`chmod 600` op de Passport-sleutels). Controleer dat het eindigt met
+"✅ Deploy klaar." en dat de site daarna nog werkt. Content (pagina's, instellingen, media)
+reist niet mee met een deploy: zie "Database & media" hierboven. `.env` staat enkel op de server.
+Uitzondering: een **content-migratie** (zoals `create_ai_coaching_page`) draait wel mee via
+`migrate --force`, en maakt dan live de pagina aan.
 
 ---
 
