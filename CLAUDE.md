@@ -76,6 +76,28 @@ http://localhost:8000/admin
 
 ---
 
+## Deploy — live op dewebgoeroe.be (Combell)
+
+Zelfde opzet als alle andere sites op `webgoeroe/core` (zie de skill `deploy-combell`):
+
+- **Deployen** ("klaar en deploy"): `ssh dewebgoeroebe@ssh.dewebgoeroe.be 'bash ~/deploy.sh'`
+  vanaf `master` na een push. Het script moet eindigen op "Deploy klaar"; controleer
+  daarna dat de site nog werkt. Zonder "klaar en deploy" niet deployen.
+- **Server**: Combell (LinExpress), app in `~/webgoeroe` (buiten de webroot, `~/www` is een
+  echte map met symlinks), PHP 8.3. Het script haalt de code uit git (deploy-key
+  `github-webgoeroe`; de module-repos via het token "WebGoeroe modules"), draait
+  `composer install --no-dev`, bouwt de assets op de server (`public/build` staat niet in
+  git), maakt eerst een DB-backup in `~/db-backups/` als er migraties openstaan en draait
+  `php artisan migrate --force`.
+- **Content-migraties lopen dus mee met de deploy**: een pagina die via een migratie
+  aangemaakt wordt (zoals `/ai-coaching`, op concept) bestaat live pas na een deploy.
+  Lokaal bestaat ze pas nadat je `php artisan migrate` draait op je eigen database
+  (`webgoeroe.test`). Een concept-pagina is voor gasten een 404, voor een ingelogde
+  beheerder niet.
+- Geen wijzigingen op de server buiten het script. Nooit een token of wachtwoord via de chat.
+
+---
+
 ## Site-basis — package webgoeroe/core
 
 De basis (modellen, page-builder en core-blokken, media, menu's, redirects,
