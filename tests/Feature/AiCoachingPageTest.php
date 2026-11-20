@@ -33,6 +33,13 @@ it('zet de pagina op concept: niet publiek bereikbaar', function () {
     $this->get('/ai-coaching')->assertNotFound();
 });
 
+it('toont het concept wel aan een ingelogde beheerder (zo bekijkt Pieter de pagina lokaal)', function () {
+    $this->actingAs(\App\Models\User::factory()->create(['role' => \Webgoeroe\Core\Enums\UserRole::SuperAdmin]))
+        ->get('/ai-coaching')
+        ->assertOk()
+        ->assertSee('Een AI-coach die het samen met je opzet.');
+});
+
 it('rendert de pagina met de tekst, de knoppen naar de agenda en beide soorten afspraak', function () {
     Page::query()->where('slug', 'ai-coaching')->update(['published' => true]);
 
