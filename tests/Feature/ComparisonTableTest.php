@@ -10,7 +10,8 @@ it('maakt van een tabel met kopregel een vergelijkingstabel in een eigen stuk', 
 
     expect(array_column($parts, 'type'))->toBe(['html', 'table', 'html']);
     expect($parts[1]['html'])
-        ->toContain('<thead>')
+        ->toContain('<thead')
+        ->toContain('role="rowheader"')
         ->toContain('scope="row"')
         ->toContain('class="is-featured"')
         ->toContain('is-featured has-check')

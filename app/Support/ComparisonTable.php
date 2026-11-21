@@ -65,13 +65,21 @@ class ComparisonTable
         }
 
         $last = count($headCells) - 1;
+
+        // Expliciete rollen: de gsm-weergave zet de tabel in een grid (andere kolomvolgorde),
+        // en daarmee verliezen schermlezers anders de tabelsemantiek.
+        $table->setAttribute('role', 'table');
         $thead = $doc->createElement('thead');
+        $thead->setAttribute('role', 'rowgroup');
         $table->insertBefore($thead, $table->firstChild);
         $first->parentNode->removeChild($first);
         $thead->appendChild($first);
 
+        $first->setAttribute('role', 'row');
+
         foreach ($headCells as $i => $th) {
             $th->setAttribute('scope', 'col');
+            $th->setAttribute('role', 'columnheader');
             if ($i === $last) {
                 $th->setAttribute('class', 'is-featured');
             }
@@ -85,7 +93,12 @@ class ComparisonTable
             }
         }
 
+        foreach ($xpath->query('.//tbody', $table) as $tbody) {
+            $tbody->setAttribute('role', 'rowgroup');
+        }
+
         foreach ($dataRows as $r => $tr) {
+            $tr->setAttribute('role', 'row');
             foreach (iterator_to_array($xpath->query('./th|./td', $tr)) as $i => $cell) {
                 if ($i === 0) {
                     $th = $doc->createElement('th');
@@ -93,8 +106,13 @@ class ComparisonTable
                         $th->appendChild($cell->firstChild);
                     }
                     $th->setAttribute('scope', 'row');
+                    $th->setAttribute('role', 'rowheader');
                     $tr->replaceChild($th, $cell);
-                } elseif ($i === $last) {
+                } else {
+                    $cell->setAttribute('role', 'cell');
+                }
+
+                if ($i !== 0 && $i === $last) {
                     $class = 'is-featured';
                     if ($r >= count($dataRows) - self::CHECK_ROWS) {
                         $class .= ' has-check';

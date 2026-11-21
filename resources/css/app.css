@@ -184,7 +184,25 @@ html { scroll-behavior: smooth; }
 .wg-compare__body > * + * { margin-top: 0.4em; }
 .wg-compare__body a { color: var(--cmp-accent); text-decoration: underline; text-underline-offset: 2px; }
 @media (max-width: 767px) {
-    .wg-compare table { min-width: 34rem; font-size: 0.9rem; }
+    /* Op gsm staat de uitgelichte kolom meteen naast de rijlabels; de andere kolommen
+       veeg je naar rechts. De volgorde verandert enkel visueel (grid + order): de DOM,
+       de leesvolgorde en de kolomkoppen blijven zoals ze zijn (de rollen staan in de HTML,
+       want display: grid haalt de tabelsemantiek anders weg). */
+    .wg-compare table { display: block; width: max-content; min-width: 100%; font-size: 0.9rem; }
+    .wg-compare thead, .wg-compare tbody { display: block; }
+    .wg-compare tr { display: grid; grid-template-columns: 6.75rem; grid-auto-flow: column; grid-auto-columns: 11rem; }
+    .wg-compare tr > * { order: 2; }
+    .wg-compare tr > :first-child { order: 0; }
+    .wg-compare tr > .is-featured { order: 1; }
     .wg-compare th, .wg-compare td { padding: 0.8rem 0.75rem; }
-    .wg-compare tbody th { white-space: normal; width: 5.75rem; min-width: 5.75rem; max-width: 5.75rem; font-size: 0.8rem; box-shadow: 1px 0 0 var(--cmp-line); }
+    .wg-compare tbody th { white-space: normal; width: auto; font-size: 0.8rem; box-shadow: 1px 0 0 var(--cmp-line); }
+
+    /* Lichte fade rechts: er staat nog meer; weg zodra je aan het einde bent. */
+    .wg-compare { position: relative; }
+    .wg-compare::after {
+        content: ""; position: absolute; top: 1px; right: 1px; bottom: 1px; width: 2.5rem;
+        border-radius: 0 1rem 1rem 0; pointer-events: none; transition: opacity 0.2s;
+        background: linear-gradient(to right, transparent, var(--cmp-bg));
+    }
+    .wg-compare.is-end::after { opacity: 0; }
 }

@@ -27,8 +27,9 @@
     @foreach ($parts as $part)
         @if ($part['type'] === 'table')
             <div class="mx-auto max-w-6xl px-6 pb-4 pt-10 md:pb-6 md:pt-14">
-                <div class="wg-compare {{ $isDark ? 'wg-compare--dark' : '' }}">
-                    <div class="wg-compare__scroll" tabindex="0" role="region" aria-label="Vergelijking">
+                <div class="wg-compare {{ $isDark ? 'wg-compare--dark' : '' }}" x-data="{ end: false }" :class="{ 'is-end': end }">
+                    <div class="wg-compare__scroll" tabindex="0" role="region" aria-label="Vergelijking"
+                         @scroll.passive="end = $el.scrollLeft + $el.clientWidth >= $el.scrollWidth - 2">
                         {!! $part['html'] !!}
                     </div>
                 </div>
