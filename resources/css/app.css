@@ -156,7 +156,7 @@ html { scroll-behavior: smooth; }
     border: 1px solid var(--cmp-line);
     border-radius: 1rem;
     background: var(--cmp-bg);
-    padding-top: 1.75rem; /* ruimte voor het label boven de uitgelichte kolom */
+    padding-top: 3rem; /* ruimte voor het label boven de uitgelichte kolom, met lucht erboven */
     -webkit-overflow-scrolling: touch;
 }
 .wg-compare table { width: 100%; min-width: 40rem; margin: 0; border-collapse: separate; border-spacing: 0; color: var(--cmp-text); font-size: 1rem; }
@@ -171,7 +171,7 @@ html { scroll-behavior: smooth; }
 .wg-compare thead th.is-featured { position: relative; color: var(--cmp-accent); border-top: 2px solid var(--cmp-accent); border-top-left-radius: 0.75rem; border-top-right-radius: 0.75rem; border-bottom-color: var(--cmp-line); }
 .wg-compare thead th.is-featured::before {
     content: "Onze aanpak";
-    position: absolute; left: 50%; top: -0.15rem; transform: translate(-50%, -100%);
+    position: absolute; left: 50%; top: -0.6rem; transform: translate(-50%, -100%);
     padding: 0.15rem 0.7rem; border-radius: 999px; white-space: nowrap;
     font-size: 0.7rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
     background: var(--cmp-accent); color: var(--color-slate-950);
