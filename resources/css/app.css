@@ -128,3 +128,60 @@ html { scroll-behavior: smooth; }
    zodat de items even dicht staan als een gewone lijst. */
 .prose li > p { margin-top: 0; margin-bottom: 0; }
 .prose li > p + p { margin-top: 0.5em; }
+
+/* Vergelijkingstabel in een tekstblok (App\Support\ComparisonTable): kopregel,
+   rijlabels in de eerste kolom, de laatste kolom uitgelicht met een label
+   "Onze aanpak" en een kader. Op een smal scherm scrolt de tabel zijwaarts en
+   blijft de eerste kolom staan. */
+.wg-compare {
+    --cmp-text: var(--color-slate-700);
+    --cmp-muted: var(--color-slate-500);
+    --cmp-line: var(--color-slate-200);
+    --cmp-bg: #fff;
+    --cmp-hover: var(--color-slate-50);
+    --cmp-accent: var(--color-cyan-600);
+    --cmp-accent-bg: color-mix(in srgb, var(--color-cyan-500) 9%, #fff);
+}
+.wg-compare--dark {
+    --cmp-text: rgb(255 255 255 / 0.85);
+    --cmp-muted: rgb(255 255 255 / 0.5);
+    --cmp-line: rgb(255 255 255 / 0.1);
+    --cmp-bg: var(--color-slate-900);
+    --cmp-hover: rgb(255 255 255 / 0.03);
+    --cmp-accent: var(--color-cyan-400);
+    --cmp-accent-bg: color-mix(in srgb, var(--color-cyan-400) 10%, var(--color-slate-900));
+}
+.wg-compare__scroll {
+    overflow-x: auto;
+    border: 1px solid var(--cmp-line);
+    border-radius: 1rem;
+    background: var(--cmp-bg);
+    padding-top: 1.75rem; /* ruimte voor het label boven de uitgelichte kolom */
+    -webkit-overflow-scrolling: touch;
+}
+.wg-compare table { width: 100%; min-width: 40rem; margin: 0; border-collapse: separate; border-spacing: 0; color: var(--cmp-text); font-size: 1rem; }
+.wg-compare th, .wg-compare td { padding: 1.1rem 1.5rem; text-align: left; vertical-align: top; border-bottom: 1px solid var(--cmp-line); line-height: 1.45; }
+.wg-compare thead th { padding-top: 0.5rem; font-size: 1.05rem; font-weight: 800; color: var(--cmp-text); border-bottom: 2px solid var(--cmp-line); }
+.wg-compare tbody th { width: 20%; font-weight: 600; color: var(--cmp-muted); white-space: nowrap; position: sticky; left: 0; background: var(--cmp-bg); z-index: 1; }
+.wg-compare thead th:first-child { position: sticky; left: 0; background: var(--cmp-bg); z-index: 1; }
+.wg-compare tbody tr:last-child th, .wg-compare tbody tr:last-child td { border-bottom: 0; }
+.wg-compare tbody tr:hover td, .wg-compare tbody tr:hover th { background-color: var(--cmp-hover); }
+.wg-compare tbody tr:hover td.is-featured { background-color: color-mix(in srgb, var(--cmp-accent) 16%, var(--cmp-bg)); }
+.wg-compare .is-featured { background: var(--cmp-accent-bg); border-left: 2px solid var(--cmp-accent); border-right: 2px solid var(--cmp-accent); color: var(--cmp-text); font-weight: 600; }
+.wg-compare thead th.is-featured { position: relative; color: var(--cmp-accent); border-top: 2px solid var(--cmp-accent); border-top-left-radius: 0.75rem; border-top-right-radius: 0.75rem; border-bottom-color: var(--cmp-line); }
+.wg-compare thead th.is-featured::before {
+    content: "Onze aanpak";
+    position: absolute; left: 50%; top: -0.15rem; transform: translate(-50%, -100%);
+    padding: 0.15rem 0.7rem; border-radius: 999px; white-space: nowrap;
+    font-size: 0.7rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
+    background: var(--cmp-accent); color: var(--color-slate-950);
+}
+.wg-compare tbody tr:last-child td.is-featured { border-bottom: 2px solid var(--cmp-accent); border-bottom-left-radius: 0.75rem; border-bottom-right-radius: 0.75rem; }
+.wg-compare td.has-check::before {
+    content: "✓"; display: inline-block; margin-right: 0.55rem; font-weight: 900; color: var(--cmp-accent);
+}
+@media (max-width: 767px) {
+    .wg-compare table { min-width: 34rem; font-size: 0.9rem; }
+    .wg-compare th, .wg-compare td { padding: 0.8rem 0.75rem; }
+    .wg-compare tbody th { white-space: normal; width: 5.75rem; min-width: 5.75rem; max-width: 5.75rem; font-size: 0.8rem; box-shadow: 1px 0 0 var(--cmp-line); }
+}
