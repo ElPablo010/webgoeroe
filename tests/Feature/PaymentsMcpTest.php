@@ -1,6 +1,6 @@
 <?php
 
-use App\Mcp\Servers\CmsServer;
+use Webgoeroe\Core\Mcp\CoreServer;
 use App\Mcp\Tools\ListPayments;
 use App\Models\User;
 use Webgoeroe\Core\Agenda\Agenda;
@@ -57,7 +57,7 @@ it('geeft enkel betaalde betalingen terug, met factuurgegevens', function () {
     paymentFor(bookingForPayment(name: 'Open Klant'), 'open', null, 'tr_open');
     paymentFor(bookingForPayment(name: 'Mislukt Klant'), 'failed', null, 'tr_mislukt');
 
-    $response = CmsServer::actingAs($this->admin)->tool(ListPayments::class, []);
+    $response = CoreServer::actingAs($this->admin)->tool(ListPayments::class, []);
 
     $response->assertOk()
         ->assertSee('tr_betaald')
@@ -75,7 +75,7 @@ it('geeft enkel betaalde betalingen terug, met factuurgegevens', function () {
 it('laat bedrijfsnaam en btw-nummer leeg als ze niet ingevuld zijn', function () {
     paymentFor(bookingForPayment(), 'paid', now()->subHour(), 'tr_zonder_bedrijf');
 
-    $response = CmsServer::actingAs($this->admin)->tool(ListPayments::class, []);
+    $response = CoreServer::actingAs($this->admin)->tool(ListPayments::class, []);
 
     $response->assertOk()
         ->assertSee('tr_zonder_bedrijf')
@@ -87,11 +87,11 @@ it('houdt standaard 14 dagen aan en volgt de parameter since', function () {
     paymentFor(bookingForPayment(), 'paid', now()->subDays(3), 'tr_recent');
     paymentFor(bookingForPayment(), 'paid', now()->subDays(20), 'tr_oud');
 
-    CmsServer::actingAs($this->admin)->tool(ListPayments::class, [])
+    CoreServer::actingAs($this->admin)->tool(ListPayments::class, [])
         ->assertSee('tr_recent')
         ->assertDontSee('tr_oud');
 
-    CmsServer::actingAs($this->admin)->tool(ListPayments::class, ['since' => now()->subDays(30)->toDateString()])
+    CoreServer::actingAs($this->admin)->tool(ListPayments::class, ['since' => now()->subDays(30)->toDateString()])
         ->assertSee('tr_recent')
         ->assertSee('tr_oud');
 });

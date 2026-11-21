@@ -7,6 +7,19 @@ use App\Filament\Schemas\Sections\ConversionCalculatorFields;
 use App\Filament\Schemas\Sections\CaseResultsFields;
 use App\Filament\Schemas\Sections\LeadCheckFields;
 use App\Livewire\LeadCheckForm;
+use App\Mcp\Tools\CreateCase;
+use App\Mcp\Tools\CreatePost;
+use App\Mcp\Tools\ListCases;
+use App\Mcp\Tools\ListPayments;
+use App\Mcp\Tools\ListPosts;
+use App\Mcp\Tools\PreviewImage;
+use App\Mcp\Tools\PublishCase;
+use App\Mcp\Tools\PublishPost;
+use App\Mcp\Tools\UnpublishCase;
+use App\Mcp\Tools\UnpublishPost;
+use App\Mcp\Tools\UpdateCase;
+use App\Mcp\Tools\UpdatePost;
+use App\Mcp\Tools\UploadMediaFile;
 use App\Models\Page;
 use App\Services\Meta\ConversionsApi;
 use App\Support\AiCoaching;
@@ -47,11 +60,30 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Bootstrap any application services.
      */
+    /**
+     * Blog-, cases- en betalingstools voor de MCP-koppeling van de core (POST /mcp).
+     * upload_media_from_url komt uit de core zelf.
+     */
+    protected function registerMcpTools(): void
+    {
+        Core::mcpTools()->add([
+            // Blog
+            ListPosts::class, CreatePost::class, UpdatePost::class, PublishPost::class, UnpublishPost::class,
+            // Cases
+            ListCases::class, CreateCase::class, UpdateCase::class, PublishCase::class, UnpublishCase::class,
+            // Gedeeld
+            UploadMediaFile::class, PreviewImage::class,
+            // Betalingen (alleen-lezen, voor de facturatie)
+            ListPayments::class,
+        ]);
+    }
+
     public function boot(): void
     {
         // Eigen (merk-)consentscherm voor de OAuth-flow, o.a. de claude.ai-connector.
         Passport::authorizationView('oauth.authorize');
 
+        $this->registerMcpTools();
         $this->registerBlocks();
         $this->registerBookings();
         $this->hideChatWidgetOnLandingPages();

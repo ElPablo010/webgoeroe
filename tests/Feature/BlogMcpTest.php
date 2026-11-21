@@ -1,7 +1,7 @@
 <?php
 
 use Webgoeroe\Core\Enums\UserRole;
-use App\Mcp\Servers\CmsServer;
+use Webgoeroe\Core\Mcp\CoreServer;
 use App\Mcp\Tools\CreatePost;
 use App\Mcp\Tools\ListPosts;
 use App\Mcp\Tools\PublishPost;
@@ -15,7 +15,7 @@ beforeEach(function () {
 });
 
 it('creates a draft post from markdown by default', function () {
-    CmsServer::actingAs($this->admin)
+    CoreServer::actingAs($this->admin)
         ->tool(CreatePost::class, [
             'title' => 'Waarom snelheid telt',
             'body' => "## Inleiding\n\nEen **snelle** site converteert beter.",
@@ -34,7 +34,7 @@ it('creates a draft post from markdown by default', function () {
 });
 
 it('publishes immediately when published is true and returns the public url', function () {
-    CmsServer::actingAs($this->admin)
+    CoreServer::actingAs($this->admin)
         ->tool(CreatePost::class, [
             'title' => 'Live artikel',
             'body' => 'Inhoud.',
@@ -54,7 +54,7 @@ it('publishes immediately when published is true and returns the public url', fu
 it('generates a unique slug when the title collides', function () {
     Post::create(['title' => 'Dubbel', 'slug' => 'dubbel']);
 
-    CmsServer::actingAs($this->admin)
+    CoreServer::actingAs($this->admin)
         ->tool(CreatePost::class, ['title' => 'Dubbel', 'body' => 'x'])
         ->assertOk();
 
@@ -62,7 +62,7 @@ it('generates a unique slug when the title collides', function () {
 });
 
 it('rejects a post without a title', function () {
-    CmsServer::actingAs($this->admin)
+    CoreServer::actingAs($this->admin)
         ->tool(CreatePost::class, ['body' => 'Geen titel.'])
         ->assertHasErrors();
 });
@@ -75,7 +75,7 @@ it('updates only the provided fields', function () {
         'excerpt' => 'oude teaser',
     ]);
 
-    CmsServer::actingAs($this->admin)
+    CoreServer::actingAs($this->admin)
         ->tool(UpdatePost::class, [
             'id' => $post->id,
             'title' => 'Bijgewerkt',
@@ -90,7 +90,7 @@ it('updates only the provided fields', function () {
 });
 
 it('sets the seo image on create and update', function () {
-    CmsServer::actingAs($this->admin)
+    CoreServer::actingAs($this->admin)
         ->tool(CreatePost::class, [
             'title' => 'Met deelbeeld',
             'body' => 'x',
@@ -104,7 +104,7 @@ it('sets the seo image on create and update', function () {
     expect($post->seo_image_url)->toBe('/storage/website-media/deel.webp')
         ->and($post->seo_image_alt)->toBe('Deelbeeld');
 
-    CmsServer::actingAs($this->admin)
+    CoreServer::actingAs($this->admin)
         ->tool(UpdatePost::class, ['id' => $post->id, 'seo_image_url' => null])
         ->assertOk();
 
@@ -115,16 +115,16 @@ it('sets the seo image on create and update', function () {
 it('publishes and unpublishes an existing post', function () {
     $post = Post::create(['title' => 'Schakel', 'slug' => 'schakel', 'published' => false]);
 
-    CmsServer::actingAs($this->admin)->tool(PublishPost::class, ['id' => $post->id])->assertOk();
+    CoreServer::actingAs($this->admin)->tool(PublishPost::class, ['id' => $post->id])->assertOk();
     expect($post->fresh()->published)->toBeTrue()
         ->and($post->fresh()->published_at)->not->toBeNull();
 
-    CmsServer::actingAs($this->admin)->tool(UnpublishPost::class, ['id' => $post->id])->assertOk();
+    CoreServer::actingAs($this->admin)->tool(UnpublishPost::class, ['id' => $post->id])->assertOk();
     expect($post->fresh()->published)->toBeFalse();
 });
 
 it('returns an error for an unknown post id', function () {
-    CmsServer::actingAs($this->admin)
+    CoreServer::actingAs($this->admin)
         ->tool(PublishPost::class, ['id' => 99999])
         ->assertHasErrors();
 });
@@ -133,7 +133,7 @@ it('lists posts filtered by status', function () {
     Post::create(['title' => 'Gepubliceerd', 'slug' => 'pub', 'published' => true, 'published_at' => now()]);
     Post::create(['title' => 'Concept', 'slug' => 'draft', 'published' => false]);
 
-    CmsServer::actingAs($this->admin)
+    CoreServer::actingAs($this->admin)
         ->tool(ListPosts::class, ['status' => 'draft'])
         ->assertOk()
         ->assertSee('Concept')
@@ -167,5 +167,5 @@ it('authenticates a real Sanctum bearer token through the http transport', funct
 
     // Geldig token => niet langer 401; de transport neemt de handshake aan.
     expect($response->getStatusCode())->not->toBe(401);
-    $response->assertSee('Webgoeroe CMS');
+    $response->assertSee('Beheer de content van De Webgoeroe');
 });
