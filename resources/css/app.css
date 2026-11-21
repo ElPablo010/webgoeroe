@@ -156,7 +156,7 @@ html { scroll-behavior: smooth; }
     border: 1px solid var(--cmp-line);
     border-radius: 1rem;
     background: var(--cmp-bg);
-    padding-top: 3rem; /* ruimte voor het label boven de uitgelichte kolom, met lucht erboven */
+    padding: 3rem 1rem 1rem 0; /* rechts en onderaan lucht rond het kader; boven ruimte voor het label boven de uitgelichte kolom, met lucht erboven */
     -webkit-overflow-scrolling: touch;
 }
 .wg-compare table { width: 100%; min-width: 40rem; margin: 0; border-collapse: separate; border-spacing: 0; color: var(--cmp-text); font-size: 1rem; }
