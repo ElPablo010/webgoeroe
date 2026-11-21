@@ -660,15 +660,23 @@ verzoek naar Google, en gtag.js nooit vóór toestemming).
 ## Content via MCP — Claude beheert blog + cases
 
 Blog en cases kunnen door elke Claude-client (Code, desktop, claude.ai/Cowork)
-beheerd worden via een MCP-server die **in de Laravel-app zelf** draait
-(`laravel/mcp`) — geen apart proces, rolt mee met de gewone deploy.
+beheerd worden via de **MCP-koppeling van de core** (sinds core 0.36 / `laravel/mcp ^1.2`),
+die in de Laravel-app zelf draait — geen apart proces, rolt mee met de gewone deploy.
 
-- **Endpoint**: `POST /mcp` (zie [routes/ai.php](routes/ai.php)).
-- **Server**: [app/Mcp/Servers/CmsServer.php](app/Mcp/Servers/CmsServer.php).
-- **Tools** (in [app/Mcp/Tools/](app/Mcp/Tools/)), 14 in totaal:
+- **Opzet (sinds core 0.36)**: de eigen `CmsServer` en `routes/ai.php` zijn weg. De core
+  registreert `POST /mcp` (route `core.mcp`); de config staat in `config/core.php` → `mcp`
+  (`enabled: true`, `middleware: ['auth:sanctum,api']`, `oauth: true`, de instructies voor
+  Claude). De site meldt zijn tools aan in `AppServiceProvider::registerMcpTools()`
+  (`Core::mcpTools()->add([...])`). Naast onze tools biedt de core er zelf `list_pages`,
+  `get_page`, `create_page`, `update_page`, menu's en `upload_media_from_url` (de eigen versie
+  is vervallen). Schakelaar ook op Instellingen → Claude (overschrijft `enabled`).
+  Tests lopen via `Webgoeroe\Core\Mcp\CoreServer::actingAs(...)`. `bootstrap/app.php` rendert
+  JSON-fouten voor `expectsJson()` én `/mcp`.
+- **Endpoint**: `POST /mcp`.
+- **Tools** (in [app/Mcp/Tools/](app/Mcp/Tools/)), 13 eigen + 10 uit de core; `tools/list` is gepagineerd (15 per pagina):
   - Blog: `list_posts`, `create_post`, `update_post`, `publish_post`, `unpublish_post`
   - Cases: `list_cases`, `create_case`, `update_case`, `publish_case`, `unpublish_case`
-  - Gedeeld: `upload_media_from_url`, `upload_media_file` (base64 of data-URI, bv. een foto
+  - Gedeeld: `upload_media_file` (base64 of data-URI, bv. een foto
     opgeladen vanuit het Contentoverzicht-artifact; zelfde opslag als een admin-upload),
     `preview_image` (read-only: verkleinde data-URI's van een Higgsfield-/Pexels-/eigen beeld,
     want het Contentoverzicht-artifact mag zelf geen externe beelden laden; vaste lijst hosts)
@@ -756,7 +764,7 @@ vraagt geheugen: `phpunit.xml` zet `memory_limit=512M` voor de tests.
 ### Auth — twee wegen op één route
 
 De `/mcp`-route draait op guard-lijst `auth:sanctum,api` (zie
-[routes/ai.php](routes/ai.php)): Sanctum wordt eerst geprobeerd, dan Passport.
+`config/core.php` → `mcp.middleware`): Sanctum wordt eerst geprobeerd, dan Passport.
 Volgorde is bewust — omgekeerd (`api,sanctum`) faalt het Sanctum-token met 401.
 
 **1. Sanctum bearer-token — Claude Code / desktop**
@@ -820,8 +828,17 @@ De code zelf is hierdoor niet te betrappen: [BlogMcpOAuthFlowTest](tests/Feature
 loopt de volledige authorization-code + PKCE-flow door en slaagt lokaal — dit is
 puur een bestandsrechten-kwestie op de server.
 
+### Deploy van de overstap naar core 0.36
+
+Bestaande Sanctum-tokens en de claude.ai-koppeling (Passport-client + tokens) blijven werken:
+zelfde pad `/mcp`, zelfde guards, geen nieuwe tabellen voor tokens (de core-migratie slaat
+`personal_access_tokens` over als ze er al is). Controleer na de deploy: `POST /mcp` zonder
+token = 401, en in claude.ai een tool laten draaien (bv. `list_posts`). De Passport-sleutels
+moeten nog steeds chmod 600 zijn. Let op: de core zet `serverInfo.name` op "Website-CMS"
+(attribuut wint van `core.mcp.name`); dat verandert niets aan de bestaande koppeling.
+
 ### Nieuwe blog-tool toevoegen
 
-`php artisan make:mcp-tool <Naam>`, `use InteractsWithPosts`, registreren in de
-`$tools`-array van `CmsServer`. Validatie in `handle()` via `$request->validate()`,
+`php artisan make:mcp-tool <Naam>`, `use InteractsWithPosts`, registreren in
+`AppServiceProvider::registerMcpTools()`. Validatie in `handle()` via `$request->validate()`,
 inputschema in `schema()`.

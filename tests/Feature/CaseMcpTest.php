@@ -1,13 +1,13 @@
 <?php
 
 use Webgoeroe\Core\Enums\UserRole;
-use App\Mcp\Servers\CmsServer;
+use Webgoeroe\Core\Mcp\CoreServer;
 use App\Mcp\Tools\CreateCase;
 use App\Mcp\Tools\ListCases;
 use App\Mcp\Tools\PublishCase;
 use App\Mcp\Tools\UnpublishCase;
 use App\Mcp\Tools\UpdateCase;
-use App\Mcp\Tools\UploadMediaFromUrl;
+use Webgoeroe\Core\Mcp\Tools\UploadMediaFromUrl;
 use App\Models\CaseStudy;
 use App\Models\User;
 use App\Models\WebsiteMedia;
@@ -29,7 +29,7 @@ function minimalCaseContent(): array
 }
 
 it('creates a draft case with the full content structure', function () {
-    CmsServer::actingAs($this->admin)
+    CoreServer::actingAs($this->admin)
         ->tool(CreateCase::class, [
             'title' => 'Bookingplatform voor sauna',
             'client' => 'Sauna Voorbeeld',
@@ -69,7 +69,7 @@ it('creates a draft case with the full content structure', function () {
 });
 
 it('publishes immediately when published is true and returns the public url', function () {
-    CmsServer::actingAs($this->admin)
+    CoreServer::actingAs($this->admin)
         ->tool(CreateCase::class, [
             'title' => 'Live case',
             'content' => minimalCaseContent(),
@@ -82,7 +82,7 @@ it('publishes immediately when published is true and returns the public url', fu
 });
 
 it('requires the mandatory content fields', function (array $content) {
-    CmsServer::actingAs($this->admin)
+    CoreServer::actingAs($this->admin)
         ->tool(CreateCase::class, ['title' => 'Onvolledig', 'content' => $content])
         ->assertHasErrors();
 
@@ -94,7 +94,7 @@ it('requires the mandatory content fields', function (array $content) {
 ]);
 
 it('rejects a case without content entirely', function () {
-    CmsServer::actingAs($this->admin)
+    CoreServer::actingAs($this->admin)
         ->tool(CreateCase::class, ['title' => 'Geen content'])
         ->assertHasErrors();
 });
@@ -102,7 +102,7 @@ it('rejects a case without content entirely', function () {
 it('generates a unique slug when the title collides', function () {
     CaseStudy::create(['title' => 'Dubbel', 'slug' => 'dubbel', 'content' => minimalCaseContent()]);
 
-    CmsServer::actingAs($this->admin)
+    CoreServer::actingAs($this->admin)
         ->tool(CreateCase::class, ['title' => 'Dubbel', 'content' => minimalCaseContent()])
         ->assertOk();
 
@@ -117,7 +117,7 @@ it('updates fields without touching content when content is omitted', function (
         'excerpt' => 'oude teaser',
     ]);
 
-    CmsServer::actingAs($this->admin)
+    CoreServer::actingAs($this->admin)
         ->tool(UpdateCase::class, ['id' => $case->id, 'title' => 'Bijgewerkt'])
         ->assertOk();
 
@@ -131,7 +131,7 @@ it('updates fields without touching content when content is omitted', function (
 it('replaces the whole content block when content is given', function () {
     $case = CaseStudy::create(['title' => 'Case', 'slug' => 'case', 'content' => minimalCaseContent()]);
 
-    CmsServer::actingAs($this->admin)
+    CoreServer::actingAs($this->admin)
         ->tool(UpdateCase::class, [
             'id' => $case->id,
             'content' => [
@@ -147,7 +147,7 @@ it('replaces the whole content block when content is given', function () {
 it('validates content on update too', function () {
     $case = CaseStudy::create(['title' => 'Case', 'slug' => 'case', 'content' => minimalCaseContent()]);
 
-    CmsServer::actingAs($this->admin)
+    CoreServer::actingAs($this->admin)
         ->tool(UpdateCase::class, [
             'id' => $case->id,
             'content' => ['challenge' => ['body' => 'Alleen dit.']], // solution ontbreekt
@@ -160,15 +160,15 @@ it('publishes and unpublishes an existing case', function () {
         'title' => 'Schakel', 'slug' => 'schakel', 'content' => minimalCaseContent(), 'published' => false,
     ]);
 
-    CmsServer::actingAs($this->admin)->tool(PublishCase::class, ['id' => $case->id])->assertOk();
+    CoreServer::actingAs($this->admin)->tool(PublishCase::class, ['id' => $case->id])->assertOk();
     expect($case->fresh()->published)->toBeTrue();
 
-    CmsServer::actingAs($this->admin)->tool(UnpublishCase::class, ['id' => $case->id])->assertOk();
+    CoreServer::actingAs($this->admin)->tool(UnpublishCase::class, ['id' => $case->id])->assertOk();
     expect($case->fresh()->published)->toBeFalse();
 });
 
 it('returns an error for an unknown case id', function () {
-    CmsServer::actingAs($this->admin)
+    CoreServer::actingAs($this->admin)
         ->tool(PublishCase::class, ['id' => 99999])
         ->assertHasErrors();
 });
@@ -177,20 +177,20 @@ it('lists cases filtered by status and searchable by client', function () {
     CaseStudy::create(['title' => 'Live', 'slug' => 'live', 'content' => minimalCaseContent(), 'published' => true, 'client' => 'Acme']);
     CaseStudy::create(['title' => 'Concept', 'slug' => 'concept', 'content' => minimalCaseContent(), 'published' => false]);
 
-    CmsServer::actingAs($this->admin)
+    CoreServer::actingAs($this->admin)
         ->tool(ListCases::class, ['status' => 'draft'])
         ->assertOk()
         ->assertSee('Concept')
         ->assertDontSee('"title":"Live"');
 
-    CmsServer::actingAs($this->admin)
+    CoreServer::actingAs($this->admin)
         ->tool(ListCases::class, ['search' => 'Acme'])
         ->assertOk()
         ->assertSee('Live');
 });
 
 it('accepts a library media path as cover_url on a case', function () {
-    CmsServer::actingAs($this->admin)
+    CoreServer::actingAs($this->admin)
         ->tool(CreateCase::class, [
             'title' => 'Met cover',
             'content' => minimalCaseContent(),
@@ -211,14 +211,14 @@ it('uploads an image and uses it as both cover and solution screenshot', functio
     )]);
 
     // 1. Afbeelding binnenhalen via de gedeelde tool.
-    CmsServer::actingAs($this->admin)
+    CoreServer::actingAs($this->admin)
         ->tool(UploadMediaFromUrl::class, ['url' => 'https://93.184.216.34/shot.jpg'])
         ->assertOk();
 
     $mediaUrl = WebsiteMedia::latest('id')->first()->url;
 
     // 2. Diezelfde URL gebruiken als cover én binnen content.
-    CmsServer::actingAs($this->admin)
+    CoreServer::actingAs($this->admin)
         ->tool(CreateCase::class, [
             'title' => 'Case met beeld',
             'cover_url' => $mediaUrl,
@@ -242,7 +242,7 @@ it('uploads an image and uses it as both cover and solution screenshot', functio
 });
 
 it('rejects a bogus media url inside case content', function () {
-    CmsServer::actingAs($this->admin)
+    CoreServer::actingAs($this->admin)
         ->tool(CreateCase::class, [
             'title' => 'Kapot beeld',
             'content' => [
