@@ -177,9 +177,12 @@ html { scroll-behavior: smooth; }
     background: var(--cmp-accent); color: var(--color-slate-950);
 }
 .wg-compare tbody tr:last-child td.is-featured { border-bottom: 2px solid var(--cmp-accent); border-bottom-left-radius: 0.75rem; border-bottom-right-radius: 0.75rem; }
-.wg-compare td.has-check::before {
-    content: "✓"; display: inline-block; margin-right: 0.55rem; font-weight: 900; color: var(--cmp-accent);
-}
+.wg-compare__check { display: flex; align-items: baseline; gap: 0.55rem; }
+.wg-compare__tick { flex: none; font-weight: 900; color: var(--cmp-accent); }
+.wg-compare__body { min-width: 0; }
+.wg-compare__body > *, .wg-compare td > p { margin: 0; }
+.wg-compare__body > * + * { margin-top: 0.4em; }
+.wg-compare__body a { color: var(--cmp-accent); text-decoration: underline; text-underline-offset: 2px; }
 @media (max-width: 767px) {
     .wg-compare table { min-width: 34rem; font-size: 0.9rem; }
     .wg-compare th, .wg-compare td { padding: 0.8rem 0.75rem; }

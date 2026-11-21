@@ -98,6 +98,22 @@ class ComparisonTable
                     $class = 'is-featured';
                     if ($r >= count($dataRows) - self::CHECK_ROWS) {
                         $class .= ' has-check';
+                        // Vinkje en inhoud naast elkaar (flex), wat de inhoud ook is: tekst,
+                        // alinea's of een link. Een ::before bleef op een eigen regel staan
+                        // zodra de cel een blokelement bevatte.
+                        $wrap = $doc->createElement('div');
+                        $wrap->setAttribute('class', 'wg-compare__check');
+                        $tick = $doc->createElement('span', '✓');
+                        $tick->setAttribute('class', 'wg-compare__tick');
+                        $tick->setAttribute('aria-hidden', 'true');
+                        $body = $doc->createElement('div');
+                        $body->setAttribute('class', 'wg-compare__body');
+                        while ($cell->firstChild) {
+                            $body->appendChild($cell->firstChild);
+                        }
+                        $wrap->appendChild($tick);
+                        $wrap->appendChild($body);
+                        $cell->appendChild($wrap);
                     }
                     $cell->setAttribute('class', $class);
                 }
