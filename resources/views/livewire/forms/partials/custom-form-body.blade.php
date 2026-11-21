@@ -51,18 +51,12 @@
         @endif
 
         <button type="submit" wire:loading.attr="disabled" wire:target="submit,next"
-                class="flex-1 cursor-pointer rounded-full bg-white px-6 py-3.5 text-sm font-semibold text-[#050507] transition-all hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-60">
+                class="relative flex-1 cursor-pointer rounded-full bg-white px-6 py-3.5 text-sm font-semibold text-[#050507] transition-all hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-60">
             @if ($step < $last)
                 <span>{{ __('Volgende') }}</span>
             @else
-                <span wire:loading.remove wire:target="submit">{{ $form->button_label ?: 'Versturen' }}</span>
-                <span wire:loading wire:target="submit" class="inline-flex items-center gap-2">
-                    <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                    </svg>
-                    Versturen...
-                </span>
+                <x-core::busy-spinner target="submit" />
+                <span>{{ $form->button_label ?: 'Versturen' }}</span>
             @endif
         </button>
     </div>

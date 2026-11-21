@@ -65,16 +65,10 @@
             <button
                 type="submit"
                 wire:loading.attr="disabled"
-                class="w-full cursor-pointer rounded-full bg-white px-6 py-3.5 text-sm font-semibold text-[#050507] transition-all hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-60"
+                class="relative w-full cursor-pointer rounded-full bg-white px-6 py-3.5 text-sm font-semibold text-[#050507] transition-all hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-60"
             >
-                <span wire:loading.remove>Bericht versturen</span>
-                <span wire:loading class="inline-flex items-center gap-2">
-                    <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                    </svg>
-                    Versturen...
-                </span>
+                <x-core::busy-spinner target="submit" />
+                <span>Bericht versturen</span>
             </button>
         </form>
     @endif
