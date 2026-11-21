@@ -21,7 +21,7 @@ it('zet de groepen in een vaste volgorde, met Instellingen onderaan', function (
         Filament::getPanel('admin')->getNavigationGroups(),
     );
 
-    expect($groups)->toBe(['Website', 'Leads', 'Vindbaarheid', 'Reviews', 'Instellingen']);
+    expect($groups)->toBe(['Website', 'Leads', 'Agenda', 'Vindbaarheid', 'Reviews', 'Instellingen']);
 });
 
 it('toont een uitlogknop onderaan de zijbalk', function () {
@@ -52,7 +52,7 @@ it('rendert de groepen in volgorde, met uitloggen als laatste', function () {
         filament()->getNavigation(),
     )));
 
-    expect($groups)->toBe(['Website', 'Leads', 'Vindbaarheid', 'Reviews', 'Instellingen'])
+    expect($groups)->toBe(['Website', 'Leads', 'Agenda', 'Vindbaarheid', 'Reviews', 'Instellingen'])
         ->and($at('Instellingen'))->toBeLessThan($logout);
 });
 
