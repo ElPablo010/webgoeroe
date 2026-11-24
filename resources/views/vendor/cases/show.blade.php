@@ -288,6 +288,11 @@
     {{-- ── CTA ────────────────────────────────────────────────────── --}}
     {{-- CTA-banner: Instellingen → Cases of de eigen knoppen van deze case;
          ontwerp: vendor/core/components/cta-banner. --}}
+    {{-- De banner heeft enkel ruimte onderaan (blog loopt in dezelfde kleur door);
+         hier volgt hij op een sectie met een andere achtergrond, dus ruimte erboven. --}}
+    @if ($cta)
+        <div class="bg-[#050507] pt-16 md:pt-24"></div>
+    @endif
     <x-core::cta-banner :cta="$cta" />
 
 </x-layouts.site>
