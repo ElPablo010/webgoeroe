@@ -81,16 +81,6 @@ return [
         'attribution_field' => env('GHL_FIELD_ATTRIBUTION'),
     ],
 
-    // Meta (Facebook/Instagram) meting: pixel in de browser + serverevents (Conversions API).
-    // Pixel-ID = dataset "De WebGoeroe". Token: Events Manager → dataset → Instellingen →
-    // Conversions API → toegangstoken genereren. Leeg = niets laden, niets versturen.
-    'meta' => [
-        'pixel_id' => env('META_PIXEL_ID'),
-        'access_token' => env('META_CAPI_TOKEN'),
-        'test_event_code' => env('META_TEST_EVENT_CODE'),
-        'api_version' => env('META_API_VERSION', 'v21.0'),
-    ],
-
     'resend' => [
         'key' => env('RESEND_API_KEY'),
     ],

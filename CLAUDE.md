@@ -311,10 +311,21 @@ is de láátste.
 
 ## Meta-pixel en serverevents (advertentiemeting)
 
-- **Pixel** ([`meta-pixel.blade.php`](resources/views/components/site/meta-pixel.blade.php), in `<head>` na de GA4-snippet): pas na marketingtoestemming (`cookieConsent.marketing`), `META_PIXEL_ID` leeg = niets laden. Zet ook `window.wgTracking` (`payload()` = herkomst uit de URL [utm_* + sector], toestemming, `_fbp`/`_fbc`, `event_id`; `fire(naam, payload)` = browserevent met hetzelfde `event_id`).
-- **Serverevents** ([`ConversionsApi`](app/Services/Meta/ConversionsApi.php)): `Lead` bij `POST /omzetcheck`, `Schedule` bij `POST /boeking`, via `app()->terminating` (na het antwoord), gehashte e-mail/voornaam, alleen met toestemming + `META_CAPI_TOKEN`. Zelfde `event_id` als de pixel = Meta ontdubbelt. Fouten komen enkel in de log. `.env`: `META_PIXEL_ID` (dataset "De WebGoeroe", 24465117833184736), `META_CAPI_TOKEN`, optioneel `META_TEST_EVENT_CODE` (Events Manager → Test events) en `GHL_FIELD_ATTRIBUTION`.
-- **Herkomst** (UTM + sector) wordt altijd bewaard in de inzending (`data.attribution`) en, met `GHL_FIELD_ATTRIBUTION`, als "bron | campagne | advertentie | sector" op het GHL-contact. Ads linken met `?sector=<sleutel>&utm_source=meta&utm_campaign=…&utm_content=<adnaam>`.
-- Tests: `tests/Feature/MetaTrackingTest.php`.
+Sinds 26/11/2026 komt dit uit de **Meta Conversions API van de core** (0.54, `docs/meta-conversions.md` daar);
+de eigen `ConversionsApi`-service, de `->booked(...)`-haak en het eigen pixel-component zijn weg.
+
+- **Aan/uit**: `.env` `CORE_META_CAPI=true` + `META_PIXEL_ID` (dataset "De WebGoeroe", 24465117833184736) + `META_CAPI_TOKEN`
+  (Events Manager → dataset → Instellingen → Conversions API); `META_TEST_EVENT_CODE` enkel tijdens het testen.
+  Standaard uit: zonder `CORE_META_CAPI=true` laadt er geen pixel en gaat er niets naar Meta.
+- **Pixel**: `<x-core::meta-pixel />` in `<head>` van de layout (pas na marketingtoestemming). Zet `window.wgTracking`.
+  Daarna `<x-site.tracking-attribution />`: voegt de herkomst uit de URL (utm_* + sector) toe aan `payload()`.
+- **Events**: `Lead` (contactformulier en omzetcheck via `ConversionsApi::recordSubmission` in
+  [`OmzetcheckController`](app/Http/Controllers/OmzetcheckController.php); Lekkencheck via de `->submitted(...)`-haak in
+  `registerLeadChecks()`), `Schedule` (boeking, door de core zelf), `QualifiedLead` en `Purchase` (kwaliteit/status van een aanvraag, core). Via de wachtrij.
+- **Herkomst** ([`AdAttribution`](app/Support/AdAttribution.php)): UTM + sector worden altijd bewaard in de inzending (`data.attribution`)
+  en, met `GHL_FIELD_ATTRIBUTION`, als "bron | campagne | advertentie | sector" op het GHL-contact. Ads linken met
+  `?sector=<sleutel>&utm_source=meta&utm_campaign=…&utm_content=<adnaam>`.
+- Tests: `tests/Feature/MetaTrackingTest.php`. Live aanzetten = env invullen + deploy; daarna controleren in Events Manager → Test events.
 
 ## Omzetcheck-gate (website-conversiecalculator)
 
@@ -360,7 +371,7 @@ Hier blijft enkel wat eigen is aan deze site:
   [`booking-own.blade.php`](resources/views/components/site/sections/booking-own.blade.php)
   (maandkalender in de huisstijl, `window.wgTracking` voor de pixel).
 - **`AppServiceProvider::registerBookings()`** (`Core::bookings()`): trackingregels, herkomst
-  (`attribution` + `herkomst`) in de inzending en het Meta-event `Schedule` na het boeken.
+  (`attribution` + `herkomst`) in de inzending en (Schedule stuurt de core zelf).
 - Inleiding in de uitnodiging: per sectie, anders `services.gohighlevel.booking.description`.
 
 De boeking maakt zelf contact en afspraak in GHL en bewaart het contact bij de aanvraag

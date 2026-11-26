@@ -3,10 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\FormSubmission;
-use App\Services\Meta\ConversionsApi;
+use App\Support\AdAttribution;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Webgoeroe\Core\Core;
+use Webgoeroe\Core\Integrations\Meta\ConversionsApi;
 
 /**
  * Gate op de omzetcheck: de bezoeker laat voornaam en e-mail achter om zijn
@@ -18,7 +19,7 @@ use Webgoeroe\Core\Core;
  */
 class OmzetcheckController extends Controller
 {
-    public function store(Request $request, ConversionsApi $meta): JsonResponse
+    public function store(Request $request): JsonResponse
     {
         // Honeypot: een bot vult het verborgen veld in én verstuurt meteen. Doe
         // alsof het gelukt is. Chrome-autofill vult het veld soms ook in bij
@@ -37,10 +38,10 @@ class OmzetcheckController extends Controller
             'value' => ['required', 'numeric', 'min:0', 'max:100000000'],
             'target' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'section' => ['nullable', 'integer'],
-            ...ConversionsApi::RULES,
+            ...AdAttribution::RULES,
         ]);
 
-        $attribution = ConversionsApi::attribution($request);
+        $attribution = AdAttribution::from($request);
 
         $result = self::calculate(
             (float) $data['visitors'],
@@ -58,7 +59,7 @@ class OmzetcheckController extends Controller
             ? Core::model('page_section')::query()->whereKey($data['section'])->where('section_type', 'conversion_calculator')->value('id')
             : null;
 
-        FormSubmission::create([
+        $submission = FormSubmission::create([
             'type' => 'omzetcheck',
             'page_section_id' => $sectionId,
             'data' => [
@@ -72,14 +73,15 @@ class OmzetcheckController extends Controller
                 'yearly' => round($result['yearly']),
                 'amount' => $amount,
                 'extra_leads' => $extra,
-                'herkomst' => ConversionsApi::attributionLine($attribution) ?: null,
+                'herkomst' => AdAttribution::line($attribution) ?: null,
                 'attribution' => $attribution ?: null,
             ],
             'page_url' => $request->headers->get('referer'),
             'ip' => $request->ip(),
         ]);
 
-        app()->terminating(fn () => $meta->send('Lead', $request, ['email' => $data['email'], 'first_name' => $data['first_name']], array_filter(['content_category' => $data['sector'] ?? null])));
+        // Meta Conversions API van de core (standaard uit; enkel met marketingtoestemming).
+        ConversionsApi::recordSubmission($submission, $request->input('tracking'), 'Lead', $request);
 
         return response()->json(['ok' => true]);
     }

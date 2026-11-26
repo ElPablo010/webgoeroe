@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
  * het meestuurt (window.coreLeadTracking.payload()). Bv.:
  *
  *     LeadCheck::hooks()
- *         ->rules(ConversionsApi::RULES)
+ *         ->rules(AdAttribution::RULES)
  *         ->data(fn (Request $request): array => ['herkomst' => …])
  *         ->submitted(fn (Request $request, Model $submission, array $contact) => …);
  */

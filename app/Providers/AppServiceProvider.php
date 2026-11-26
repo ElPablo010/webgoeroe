@@ -3,8 +3,8 @@
 namespace App\Providers;
 
 use App\Filament\Schemas\Sections\CalculatorFields;
-use App\Filament\Schemas\Sections\ConversionCalculatorFields;
 use App\Filament\Schemas\Sections\CaseResultsFields;
+use App\Filament\Schemas\Sections\ConversionCalculatorFields;
 use App\Filament\Schemas\Sections\LeadCheckFields;
 use App\Livewire\LeadCheckForm;
 use App\Mcp\Tools\CreateCase;
@@ -21,7 +21,7 @@ use App\Mcp\Tools\UpdateCase;
 use App\Mcp\Tools\UpdatePost;
 use App\Mcp\Tools\UploadMediaFile;
 use App\Models\Page;
-use App\Services\Meta\ConversionsApi;
+use App\Support\AdAttribution;
 use App\Support\AiCoaching;
 use App\Support\LandingPages;
 use App\Support\LeadCheck;
@@ -41,11 +41,13 @@ use Illuminate\Http\Request;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Passport\Passport;
 use Livewire\Livewire;
+use Webgoeroe\Chat\Support\WidgetVisibility;
 use Webgoeroe\Core\Core;
 use Webgoeroe\Core\Filament\Schemas\Components\MediaPickerField;
 use Webgoeroe\Core\Filament\Schemas\Components\PageLinkField;
 use Webgoeroe\Core\Filament\Schemas\Components\RichText;
 use Webgoeroe\Core\Filament\Schemas\Sections\CtaLinkSchema;
+use Webgoeroe\Core\Integrations\Meta\ConversionsApi;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -98,20 +100,14 @@ class AppServiceProvider extends ServiceProvider
 
     /**
      * Eigen kalender (core): herkomst van de advertentie meebewaren (`herkomst` staat
-     * op Integraties aan het GHL-veld "Herkomst advertentie" gekoppeld) en het
-     * Meta-serverevent "Schedule" na een geslaagde boeking.
+     * op Integraties aan het GHL-veld "Herkomst advertentie" gekoppeld). Het Meta-event
+     * Schedule stuurt de core zelf (Meta Conversions API, standaard uit).
      */
     protected function registerBookings(): void
     {
         Core::bookings()
-            ->rules(ConversionsApi::RULES)
-            ->data(function (Request $request): array {
-                $attribution = ConversionsApi::attribution($request);
-
-                return ['attribution' => $attribution ?: null, 'herkomst' => ConversionsApi::attributionLine($attribution) ?: null];
-            })
-            ->booked(fn (Request $request, Model $submission, array $contact) => app(ConversionsApi::class)
-                ->send('Schedule', $request, array_filter(['email' => $contact['email'] ?? null, 'first_name' => $contact['first_name'] ?? null])));
+            ->rules(AdAttribution::RULES)
+            ->data(fn (Request $request): array => AdAttribution::data($request));
     }
 
     /**
@@ -160,14 +156,9 @@ class AppServiceProvider extends ServiceProvider
         Livewire::component(LeadCheck::COMPONENT, LeadCheckForm::class);
 
         LeadCheck::hooks()
-            ->rules(ConversionsApi::RULES)
-            ->data(function (Request $request): array {
-                $attribution = ConversionsApi::attribution($request);
-
-                return ['attribution' => $attribution ?: null, 'herkomst' => ConversionsApi::attributionLine($attribution) ?: null];
-            })
-            ->submitted(fn (Request $request, Model $submission, array $contact) => app(ConversionsApi::class)
-                ->send('Lead', $request, array_filter(['email' => $contact['email'] ?? null, 'first_name' => $contact['first_name'] ?? null])));
+            ->rules(AdAttribution::RULES)
+            ->data(fn (Request $request): array => AdAttribution::data($request))
+            ->submitted(fn (Request $request, Model $submission, array $contact) => ConversionsApi::recordSubmission($submission, $request->input('tracking'), 'Lead', $request));
     }
 
     /**
@@ -438,14 +429,14 @@ class AppServiceProvider extends ServiceProvider
      */
     protected function hideChatWidgetOnLandingPages(): void
     {
-        if (! class_exists(\Webgoeroe\Chat\Support\WidgetVisibility::class)) {
+        if (! class_exists(WidgetVisibility::class)) {
             return;
         }
 
-        \Webgoeroe\Chat\Support\WidgetVisibility::hideWhen(function (Request $request): bool {
-            $ids = \App\Support\LandingPages::ids();
+        WidgetVisibility::hideWhen(function (Request $request): bool {
+            $ids = LandingPages::ids();
 
-            return $ids !== [] && \App\Models\Page::query()
+            return $ids !== [] && Page::query()
                 ->whereIn('id', $ids)
                 ->where('slug', trim($request->path(), '/'))
                 ->exists();

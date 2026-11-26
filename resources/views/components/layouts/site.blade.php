@@ -48,7 +48,8 @@
     {{-- Staat bewust vóór Alpine: de listener op cookie-consent-changed moet
          al klaarstaan wanneer de banner een eerder bewaarde keuze doorgeeft. --}}
     <x-seo-growth::site.analytics />
-    <x-site.meta-pixel />
+    <x-core::meta-pixel />
+    <x-site.tracking-attribution />
 </head>
 <body class="min-h-screen bg-[#050507] text-white antialiased">
     @if ($isLanding)
