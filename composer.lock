@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "65e2bb6c6abec9ec0c962b64086a30b8",
+    "content-hash": "f33a17e5380d8084370f66acc0361693",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -3282,16 +3282,16 @@
         },
         {
             "name": "league/commonmark",
-            "version": "2.10.9",
+            "version": "2.10.10",
             "source": {
                 "type": "git",
                 "url": "https://github.com/thephpleague/commonmark.git",
-                "reference": "ab5ff8c80fd69abaeb4d57d7711d389248f219e4"
+                "reference": "3e956235b26ea34ea721a302e27eae9a32cb9ef0"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/thephpleague/commonmark/zipball/ab5ff8c80fd69abaeb4d57d7711d389248f219e4",
-                "reference": "ab5ff8c80fd69abaeb4d57d7711d389248f219e4",
+                "url": "https://api.github.com/repos/thephpleague/commonmark/zipball/3e956235b26ea34ea721a302e27eae9a32cb9ef0",
+                "reference": "3e956235b26ea34ea721a302e27eae9a32cb9ef0",
                 "shasum": ""
             },
             "require": {
@@ -3385,8 +3385,8 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-11-25T20:08:31+00:00",
-            "published-time": "2026-11-25T20:11:11+00:00"
+            "time": "2026-11-26T14:08:53+00:00",
+            "published-time": "2026-11-26T14:12:37+00:00"
         },
         {
             "name": "league/config",
@@ -10211,16 +10211,16 @@
         },
         {
             "name": "webgoeroe/core",
-            "version": "v0.54.2",
+            "version": "v0.55.0",
             "source": {
                 "type": "git",
                 "url": "git@github.com:ElPablo010/core.git",
-                "reference": "af50fb6453b6f002c2a231bb40337d370d392c6e"
+                "reference": "eebcbea398d2d743a322c3fd0164968a150f1513"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ElPablo010/core/zipball/af50fb6453b6f002c2a231bb40337d370d392c6e",
-                "reference": "af50fb6453b6f002c2a231bb40337d370d392c6e",
+                "url": "https://api.github.com/repos/ElPablo010/core/zipball/eebcbea398d2d743a322c3fd0164968a150f1513",
+                "reference": "eebcbea398d2d743a322c3fd0164968a150f1513",
                 "shasum": ""
             },
             "require": {
@@ -10251,10 +10251,10 @@
             ],
             "description": "Site-basis van De WebGoeroe: page-builder met blokken, media, menu's, redirects, header/footer, SEO (sitemap, robots, llms.txt, JSON-LD) en formulieren voor Laravel + Filament-sites.",
             "support": {
-                "source": "https://github.com/ElPablo010/core/tree/v0.54.2",
+                "source": "https://github.com/ElPablo010/core/tree/v0.55.0",
                 "issues": "https://github.com/ElPablo010/core/issues"
             },
-            "time": "2026-11-26T12:30:01+00:00"
+            "time": "2026-11-26T15:03:34+00:00"
         },
         {
             "name": "webgoeroe/reviews",
