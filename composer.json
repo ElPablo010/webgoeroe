@@ -23,7 +23,7 @@
         "webgoeroe/blog": "^0.2",
         "webgoeroe/cases": "^0.2",
         "webgoeroe/chat": "^0.2",
-        "webgoeroe/core": "^0.43.0",
+        "webgoeroe/core": "^0.53",
         "webgoeroe/reviews": "^0.3",
         "webgoeroe/seo-growth": "^0.11"
     },
