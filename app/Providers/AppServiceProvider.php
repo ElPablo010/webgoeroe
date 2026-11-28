@@ -195,9 +195,14 @@ class AppServiceProvider extends ServiceProvider
                     ->rows(3)
                     ->maxLength(1000);
                 if ($layout) {
+                    // Opmaak als eerste veld in het raster van Aanbieder: Opmaak | Aanbieder.
                     $providerGrid = collect($fields)->search(fn ($f) => $f instanceof Grid
                         && collect($f->getDefaultChildComponents())->contains(fn ($c) => is_object($c) && method_exists($c, 'getName') && $c->getName() === 'provider'));
-                    array_splice($fields, $providerGrid === false ? count($fields) : $providerGrid, 0, [$layout]);
+                    if ($providerGrid === false) {
+                        $fields[] = $layout;
+                    } else {
+                        $fields[$providerGrid]->schema([$layout, ...$fields[$providerGrid]->getDefaultChildComponents()]);
+                    }
                 }
 
                 return $fields;
