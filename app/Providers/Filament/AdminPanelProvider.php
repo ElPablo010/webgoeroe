@@ -43,7 +43,7 @@ class AdminPanelProvider extends PanelProvider
             // waarin hij de pagina's ontdekt, en dan wandelt "Instellingen" naar
             // boven zodra er een pagina bijkomt. Instellingen hoort onderaan:
             // dat open je zelden, in tegenstelling tot content en cijfers.
-            // Vaste volgorde op elke site: Website, Leads, Vindbaarheid, Reviews, ..., Instellingen.
+            // Vaste volgorde op elke site: Website, Leads, Agenda, SEO, Reviews, ..., Instellingen.
             ->navigationGroups(NavigationOrder::groups())
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')

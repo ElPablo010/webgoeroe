@@ -21,7 +21,8 @@ it('zet de groepen in een vaste volgorde, met Instellingen onderaan', function (
         Filament::getPanel('admin')->getNavigationGroups(),
     );
 
-    expect($groups)->toBe(['Website', 'Leads', 'Agenda', 'Vindbaarheid', 'Reviews', 'Instellingen']);
+    // "Vindbaarheid" blijft in de lijst van de core voor sites op een oudere Groei-module; deze site toont "SEO".
+    expect($groups)->toBe(['Website', 'Leads', 'Agenda', 'SEO', 'Vindbaarheid', 'Reviews', 'Instellingen']);
 });
 
 it('toont een uitlogknop onderaan de zijbalk', function () {
@@ -52,7 +53,7 @@ it('rendert de groepen in volgorde, met uitloggen als laatste', function () {
         filament()->getNavigation(),
     )));
 
-    expect($groups)->toBe(['Website', 'Leads', 'Agenda', 'Vindbaarheid', 'Reviews', 'Instellingen'])
+    expect($groups)->toBe(['Website', 'Leads', 'Agenda', 'SEO', 'Reviews', 'Instellingen'])
         ->and($at('Instellingen'))->toBeLessThan($logout);
 });
 
