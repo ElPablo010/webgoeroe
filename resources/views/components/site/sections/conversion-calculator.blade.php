@@ -165,8 +165,8 @@
                     <label class="mt-4 block min-w-0 text-sm font-medium text-white/60">E-mail
                         <input type="email" x-model="email" required maxlength="191" autocomplete="email" class="{{ $inputCls }}">
                     </label>
-                    <label class="mt-4 block min-w-0 text-sm font-medium text-white/60">Gsm <span class="text-white/40">(optioneel)</span>
-                        <input type="tel" x-model="phone" maxlength="30" autocomplete="tel" inputmode="tel" class="{{ $inputCls }}">
+                    <label class="mt-4 block min-w-0 text-sm font-medium text-white/60">Gsm
+                        <input type="tel" x-model="phone" required maxlength="30" autocomplete="tel" inputmode="tel" class="{{ $inputCls }}">
                     </label>
                     <input type="text" x-model="website" tabindex="-1" autocomplete="off" aria-hidden="true" class="absolute -left-[9999px] h-0 w-0 opacity-0">
                     <p x-show="error" x-text="error" class="mt-3 text-sm text-red-400" role="alert"></p>

@@ -31,7 +31,7 @@ class OmzetcheckController extends Controller
         $data = $request->validate([
             'first_name' => ['required', 'string', 'max:80'],
             'email' => ['required', 'email:rfc', 'max:191'],
-            'phone' => ['nullable', 'string', 'max:30', 'regex:/^[0-9+()\/.\s-]{6,30}$/'],
+            'phone' => ['required', 'string', 'max:30', 'regex:/^[0-9+()\/.\s-]{6,30}$/'],
             'sector' => ['nullable', 'string', 'max:100'],
             'visitors' => ['required', 'numeric', 'min:0', 'max:100000000'],
             'leads' => ['required', 'numeric', 'min:0', 'max:100000000'],
@@ -40,6 +40,9 @@ class OmzetcheckController extends Controller
             'target' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'section' => ['nullable', 'integer'],
             ...AdAttribution::RULES,
+        ], [
+            'phone.required' => 'Vul je gsm-nummer in.',
+            'phone.regex' => 'Dat lijkt geen geldig gsm-nummer.',
         ]);
 
         $attribution = AdAttribution::from($request);
@@ -66,7 +69,7 @@ class OmzetcheckController extends Controller
             'data' => [
                 'first_name' => $data['first_name'],
                 'email' => $data['email'],
-                'phone' => filled($data['phone'] ?? null) ? trim($data['phone']) : null,
+                'phone' => trim($data['phone']),
                 'sector' => $data['sector'] ?? null,
                 'visitors' => $data['visitors'],
                 'leads' => $data['leads'],

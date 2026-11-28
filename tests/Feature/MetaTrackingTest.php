@@ -22,7 +22,7 @@ function wgMetaOn(bool $on = true): void
 function leadPayload(array $tracking): array
 {
     return [
-        'first_name' => 'Jan', 'email' => 'Jan@Example.be', 'sector' => 'Renovatie',
+        'first_name' => 'Jan', 'email' => 'Jan@Example.be', 'phone' => '0470 12 34 56', 'sector' => 'Renovatie',
         'visitors' => 1000, 'leads' => 10, 'close' => 30, 'value' => 5000, 'tracking' => $tracking,
     ];
 }

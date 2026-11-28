@@ -24,6 +24,7 @@ function omzetcheckPayload(array $overrides = []): array
     return array_merge([
         'first_name' => 'Jan',
         'email' => 'jan@voorbeeld.be',
+        'phone' => '0470 12 34 56',
         'sector' => 'Bouw & renovatie',
         'visitors' => 500,
         'leads' => 5,
@@ -169,7 +170,7 @@ it('vraagt een voornaam en een geldig e-mailadres', function () {
     Http::assertNothingSent();
 });
 
-it('bewaart een optioneel gsm-nummer en weigert onzin', function () {
+it('vraagt een verplicht gsm-nummer en weigert onzin', function () {
     Http::fake();
 
     $this->postJson('/omzetcheck', omzetcheckPayload(['phone' => '0470 12 34 56']))->assertOk();
@@ -179,8 +180,9 @@ it('bewaart een optioneel gsm-nummer en weigert onzin', function () {
         ->assertStatus(422)
         ->assertJsonValidationErrors(['phone']);
 
-    $this->postJson('/omzetcheck', omzetcheckPayload(['phone' => '']))->assertOk();
-    expect(\App\Models\FormSubmission::query()->latest('id')->first()->data['phone'])->toBeNull();
+    $this->postJson('/omzetcheck', omzetcheckPayload(['phone' => '']))
+        ->assertStatus(422)
+        ->assertJsonValidationErrors(['phone' => 'Vul je gsm-nummer in.']);
 });
 
 it('toont eerst het formulier en pas na invullen het resultaat', function () {
