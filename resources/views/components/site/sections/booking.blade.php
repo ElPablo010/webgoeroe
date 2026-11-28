@@ -144,6 +144,9 @@
                             :submit-label="$content['agenda_submit_label'] ?? null" />
                     @elseif (! $url)
                         <p class="text-center text-sm text-red-500">Geen URL ingesteld.</p>
+                    @elseif (\Webgoeroe\Core\Integrations\Scheduling\Tools::isOwn($content))
+                        {{-- Eigen kalender op Calendly of Cal.com (core 0.57): vrije momenten en boeken via de API van de tool. --}}
+                        <x-core::sections.booking-own :calendar-id="\Webgoeroe\Core\Http\Controllers\BookingController::calendarId($content)" :section-id="$section?->id" :fields="\Webgoeroe\Core\Support\BookingForm::fields($content)" :note="\Webgoeroe\Core\Http\Controllers\BookingController::note($content)" />
                     @elseif ($provider === 'ghl')
                         {{-- GoHighLevel-agenda (iframe). Naam en e-mail uit de omzetcheck vullen het
                              formulier voor: via ?first_name=…&email=… op de pagina-URL, of (zelfde
