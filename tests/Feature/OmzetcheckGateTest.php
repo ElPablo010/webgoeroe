@@ -169,6 +169,20 @@ it('vraagt een voornaam en een geldig e-mailadres', function () {
     Http::assertNothingSent();
 });
 
+it('bewaart een optioneel gsm-nummer en weigert onzin', function () {
+    Http::fake();
+
+    $this->postJson('/omzetcheck', omzetcheckPayload(['phone' => '0470 12 34 56']))->assertOk();
+    expect(\App\Models\FormSubmission::query()->latest('id')->first()->data['phone'])->toBe('0470 12 34 56');
+
+    $this->postJson('/omzetcheck', omzetcheckPayload(['phone' => 'bel me maar']))
+        ->assertStatus(422)
+        ->assertJsonValidationErrors(['phone']);
+
+    $this->postJson('/omzetcheck', omzetcheckPayload(['phone' => '']))->assertOk();
+    expect(\App\Models\FormSubmission::query()->latest('id')->first()->data['phone'])->toBeNull();
+});
+
 it('toont eerst het formulier en pas na invullen het resultaat', function () {
     $html = Blade::render('<x-site.sections.conversion-calculator :content="$content" />', [
         'content' => ['heading' => 'Wat kost je website je eigenlijk?', 'sectors' => []],
@@ -176,6 +190,7 @@ it('toont eerst het formulier en pas na invullen het resultaat', function () {
 
     expect($html)->toContain('Toon mijn resultaat')
         ->toContain('x-show="unlocked"')
+        ->toContain('x-model="phone"')
         ->toContain('omzetcheck');
 });
 

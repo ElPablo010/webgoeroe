@@ -10211,16 +10211,16 @@
         },
         {
             "name": "webgoeroe/core",
-            "version": "v0.59.1",
+            "version": "v0.59.2",
             "source": {
                 "type": "git",
                 "url": "git@github.com:ElPablo010/core.git",
-                "reference": "c1cca66e8bc15521ea21031c6a8febaeeaa493b6"
+                "reference": "51ed722ada8fe9f8c26b71c4917ecaffbfa3a84a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ElPablo010/core/zipball/c1cca66e8bc15521ea21031c6a8febaeeaa493b6",
-                "reference": "c1cca66e8bc15521ea21031c6a8febaeeaa493b6",
+                "url": "https://api.github.com/repos/ElPablo010/core/zipball/51ed722ada8fe9f8c26b71c4917ecaffbfa3a84a",
+                "reference": "51ed722ada8fe9f8c26b71c4917ecaffbfa3a84a",
                 "shasum": ""
             },
             "require": {
@@ -10251,10 +10251,10 @@
             ],
             "description": "Site-basis van De WebGoeroe: page-builder met blokken, media, menu's, redirects, header/footer, SEO (sitemap, robots, llms.txt, JSON-LD) en formulieren voor Laravel + Filament-sites.",
             "support": {
-                "source": "https://github.com/ElPablo010/core/tree/v0.59.1",
+                "source": "https://github.com/ElPablo010/core/tree/v0.59.2",
                 "issues": "https://github.com/ElPablo010/core/issues"
             },
-            "time": "2026-11-28T08:10:03+00:00"
+            "time": "2026-11-28T10:44:20+00:00"
         },
         {
             "name": "webgoeroe/reviews",

@@ -51,7 +51,7 @@
             data-reveal
             x-data="{
                 ...@js($config),
-                first_name: '', email: '', website: '', startedAt: Date.now(), sending: false, error: '',
+                first_name: '', email: '', phone: '', website: '', startedAt: Date.now(), sending: false, error: '',
                 // Naam en e-mail uit de gate meegeven aan de agenda (voorinvullen).
                 ctaUrl(base) {
                     // Een anker op de pagina zelf (#scan) laten we ongemoeid: een query erachter breekt de sprong.
@@ -68,7 +68,7 @@
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                             body: JSON.stringify({
-                                first_name: this.first_name, email: this.email, website: this.website, elapsed: Date.now() - this.startedAt,
+                                first_name: this.first_name, email: this.email, phone: this.phone, website: this.website, elapsed: Date.now() - this.startedAt,
                                 section: this.section, sector: this.sectorLabel, visitors: this.visitors, leads: this.leads,
                                 close: this.close, value: this.value, target: this.target, tracking: tracking
                             })
@@ -164,6 +164,9 @@
                     </label>
                     <label class="mt-4 block min-w-0 text-sm font-medium text-white/60">E-mail
                         <input type="email" x-model="email" required maxlength="191" autocomplete="email" class="{{ $inputCls }}">
+                    </label>
+                    <label class="mt-4 block min-w-0 text-sm font-medium text-white/60">Gsm <span class="text-white/40">(optioneel)</span>
+                        <input type="tel" x-model="phone" maxlength="30" autocomplete="tel" inputmode="tel" class="{{ $inputCls }}">
                     </label>
                     <input type="text" x-model="website" tabindex="-1" autocomplete="off" aria-hidden="true" class="absolute -left-[9999px] h-0 w-0 opacity-0">
                     <p x-show="error" x-text="error" class="mt-3 text-sm text-red-400" role="alert"></p>

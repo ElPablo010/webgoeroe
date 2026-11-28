@@ -329,7 +329,7 @@ de eigen `ConversionsApi`-service, de `->booked(...)`-haak en het eigen pixel-co
 
 ## Omzetcheck-gate (website-conversiecalculator)
 
-Het blok `conversion_calculator` vraagt eerst voornaam + e-mail vóór het resultaat
+Het blok `conversion_calculator` vraagt eerst voornaam + e-mail (+ optioneel gsm, veld `phone`, sinds 28/11/2026 voor de WhatsApp-opvolging in Make) vóór het resultaat
 (schakelaar "require_contact" in de blokvelden, standaard aan). Flow:
 `POST /omzetcheck` ([`OmzetcheckController`](app/Http/Controllers/OmzetcheckController.php))
 rekent het resultaat server-side opnieuw uit (zelfde formule als de Alpine-code in
